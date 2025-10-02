@@ -38,4 +38,19 @@ public class FreelancerEvaluation {
     private Integer ratingProactiveness;
 
     private LocalDateTime createdAt;
+
+    public FreelancerEvaluation(Project project, Client client, Freelancer freelancer, String comment,
+                            int satisfaction, int professionalism, int scheduleAdherence,
+                            int communication, int proactiveness) {
+        this.project = project;
+        this.client = client;
+        this.freelancer = freelancer;
+        this.comment = comment;
+        this.ratingSatisfaction = satisfaction;
+        this.ratingProfessionalism = professionalism;
+        this.ratingScheduleAdherence = scheduleAdherence;
+        this.ratingCommunication = communication;
+        this.ratingProactiveness = proactiveness;
+        this.createdAt = LocalDateTime.now();
+    }
 }
