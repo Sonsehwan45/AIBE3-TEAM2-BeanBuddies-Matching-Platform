@@ -6,11 +6,12 @@ import com.back.domain.member.member.constant.Role;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.repository.MemberRepository;
 import com.back.global.exception.ServiceException;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -69,5 +70,9 @@ public class MemberService {
         if(!passwordEncoder.matches(password, member.getPassword())) {
             throw new ServiceException("401-2", "비밀번호가 일치하지 않습니다.");
         }
+    }
+
+    public Member findById(Long id) {
+        return memberRepository.findById(id).orElseThrow(() -> new ServiceException("404-1", "해당 ID를 가진 회원을 찾을 수 없습니다."));
     }
 }

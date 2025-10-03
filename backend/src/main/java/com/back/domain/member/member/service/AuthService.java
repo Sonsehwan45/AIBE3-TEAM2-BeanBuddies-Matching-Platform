@@ -61,4 +61,8 @@ public class AuthService {
         return jwtProvider.genRefreshToken(claims);
     }
 
+    public String reissueAccessToken(Member member) {
+        return genAccessToken(member);
+    }
+
 }
