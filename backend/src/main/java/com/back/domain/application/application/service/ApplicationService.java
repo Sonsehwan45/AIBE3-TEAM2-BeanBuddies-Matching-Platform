@@ -15,6 +15,10 @@ import java.util.Optional;
 public class ApplicationService {
     private final ApplicationRepository applicationRepository;
 
+    public long count() {
+        return applicationRepository.count();
+    }
+
     public Application create(ApplicationWriteReqBody reqBody, Freelancer freelancer, Project project) {
         Application application = new Application(reqBody, freelancer, project);
 
