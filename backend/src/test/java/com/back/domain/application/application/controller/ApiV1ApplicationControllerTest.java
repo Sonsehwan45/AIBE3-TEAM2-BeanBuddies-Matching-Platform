@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -32,7 +32,7 @@ class ApiV1ApplicationControllerTest {
 
     @Test
     @DisplayName("지원서 등록")
-    @WithMockUser(username = "client1", roles = {"CLIENT"})
+    @WithMockUser(username = "freelancer1", roles = {"FREELANCER"})
     void t1() throws Exception {
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/projects/1/applications")
@@ -64,5 +64,33 @@ class ApiV1ApplicationControllerTest {
                 .andExpect(jsonPath("$.data.additionalRequest").value(application.getAdditionalRequest()))
                 .andExpect(jsonPath("$.data.projectId").value(application.getId()))
                 .andExpect(jsonPath("$.data.freelancerName").value(application.getFreelancer().getMember().getName()));
+    }
+
+    @Test
+    @DisplayName("지원서 상태 수정 by 클라이언트")
+    @WithMockUser(username = "client1", roles = {"CLIENT"})
+    void t2() throws Exception {
+        long id = 1;
+
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/projects/1/applications/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                        .content("""
+                        {
+                          "status": "ACCEPT"
+                        }
+                    """)
+        ).andDo(print());
+
+        Application application = applicationService.findById(id);
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(handler().handlerType(ApiV1ApplicationController.class))
+                .andExpect(handler().methodName("update"))
+                .andExpect(jsonPath("$.resultCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("%d번 지원서가 수정되었습니다.".formatted(application.getId())))
+                .andExpect(jsonPath("$.data.status").value("ACCEPT"));
     }
 }

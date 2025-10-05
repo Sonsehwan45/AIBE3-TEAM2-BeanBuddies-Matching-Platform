@@ -50,4 +50,8 @@ public class Application extends BaseEntity {
         this.project = project;
         this.client = project.getClient();
     }
+
+    public void modifyStatus(ApplicationStatus status) {
+        this.status = status;
+    }
 }
