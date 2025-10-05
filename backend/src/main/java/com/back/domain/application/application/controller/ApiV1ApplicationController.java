@@ -81,7 +81,16 @@ public class ApiV1ApplicationController {
         );
     }
 
-    // TODO: 삭제
+    // 삭제
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ApiResponse<Void> delete(@PathVariable long projectId, @PathVariable long id) {
+        Application application = applicationService.findById(id);
+
+        applicationService.delete(application);
+
+        return new ApiResponse<>("200-1", "%d번 지원서가 삭제되었습니다.".formatted(id));
+    }
 
     // TODO: 조회
     // 클라이언트가 프로젝트의 지원 보기

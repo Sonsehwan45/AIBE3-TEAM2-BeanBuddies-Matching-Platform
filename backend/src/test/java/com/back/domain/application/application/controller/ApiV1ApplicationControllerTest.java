@@ -93,4 +93,23 @@ class ApiV1ApplicationControllerTest {
                 .andExpect(jsonPath("$.msg").value("%d번 지원서가 수정되었습니다.".formatted(application.getId())))
                 .andExpect(jsonPath("$.data.status").value("ACCEPT"));
     }
+
+    @Test
+    @DisplayName("지원서 삭제")
+    @WithMockUser(username = "freelancer1", roles = {"FREELANCER"})
+    void t3() throws Exception {
+        long id = 1;
+
+        ResultActions resultActions = mvc.perform(
+                delete(String.format("/api/v1/projects/1/applications/" + id))
+                        .with(csrf())
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(handler().handlerType(ApiV1ApplicationController.class))
+                .andExpect(handler().methodName("delete"))
+                .andExpect(jsonPath("$.resultCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("%d번 지원서가 삭제되었습니다.".formatted(id)));
+    }
 }

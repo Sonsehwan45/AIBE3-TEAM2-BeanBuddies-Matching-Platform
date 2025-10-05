@@ -40,4 +40,8 @@ public class ApplicationService {
     public void update(Application application, ApplicationStatus status) {
         application.modifyStatus(status);
     }
+
+    public void delete(Application application) {
+        applicationRepository.delete(application);
+    }
 }
