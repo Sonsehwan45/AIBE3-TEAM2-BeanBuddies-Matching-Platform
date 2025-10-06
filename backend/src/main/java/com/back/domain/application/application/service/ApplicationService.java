@@ -10,6 +10,7 @@ import com.back.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -43,5 +44,13 @@ public class ApplicationService {
 
     public void delete(Application application) {
         applicationRepository.delete(application);
+    }
+
+    public List<Application> findAllByProject(Project project) {
+        return applicationRepository.findAllByProject(project);
+    }
+
+    public List<Application> findAllByFreeLancer(Freelancer freelancer) {
+        return applicationRepository.findAllByFreelancer(freelancer);
     }
 }

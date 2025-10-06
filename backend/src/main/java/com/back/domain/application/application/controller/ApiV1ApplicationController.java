@@ -17,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/projects/{projectId}/applications")
 @RequiredArgsConstructor
@@ -92,7 +94,58 @@ public class ApiV1ApplicationController {
         return new ApiResponse<>("200-1", "%d번 지원서가 삭제되었습니다.".formatted(id));
     }
 
-    // TODO: 조회
+    // 조회
+    // 단건 조회
+    @GetMapping("/{id}")
+    @Transactional(readOnly = true)
+    public ApiResponse<ApplicationDto> get(@PathVariable long projectId, @PathVariable long id) {
+        Application application = applicationService.findById(id);
+
+        return new ApiResponse<>(
+                "200-1",
+                "%d번 지원서가 단건 조회되었습니다.".formatted(id),
+                new ApplicationDto(application)
+                );
+    }
     // 클라이언트가 프로젝트의 지원 보기
+    @GetMapping
+    @Transactional(readOnly = true)
+    public ApiResponse<List<ApplicationDto>> getAll(@PathVariable long projectId) {
+        Project project = ProjectService.findById(projectId);
+        List<Application> applicationList = applicationService.findAllByProject(project);
+
+        // List<ApplicationDto>로 넣어주기
+        List<ApplicationDto> applicationDtoList = applicationList.stream()
+                .map(ApplicationDto::new)
+                .toList();
+
+        return new ApiResponse<>(
+                "200-1",
+                "%d번 프로젝트의 지원서가 조회되었습니다.".formatted(projectId),
+                applicationDtoList
+        );
+    }
     // 프리랜서가 자신의 지원 보기
+    @GetMapping("/me") // 임시로 매핑한 상태며 RESTful 한 URI를 위해 Freelancer로 옮기거나 수정될 예정
+    @Transactional(readOnly = true)
+    public ApiResponse<List<ApplicationDto>> getAllMe(
+            @PathVariable long projectId // 이것도 안쓰임
+    ) {
+        // 임시로 회원 하나의 freelancer 정보 불러옴
+        Member freelancerMember1 = memberService.findByUsername("freelancer1").get();
+        Freelancer freelancer = freelancerService.findById(freelancerMember1.getId());
+
+        List<Application> applicationList = applicationService.findAllByFreeLancer(freelancer);
+
+        // List<ApplicationDto>로 넣어주기
+        List<ApplicationDto> applicationDtoList = applicationList.stream()
+                .map(ApplicationDto::new)
+                .toList();
+
+        return new ApiResponse<>(
+                "200-1",
+                "%d번 프리랜서의 지원서가 조회되었습니다.".formatted(freelancer.getId()),
+                applicationDtoList
+        );
+    }
 }
