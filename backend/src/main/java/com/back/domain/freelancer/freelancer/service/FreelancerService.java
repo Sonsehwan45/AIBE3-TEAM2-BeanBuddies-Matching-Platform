@@ -1,6 +1,6 @@
 package com.back.domain.freelancer.freelancer.service;
 
-import com.back.domain.freelancer.freelancer.dto.FreelancerFilterDto;
+import com.back.domain.freelancer.freelancer.dto.FreelancerSearchCondition;
 import com.back.domain.freelancer.freelancer.dto.FreelancerSummary;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.freelancer.freelancer.repository.FreelancerRepository;
@@ -34,7 +34,7 @@ public class FreelancerService {
     }
 
     @Transactional(readOnly = true)
-    public Page<FreelancerSummary> findAll(FreelancerFilterDto filter, Pageable page) {
+    public Page<FreelancerSummary> findAll(FreelancerSearchCondition condition, Pageable page) {
         int pageNumber = page.getPageNumber();
         int pageSize = page.getPageSize();
 

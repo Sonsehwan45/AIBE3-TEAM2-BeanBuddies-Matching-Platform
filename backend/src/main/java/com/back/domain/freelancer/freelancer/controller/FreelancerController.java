@@ -1,6 +1,6 @@
 package com.back.domain.freelancer.freelancer.controller;
 
-import com.back.domain.freelancer.freelancer.dto.FreelancerFilterDto;
+import com.back.domain.freelancer.freelancer.dto.FreelancerSearchCondition;
 import com.back.domain.freelancer.freelancer.dto.FreelancerSummary;
 import com.back.domain.freelancer.freelancer.dto.FreelancerUpdateForm;
 import com.back.domain.freelancer.freelancer.dto.FreelancerUpdateResponse;
@@ -52,11 +52,11 @@ public class FreelancerController {
     // 프리랜서 목록 조회
     @GetMapping
     public ApiResponse<Page<FreelancerSummary>> getFreelancers(
-            FreelancerFilterDto filter,
+            FreelancerSearchCondition condition,
             @PageableDefault(size = 20, sort = "ratingAvg", direction = Sort.Direction.DESC)
             Pageable pageable
     ) {
-        Page<FreelancerSummary> result = freelancerService.findAll(filter, pageable);
+        Page<FreelancerSummary> result = freelancerService.findAll(condition, pageable);
 
         return new ApiResponse<>(
                 "200",

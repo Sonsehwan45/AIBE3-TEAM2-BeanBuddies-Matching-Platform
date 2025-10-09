@@ -41,6 +41,8 @@ public class Freelancer {
     @Column(columnDefinition = "TEXT")
     private Map<String, Integer> career;
 
+    private Integer careerTotalYears;
+
     @Column(name = "rating_avg")
     //읽기전용?
     private float ratingAvg;
@@ -67,5 +69,13 @@ public class Freelancer {
         this.freelancerEmail = freelancerEmail;
         this.comment = comment;
         this.career = career;
+        computeCareerTotalYears();
+    }
+
+    private void computeCareerTotalYears() {
+        if (career == null || career.isEmpty()) {
+            return;
+        }
+        this.careerTotalYears = career.values().stream().mapToInt(Integer::intValue).sum() / 12;
     }
 }
