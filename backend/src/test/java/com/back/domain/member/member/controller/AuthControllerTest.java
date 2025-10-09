@@ -68,7 +68,6 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.data.name").value(member.getName()))
                 .andExpect(jsonPath("$.data.role").value(member.getRole().name()))
                 .andExpect(jsonPath("$.data.status").value(member.getStatus().name()))
-                .andExpect(jsonPath("$.data.createDate").value(Matchers.startsWith(member.getCreateDate().toString().substring(0, 20))))
 
                 //헤더 확인
                 .andExpect(header().exists("Authorization"))

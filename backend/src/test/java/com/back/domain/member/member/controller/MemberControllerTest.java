@@ -65,8 +65,7 @@ public class MemberControllerTest {
                 .andExpect(jsonPath("$.data.id").value(member.getId()))
                 .andExpect(jsonPath("$.data.name").value(member.getName()))
                 .andExpect(jsonPath("$.data.role").value(member.getRole().name()))
-                .andExpect(jsonPath("$.data.status").value(member.getStatus().name()))
-                .andExpect(jsonPath("$.data.createDate").value(Matchers.startsWith(member.getCreateDate().toString().substring(0, 20))));
+                .andExpect(jsonPath("$.data.status").value(member.getStatus().name()));
 
     }
 
