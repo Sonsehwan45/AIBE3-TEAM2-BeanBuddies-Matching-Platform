@@ -5,6 +5,7 @@ import com.back.domain.member.member.constant.Role;
 import com.back.domain.member.member.entity.Member;
 import com.back.global.exception.ServiceException;
 import com.back.global.jwt.JwtProvider;
+import com.back.global.security.TokenBlacklistService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,7 @@ public class AuthService {
 
     private final JwtProvider jwtProvider;
     private final MemberService memberService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     public Map<String, Object> login(String username, String password) {
         //가입된 ID인지 확인
@@ -65,4 +67,9 @@ public class AuthService {
         return genAccessToken(member);
     }
 
+    public void addBlacklistToken(String accessToken) {
+        if(accessToken == null || accessToken.isBlank()) return;
+
+        tokenBlacklistService.addBlacklistToken(accessToken);
+    }
 }
