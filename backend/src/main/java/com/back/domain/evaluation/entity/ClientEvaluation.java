@@ -1,6 +1,8 @@
 package com.back.domain.evaluation.entity;
 
 
+import com.back.domain.client.client.entity.Client;
+import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.project.project.entity.Project;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -32,17 +34,17 @@ public class ClientEvaluation {
     @Lob
     private String comment;
 
-    private Integer ratingSatisfaction;
-    private Integer ratingProfessionalism;
-    private Integer ratingScheduleAdherence;
-    private Integer ratingCommunication;
-    private Integer ratingProactiveness;
+    private Integer ratingSatisfaction;//평가 평균
+    private Integer ratingProfessionalism;//전문성
+    private Integer ratingScheduleAdherence;//일정 준수
+    private Integer ratingCommunication;//의사소통
+    private Integer ratingProactiveness;//적극성
 
     private LocalDateTime createdAt;
 
     public ClientEvaluation(Project project, Client client, Freelancer freelancer, String comment,
-                        int satisfaction, int professionalism, int scheduleAdherence,
-                        int communication, int proactiveness) {
+                            int satisfaction, int professionalism, int scheduleAdherence,
+                            int communication, int proactiveness) {
         this.project = project;
         this.client = client;
         this.freelancer = freelancer;

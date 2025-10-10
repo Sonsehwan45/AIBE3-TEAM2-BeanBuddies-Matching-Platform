@@ -1,5 +1,7 @@
 package com.back.domain.evaluation.entity;
 
+import com.back.domain.client.client.entity.Client;
+import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.project.project.entity.Project;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -40,8 +42,8 @@ public class FreelancerEvaluation {
     private LocalDateTime createdAt;
 
     public FreelancerEvaluation(Project project, Client client, Freelancer freelancer, String comment,
-                            int satisfaction, int professionalism, int scheduleAdherence,
-                            int communication, int proactiveness) {
+                                int satisfaction, int professionalism, int scheduleAdherence,
+                                int communication, int proactiveness) {
         this.project = project;
         this.client = client;
         this.freelancer = freelancer;

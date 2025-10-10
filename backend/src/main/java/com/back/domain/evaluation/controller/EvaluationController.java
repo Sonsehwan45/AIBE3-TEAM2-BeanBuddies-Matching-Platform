@@ -4,6 +4,7 @@ package com.back.domain.evaluation.controller;
 import com.back.domain.evaluation.dto.EvaluationCreateReq;
 import com.back.domain.evaluation.service.EvaluationService;
 import com.back.global.response.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,11 +22,8 @@ public class EvaluationController {
 
     //평가 생성
     @PostMapping
-    public ApiResponse<Void> createEvaluation(@RequestBody EvaluationCreateReq request) {
-        // TODO: Spring Security에서 현재 로그인한 사용자의 ID를 가져와야 합니다.
-        // Principal principal
-        // Long currentUserId = ((Member) principal).getId(); 와 같은 방식
-        Long currentUserId = 1L; // 임시 테스트용 ID
+    public ApiResponse<Void> createEvaluation(@Valid @RequestBody EvaluationCreateReq request) {
+        Long currentUserId = 4L; // 임시 테스트용 ID
 
         evaluationService.createEvaluation(currentUserId, request);
 
