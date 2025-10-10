@@ -1,6 +1,8 @@
 package com.back.domain.evaluation.service;
 
 import com.back.domain.evaluation.dto.EvaluationCreateReq;
+import com.back.domain.evaluation.entity.ClientEvaluation;
+import com.back.domain.evaluation.entity.FreelancerEvaluation;
 import com.back.domain.evaluation.repository.ClientEvaluationRepository;
 import com.back.domain.evaluation.repository.FreelancerEvaluationRepository;
 import com.back.domain.member.member.constant.Role;
@@ -19,6 +21,8 @@ public class EvaluationService {
     private final FreelancerEvaluationRepository freelancerEvaluationRepository;
     private final ClientEvaluationRepository clientEvaluationRepository;
     private final MemberRepository memberRepository;
+    private final FreelancerRepository freelancerRepository;
+    private final ClientRepository clientRepository;
     private final ProjectRepository projectRepository;
 
     @Transactional
@@ -34,5 +38,30 @@ public class EvaluationService {
         double average = (ratings.professionalism() + ratings.scheduleAdherence() + ratings.communication() + ratings.proactiveness())/4.0;
 
         int satisfactionScore = (int) Math.round(average);
+
+        //평가자가 클라이언트
+        if (evaluatorMember.getRole() == Role.CLIENT) {
+            Client clientEvaluator = clientRepository.findById(evaluatorId)
+                    .orElseThrow(() -> new IllegalArgumentException("클라이언트 정보를 찾을 수 없습니다."));
+            Freelancer freelancerEvaluatee = freelancerRepository.findById(evaluationCreateReq.evaluateeId())
+                    .orElseThrow(() -> new IllegalArgumentException("프리랜서 정보를 찾을 수 없습니다."));
+
+            FreelancerEvaluation review = new FreelancerEvaluation(project, clientEvaluator, freelancerEvaluatee, evaluationCreateReq.comment(),
+                    satisfactionScore, ratings.professionalism(), ratings.scheduleAdherence(),
+                    ratings.communication(), ratings.proactiveness());
+            freelancerEvaluationRepository.save(review);
+
+        //평가자가 프리랜서
+        } else if (evaluatorMember.getRole() == Role.FREELANCER) {
+            Freelancer freelancerEvaluator = freelancerRepository.findById(evaluatorId)
+                    .orElseThrow(() -> new IllegalArgumentException("프리랜서 정보를 찾을 수 없습니다."));
+            Client clientEvaluatee = clientRepository.findById(evaluationCreateReq.evaluateeId())
+                    .orElseThrow(() -> new IllegalArgumentException("클라이언트 정보를 찾을 수 없습니다."));
+
+            ClientEvaluation review = new ClientEvaluation(project, clientEvaluatee, freelancerEvaluator, evaluationCreateReq.comment(),
+                    satisfactionScore, ratings.professionalism(), ratings.scheduleAdherence(),
+                    ratings.communication(), ratings.proactiveness());
+            clientEvaluationRepository.save(review);
+        }
     }
 }
