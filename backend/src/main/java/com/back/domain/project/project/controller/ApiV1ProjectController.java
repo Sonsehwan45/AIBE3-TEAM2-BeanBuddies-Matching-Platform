@@ -6,18 +6,21 @@ import com.back.domain.common.skill.dto.SkillDto;
 import com.back.domain.common.skill.service.SkillService;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
-import com.back.domain.project.project.dto.ProjectDto;
-import com.back.domain.project.project.dto.ProjectModifyReqBody;
-import com.back.domain.project.project.dto.ProjectWriteReqBody;
+import com.back.domain.project.project.dto.*;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
 import com.back.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/projects")
@@ -104,5 +107,37 @@ public class ApiV1ProjectController {
                 "%d번 프로젝트가 수정되었습니다.".formatted(project.getId()),
                 new ProjectDto(project, skillDtoList, interestDtoList)
         );
+    }
+
+    @GetMapping("/{id}")
+    @Transactional(readOnly = true)
+    public ProjectDto getItem(@PathVariable long id) {
+        Project project = projectService.findById(id);
+        List<SkillDto> skillDtoList = skillService.findByProjectId(id);
+        List<InterestDto> interestDtoList = interestService.findByProjectId(id);
+        return new ProjectDto(project, skillDtoList, interestDtoList);
+    }
+
+    // 테스트용으로 만든 다건 조회이기에 임시로 "/all" 붙임 처리함 이후 삭제하거나 수정할 예정
+    @GetMapping("/all")
+    @Transactional(readOnly = true)
+    public List<ProjectDto> getItems() {
+        return projectService.getList().stream()
+                .map(project -> {
+                    List<SkillDto> skillDtoList = skillService.findByProjectId(project.getId());
+                    List<InterestDto> interestDtoList = interestService.findByProjectId(project.getId());
+                    return new ProjectDto(project, skillDtoList, interestDtoList);
+                })
+                .collect(Collectors.toList());
+    }
+
+    @GetMapping
+    @Transactional(readOnly = true)
+    public ApiResponse<Page<ProjectSummaryDto>> searchProjects(
+            @ModelAttribute ProjectSearchDto searchDto,
+            @PageableDefault(size = 10, sort = "createDate", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<ProjectSummaryDto> page = projectService.search(searchDto, pageable);
+        return new ApiResponse<>("200-1", "조회 성공", page);
     }
 }

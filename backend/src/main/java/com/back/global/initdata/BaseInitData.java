@@ -26,9 +26,10 @@ public class BaseInitData {
     private BaseInitData self;
 
     private final MemberService memberService;
+    private final ProjectService projectService;
     private final SkillService skillService;
     private final InterestService interestService;
-    private final ProjectService projectService;
+
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {

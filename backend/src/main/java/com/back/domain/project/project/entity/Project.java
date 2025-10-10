@@ -28,7 +28,6 @@ public class Project extends BaseEntity {
     private String preferredCondition;
     private String payCondition;
     private String workingCondition;
-    // 기술, 관심 분야의 경우 다른 entity로 생성하여 관리 예정
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id")
