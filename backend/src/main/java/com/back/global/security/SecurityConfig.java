@@ -5,6 +5,7 @@ import com.back.standard.json.JsonUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
@@ -29,6 +30,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/*/test/public").permitAll()
                         .requestMatchers("/api/*/members/join/**").permitAll()
                         .requestMatchers("/api/*/members/temp-password/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트 단건/다건 조회
+                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/applications/**").permitAll() // 지원서 단건/다건 조회
 
                         //인증된 사용자만 접근 가능
                         .requestMatchers("/api/*/test/auth").authenticated()
@@ -38,9 +41,15 @@ public class SecurityConfig {
 
                         //프리랜서만 접근 가능
                         .requestMatchers("/api/*/test/auth/freelancer").hasRole("FREELANCER")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/projects/*/applications").hasRole("FREELANCER") // 지원서 등록
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/projects/*/applications/**").hasRole("FREELANCER") // 지원서 삭제
 
                         //클라이언트만 접근 가능
                         .requestMatchers("/api/*/test/auth/client").hasRole("CLIENT")
+                        .requestMatchers(HttpMethod.POST, "/api/*/projects").hasRole("CLIENT") // 프로젝트 등록
+                        .requestMatchers(HttpMethod.DELETE, "/api/*/projects/**").hasRole("CLIENT") // 프로젝트 삭제
+                        .requestMatchers(HttpMethod.PATCH, "/api/*/projects/**").hasRole("CLIENT") // 프로젝트 수정
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/applications/**").hasRole("CLIENT") // 지원서 수정 (클라이언트가 하는 기능!)
 
                         //관리자만 접근 가능
                         .requestMatchers("/api/*/test/auth/admin").hasRole("ADMIN")
