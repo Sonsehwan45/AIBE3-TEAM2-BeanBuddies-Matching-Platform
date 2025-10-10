@@ -241,14 +241,14 @@ class ApiV1ApplicationControllerTest {
 
     @Test
     @DisplayName("지원서 조회 (작성자 기준)")
-    void t5_getAllMe() throws Exception {
-        Member member = memberService.findByUsername("freelancer1").get();
-        Freelancer freelancer = freelancerService.findById(member.getId());
-
+    @WithUserDetails(value = "freelancer1", userDetailsServiceBeanName = "customUserDetailsService")
+    void t5() throws Exception {
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/projects/1/applications/me")
         ).andDo(print());
 
+        Member member = memberService.findByUsername("freelancer1").get();
+        Freelancer freelancer = freelancerService.findById(member.getFreelancer().getId());
         List<Application> applications = applicationService.findAllByFreeLancer(freelancer);
 
         resultActions
@@ -270,8 +270,40 @@ class ApiV1ApplicationControllerTest {
     }
 
     @Test
+    @DisplayName("지원서 조회 (작성자 기준) - 비 로그인시 fail")
+    @WithUserDetails(value = "client1", userDetailsServiceBeanName = "customUserDetailsService")
+    void t5_1() throws Exception {
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/projects/1/applications/me")
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(handler().handlerType(ApiV1ApplicationController.class))
+                .andExpect(handler().methodName("getAllMe"))
+                .andExpect(jsonPath("$.resultCode").value("404-1"))
+                .andExpect(jsonPath("$.msg").value("로그인 후 사용해주세요."));
+    }
+
+    @Test
+    @DisplayName("지원서 조회 (작성자 기준) - client 시도 시 fail")
+    @WithUserDetails(value = "client1", userDetailsServiceBeanName = "customUserDetailsService")
+    void t5_2() throws Exception {
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/projects/1/applications/me")
+        ).andDo(print());
+
+        resultActions
+                .andExpect(status().isNotFound())
+                .andExpect(handler().handlerType(ApiV1ApplicationController.class))
+                .andExpect(handler().methodName("getAllMe"))
+                .andExpect(jsonPath("$.resultCode").value("404-1"))
+                .andExpect(jsonPath("$.msg").value("존재하지 않는 엔티티에 접근했습니다."));
+    }
+
+    @Test
     @DisplayName("지원서 조회 (프로젝트 기준)")
-    void t6_getAllByProject() throws Exception {
+    void t6() throws Exception {
         long projectId = 1;
         Project project = projectService.findById(projectId);
 

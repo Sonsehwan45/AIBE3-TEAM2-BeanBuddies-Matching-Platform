@@ -155,10 +155,14 @@ public class ApiV1ApplicationController {
     // 프리랜서가 자신의 지원 목록 보기
     @GetMapping("/me") // 임시로 매핑한 상태며 RESTful 한 URI를 위해 Freelancer로 옮기거나 수정될 예정
     @Transactional(readOnly = true)
+    @OnlyActiveMember
     public ApiResponse<List<ApplicationSummaryDto>> getAllMe(
             @PathVariable long projectId,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
+        if (user == null) {
+            throw new ServiceException("404-1", "로그인 후 사용해주세요.");
+        }
         Member member = memberService.findById(user.getId());
         Freelancer freelancer = freelancerService.findById(member.getId());
         if (freelancer == null) {
