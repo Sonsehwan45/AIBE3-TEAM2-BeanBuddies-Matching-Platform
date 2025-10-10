@@ -6,7 +6,7 @@ public record SkillDto(
         Long id,
         String name
 ) {
-    public SkillDto (Skill skill) {
+    public SkillDto(Skill skill) {
         this(
                 skill.getId(),
                 skill.getName()

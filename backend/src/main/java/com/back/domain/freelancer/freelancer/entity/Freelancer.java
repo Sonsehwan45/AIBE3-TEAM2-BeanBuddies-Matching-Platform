@@ -3,7 +3,8 @@ package com.back.domain.freelancer.freelancer.entity;
 import com.back.domain.freelancer.join.entity.FreelancerInterest;
 import com.back.domain.freelancer.join.entity.FreelancerSkill;
 import com.back.domain.member.member.entity.Member;
-import com.back.standard.converter.CareerConverter;
+import com.back.standard.converter.JsonConverter;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
@@ -12,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.validation.constraints.Email;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,22 +35,25 @@ public class Freelancer {
 
     private String job;
 
+    @Email
     private String freelancerEmail;
 
     private String comment;
 
-    @Convert(converter = CareerConverter.class)
+    @Convert(converter = JsonConverter.class)
     @Column(columnDefinition = "TEXT")
     private Map<String, Integer> career;
+
+    private Integer careerTotalYears;
 
     @Column(name = "rating_avg")
     //읽기전용?
     private float ratingAvg;
 
-    @OneToMany(mappedBy = "freelancer")
+    @OneToMany(mappedBy = "freelancer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FreelancerSkill> skills = new ArrayList<>();
 
-    @OneToMany(mappedBy = "freelancer")
+    @OneToMany(mappedBy = "freelancer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FreelancerInterest> interests = new ArrayList<>();
 
     public Freelancer(Member member) {
@@ -67,5 +72,13 @@ public class Freelancer {
         this.freelancerEmail = freelancerEmail;
         this.comment = comment;
         this.career = career;
+        computeCareerTotalYears();
+    }
+
+    private void computeCareerTotalYears() {
+        if (career == null || career.isEmpty()) {
+            return;
+        }
+        this.careerTotalYears = career.values().stream().mapToInt(Integer::intValue).sum() / 12;
     }
 }
