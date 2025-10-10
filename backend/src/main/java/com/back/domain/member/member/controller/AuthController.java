@@ -46,4 +46,23 @@ public class AuthController {
                 new MemberDto(member)
         );
     }
+
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout() {
+
+        String accessToken = headerHelper.getHeader("Authorization", "");
+        if(accessToken != null && accessToken.startsWith("Bearer ")) {
+            accessToken = accessToken.replace("Bearer ", "");
+            authService.addBlacklistToken(accessToken);
+        }
+
+        cookieHelper.deleteCookie("refreshToken");
+        headerHelper.setHeader("Authorization", null);
+
+        return new ApiResponse<>(
+                "200-2",
+                "로그아웃이 완료되었습니다."
+        );
+
+    }
 }

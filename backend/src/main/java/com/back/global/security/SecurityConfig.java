@@ -27,10 +27,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         //누구나 접근 가능
                         .requestMatchers("/api/*/test/public").permitAll()
+                        .requestMatchers("/api/*/members/join/**").permitAll()
+                        .requestMatchers("/api/*/members/temp-password/**").permitAll()
 
                         //인증된 사용자만 접근 가능
                         .requestMatchers("/api/*/test/auth").authenticated()
                         .requestMatchers("/api/*/test/auth/me").authenticated()
+                        .requestMatchers("/api/*/members/password-update").authenticated()
+
 
                         //프리랜서만 접근 가능
                         .requestMatchers("/api/*/test/auth/freelancer").hasRole("FREELANCER")

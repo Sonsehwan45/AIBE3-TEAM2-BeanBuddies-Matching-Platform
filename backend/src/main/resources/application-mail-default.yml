@@ -1,0 +1,12 @@
+spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: NEED_TO_INPUT
+    password: NEED_TO_INPUT
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true

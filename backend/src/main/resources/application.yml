@@ -1,7 +1,9 @@
 spring:
   profiles:
     active: dev
-    include: secret
+    include:
+      - secret
+      - mail
   output:
     ansi:
       enabled: always
@@ -17,6 +19,10 @@ spring:
         format_sql: true
         highlight_sql: true
         use_sql_comments: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
 logging:
   level:
     org.hibernate.orm.jdbc.bind: TRACE

@@ -5,16 +5,12 @@ import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.member.member.constant.MemberStatus;
 import com.back.domain.member.member.constant.Role;
 import com.back.global.jpa.entity.BaseEntity;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.OneToOne;
-import java.time.LocalDateTime;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -72,5 +68,10 @@ public class Member extends BaseEntity {
 
     public void changeStatus(String status) {
         this.status = MemberStatus.valueOf(status);
+    }
+
+    //비밀번호 변경
+    public void updatePassword(String password) {
+        this.password = password;
     }
 }

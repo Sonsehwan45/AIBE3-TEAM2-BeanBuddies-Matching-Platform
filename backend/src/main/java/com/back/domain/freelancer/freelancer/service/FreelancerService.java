@@ -44,10 +44,7 @@ public class FreelancerService {
 
     @Transactional(readOnly = true)
     public Page<FreelancerSummary> findAll(FreelancerSearchCondition condition, Pageable page) {
-        int pageNumber = page.getPageNumber();
-        int pageSize = page.getPageSize();
-
-        return freelancerRepository.findAll(condition, PageRequest.of(pageNumber, pageSize));
+        return freelancerRepository.findAll(condition, page);
     }
 
     private void updateFreelancerSkills(Freelancer freelancer, List<Long> newSkillIds) {

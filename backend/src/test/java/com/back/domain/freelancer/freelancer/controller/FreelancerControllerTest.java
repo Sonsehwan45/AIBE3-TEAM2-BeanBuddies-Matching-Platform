@@ -84,7 +84,7 @@ class FreelancerControllerTest {
     void t1_queryParam() throws Exception {
         ResultActions resultActions = mvc
                 .perform(
-                        get("/api/v1/freelancers?page=0&size=5&careeLevel=JUNIOR&ratingAvg=3&skillIds=1,2,3")
+                        get("/api/v1/freelancers?page=0&size=5&careerLevel=JUNIOR&ratingAvg=3&skillIds=1,2,3")
                 )
                 .andDo(print());
 

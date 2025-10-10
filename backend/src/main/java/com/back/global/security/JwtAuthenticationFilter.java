@@ -28,6 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final CookieHelper cookieHelper;
     private final MemberService memberService;
     private final AuthService authService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     private final List<String> skipUrls = List.of(
             "/api/v1/members/login",
@@ -58,6 +59,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
         String accessToken = header.replace("Bearer ", "");
+
+        //블랙리스트 확인
+        if(tokenBlacklistService.isBlacklisted(accessToken)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         //accessToken이 없을 때 -> refreshToken 확인 후 재발급
         Claims accessClaims = jwtProvider.getClaims(accessToken, true);
