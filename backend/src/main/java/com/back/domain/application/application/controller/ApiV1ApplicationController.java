@@ -2,6 +2,7 @@ package com.back.domain.application.application.controller;
 
 import com.back.domain.application.application.dto.ApplicationDto;
 import com.back.domain.application.application.dto.ApplicationModifyReqBody;
+import com.back.domain.application.application.dto.ApplicationSummaryDto;
 import com.back.domain.application.application.dto.ApplicationWriteReqBody;
 import com.back.domain.application.application.entity.Application;
 import com.back.domain.application.application.service.ApplicationService;
@@ -130,28 +131,30 @@ public class ApiV1ApplicationController {
                 new ApplicationDto(application)
                 );
     }
-    // 클라이언트가 프로젝트의 지원 보기
+
+    // 클라이언트가 프로젝트의 지원 목록 보기
     @GetMapping
     @Transactional(readOnly = true)
-    public ApiResponse<List<ApplicationDto>> getAll(@PathVariable long projectId) {
+    public ApiResponse<List<ApplicationSummaryDto>> getAll(@PathVariable long projectId) {
         Project project = ProjectService.findById(projectId);
         List<Application> applicationList = applicationService.findAllByProject(project);
 
         // List<ApplicationDto>로 넣어주기
-        List<ApplicationDto> applicationDtoList = applicationList.stream()
-                .map(ApplicationDto::new)
+        List<ApplicationSummaryDto> applicationSummaryDtoList = applicationList.stream()
+                .map(ApplicationSummaryDto::new)
                 .toList();
 
         return new ApiResponse<>(
                 "200-1",
                 "%d번 프로젝트의 지원서가 조회되었습니다.".formatted(projectId),
-                applicationDtoList
+                applicationSummaryDtoList
         );
     }
-    // 프리랜서가 자신의 지원 보기
+
+    // 프리랜서가 자신의 지원 목록 보기
     @GetMapping("/me") // 임시로 매핑한 상태며 RESTful 한 URI를 위해 Freelancer로 옮기거나 수정될 예정
     @Transactional(readOnly = true)
-    public ApiResponse<List<ApplicationDto>> getAllMe(
+    public ApiResponse<List<ApplicationSummaryDto>> getAllMe(
             @PathVariable long projectId
     ) {
         // 임시로 회원 하나의 freelancer 정보 불러옴
@@ -161,14 +164,14 @@ public class ApiV1ApplicationController {
         List<Application> applicationList = applicationService.findAllByFreeLancer(freelancer);
 
         // List<ApplicationDto>로 넣어주기
-        List<ApplicationDto> applicationDtoList = applicationList.stream()
-                .map(ApplicationDto::new)
+        List<ApplicationSummaryDto> applicationSummaryDtoList = applicationList.stream()
+                .map(ApplicationSummaryDto::new)
                 .toList();
 
         return new ApiResponse<>(
                 "200-1",
                 "%d번 프리랜서의 지원서가 조회되었습니다.".formatted(freelancer.getId()),
-                applicationDtoList
+                applicationSummaryDtoList
         );
     }
 }

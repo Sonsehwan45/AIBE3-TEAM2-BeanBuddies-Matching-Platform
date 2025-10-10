@@ -264,7 +264,6 @@ class ApiV1ApplicationControllerTest {
                     .andExpect(jsonPath("$.data[" + i + "].estimatedPay").value(org.hamcrest.Matchers.closeTo(application.getEstimatedPay().doubleValue(), 0.01)))
                     .andExpect(jsonPath("$.data[" + i + "].expectedDuration").value(application.getExpectedDuration()))
                     .andExpect(jsonPath("$.data[" + i + "].workPlan").value(application.getWorkPlan()))
-                    .andExpect(jsonPath("$.data[" + i + "].additionalRequest").value(application.getAdditionalRequest()))
                     .andExpect(jsonPath("$.data[" + i + "].projectId").value(application.getProject().getId()))
                     .andExpect(jsonPath("$.data[" + i + "].freelancerName").value(application.getFreelancer().getMember().getName()));
         }
@@ -295,7 +294,6 @@ class ApiV1ApplicationControllerTest {
                     .andExpect(jsonPath("$.data[" + i + "].estimatedPay").value(org.hamcrest.Matchers.closeTo(application.getEstimatedPay().doubleValue(), 0.01)))
                     .andExpect(jsonPath("$.data[" + i + "].expectedDuration").value(application.getExpectedDuration()))
                     .andExpect(jsonPath("$.data[" + i + "].workPlan").value(application.getWorkPlan()))
-                    .andExpect(jsonPath("$.data[" + i + "].additionalRequest").value(application.getAdditionalRequest()))
                     .andExpect(jsonPath("$.data[" + i + "].projectId").value(application.getProject().getId()))
                     .andExpect(jsonPath("$.data[" + i + "].freelancerName").value(application.getFreelancer().getMember().getName()));
         }
