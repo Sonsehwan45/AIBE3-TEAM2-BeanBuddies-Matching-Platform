@@ -109,7 +109,7 @@ public class AuthControllerTest {
 
                 //응답 데이터 확인
                 .andExpect(jsonPath("$.resultCode").value("401-1"))
-                .andExpect(jsonPath("$.msg").value("존재하지 않는 회원입니다."));
+                .andExpect(jsonPath("$.msg").value("해당 회원을 찾을 수 없습니다."));
 
     }
 
