@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -23,7 +22,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -40,12 +38,10 @@ class ApiV1ProjectControllerTest {
 
     @Test
     @DisplayName("프로젝트 생성")
-    @WithMockUser(username = "user1", roles = {"ADMIN"})
     void t1() throws  Exception {
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/projects")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf())
                         .content("""
                 {
                     "title": "테스트 프로젝트",
@@ -109,12 +105,10 @@ class ApiV1ProjectControllerTest {
 
     @Test
     @DisplayName("프로젝트 등록 (제목 누락)")
-    @WithMockUser(username = "user1", roles = {"ADMIN"})
     void t1_1() throws Exception {
         ResultActions resultActions = mvc.perform(
                 post("/api/v1/projects")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf())
                         .content("""
                 {
                     "title": "",
@@ -141,13 +135,11 @@ class ApiV1ProjectControllerTest {
 
     @Test
     @DisplayName("프로젝트 삭제")
-    @WithMockUser(username = "user1", roles = {"ADMIN"})
     void t2() throws  Exception {
         long id = 1;
         Project project = projectService.findById(id);
         ResultActions resultActions = mvc.perform(
                 delete("/api/v1/projects/" + id)
-                        .with(csrf())
         ).andDo(print());
 
         resultActions
@@ -164,7 +156,6 @@ class ApiV1ProjectControllerTest {
 
     @Test
     @DisplayName("프로젝트 수정")
-    @WithMockUser(username = "user1", roles = {"ADMIN"})
     void t3() throws  Exception {
         long id = 1;
         Project project = projectService.findById(id);
@@ -172,7 +163,6 @@ class ApiV1ProjectControllerTest {
         ResultActions resultActions = mvc.perform(
                 patch("/api/v1/projects/" + id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .with(csrf())
                         .content("""
                 {
                     "title": "테스트 프로젝트 update",

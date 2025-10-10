@@ -1,11 +1,17 @@
 package com.back.global.initdata;
 
+import com.back.domain.application.application.dto.ApplicationWriteReqBody;
+import com.back.domain.application.application.entity.Application;
+import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.client.client.service.ClientService;
 import com.back.domain.common.interest.service.InterestService;
 import com.back.domain.common.skill.service.SkillService;
+import com.back.domain.freelancer.freelancer.entity.Freelancer;
+import com.back.domain.freelancer.freelancer.service.FreelancerService;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
+import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +38,8 @@ public class BaseInitData {
     private final ProjectService projectService;
     private final SkillService skillService;
     private final InterestService interestService;
+    private final ApplicationService applicationService;
+    private final FreelancerService freelancerService;
 
 
     @Bean
@@ -40,6 +48,7 @@ public class BaseInitData {
             self.addMember();
             self.addSkillAndInterest();
             self.addProject();
+            self.addApplication();
         };
     }
 
@@ -134,6 +143,56 @@ public class BaseInitData {
                 LocalDateTime.now().plusMonths(3),
                 skillIds3,
                 interestIds3
+        );
+    }
+
+    @Transactional
+    public void addApplication() {
+        if (applicationService.count() > 0) return;
+
+        // 프리랜서 회원 조회
+        Member freelancerMember1 = memberService.findByUsername("freelancer1").get();
+        Freelancer freelancer1 = freelancerService.findById(freelancerMember1.getId());
+        Member freelancerMember2 = memberService.findByUsername("freelancer2").get();
+        Freelancer freelancer2 = freelancerService.findById(freelancerMember2.getId());
+
+        // 프로젝트 조회
+        Project project1 = projectService.findById(1);
+        Project project2 = projectService.findById(2);
+        Project project3 = projectService.findById(3);
+
+        // 지원서 3개 생성
+        Application application1 = applicationService.create(
+                new ApplicationWriteReqBody(
+                        BigDecimal.valueOf(1_000_000),
+                        "1개월",
+                        "주 5일, 원격 근무",
+                        "추가 자료 없음"
+                ),
+                freelancer1,
+                project1
+        );
+
+        Application application2 = applicationService.create(
+                new ApplicationWriteReqBody(
+                        BigDecimal.valueOf(2_000_000),
+                        "2개월",
+                        "주 3일, 출근 근무",
+                        "디자인 자료 필요"
+                ),
+                freelancer1,
+                project2
+        );
+
+        Application application3 = applicationService.create(
+                new ApplicationWriteReqBody(
+                        BigDecimal.valueOf(2_500_000),
+                        "3개월",
+                        "주 4일, 혼합 근무",
+                        "기술 자료 요청"
+                ),
+                freelancer2,
+                project3
         );
     }
 }
