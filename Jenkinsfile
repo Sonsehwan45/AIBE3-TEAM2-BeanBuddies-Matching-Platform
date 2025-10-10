@@ -21,7 +21,8 @@ pipeline {
                 // Gradle 실행 권한을 부여하고, clean build를 통해 빌드 및 테스트를 수행합니다.
                 dir('backend') {
                     sh 'chmod +x gradlew'
-                    sh './gradlew clean build -x test'
+                    sh './gradlew clean'
+                    sh './gradlew build -x test'
                 }
             }
         }
