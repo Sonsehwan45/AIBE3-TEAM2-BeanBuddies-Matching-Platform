@@ -1,10 +1,14 @@
 package com.back.domain.evaluation.service;
 
+import com.back.domain.client.client.entity.Client;
+import com.back.domain.client.client.repository.ClientRepository;
 import com.back.domain.evaluation.dto.EvaluationCreateReq;
 import com.back.domain.evaluation.entity.ClientEvaluation;
 import com.back.domain.evaluation.entity.FreelancerEvaluation;
 import com.back.domain.evaluation.repository.ClientEvaluationRepository;
 import com.back.domain.evaluation.repository.FreelancerEvaluationRepository;
+import com.back.domain.freelancer.freelancer.entity.Freelancer;
+import com.back.domain.freelancer.freelancer.repository.FreelancerRepository;
 import com.back.domain.member.member.constant.Role;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.repository.MemberRepository;
