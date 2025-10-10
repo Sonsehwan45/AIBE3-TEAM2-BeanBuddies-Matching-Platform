@@ -69,7 +69,6 @@ pipeline {
                                     -e SPRING_DATASOURCE_URL=${DB_URL_SECRET} \
                                     -e SPRING_DATASOURCE_USERNAME=${DB_USERNAME_SECRET} \
                                     -e SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_SECRET} \
-                                    -e SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.MySQLDialect \
                                     -e CUSTOM_JWT_ACCESSTOKEN_SECRETKEY=${JWT_ACCESS_KEY_SECRET} \
                                     -e CUSTOM_JWT_ACCESSTOKEN_EXPIRESECONDS=3600 \
                                     -e CUSTOM_JWT_REFRESHTOKEN_SECRETKEY=${JWT_REFRESH_KEY_SECRET} \
