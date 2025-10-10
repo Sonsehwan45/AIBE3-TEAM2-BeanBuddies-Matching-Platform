@@ -1,5 +1,7 @@
 package com.back.domain.project.project.service;
 
+import com.back.domain.application.application.entity.Application;
+import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.common.interest.dto.InterestDto;
 import com.back.domain.common.interest.entity.Interest;
@@ -7,7 +9,6 @@ import com.back.domain.common.interest.service.InterestService;
 import com.back.domain.common.skill.dto.SkillDto;
 import com.back.domain.common.skill.entity.Skill;
 import com.back.domain.common.skill.service.SkillService;
-import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.constant.ProjectStatus;
 import com.back.domain.project.project.dto.ProjectSearchDto;
 import com.back.domain.project.project.dto.ProjectSummaryDto;
@@ -36,7 +37,7 @@ import java.util.Optional;
 public class ProjectService {
     private final ProjectRepository projectRepository;
 
-    private final MemberService memberService;
+    private final ApplicationService applicationService;
     private final InterestService interestService;
     private final SkillService skillService;
 
@@ -106,6 +107,11 @@ public class ProjectService {
         // ProjectSkill, ProjectInterest 우선 삭제
         projectSkillRepository.deleteAllByProject(project);
         projectInterestRepository.deleteAllByProject(project);
+
+        // application 삭제
+        List<Application> applications = applicationService.findAllByProject(project);
+        for(Application application: applications) applicationService.delete(application);
+
         projectRepository.delete(project);
     }
 
