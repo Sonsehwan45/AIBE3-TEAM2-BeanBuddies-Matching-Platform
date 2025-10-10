@@ -50,24 +50,34 @@ pipeline {
                     string(credentialsId: 'db-username', variable: 'DB_USERNAME_SECRET'),
                     string(credentialsId: 'db-password', variable: 'DB_PASSWORD_SECRET'),
                     string(credentialsId: 'jwt-secret-key', variable: 'JWT_ACCESS_KEY_SECRET'),
-                    string(credentialsId: 'jwt-refresh-key', variable: 'JWT_REFRESH_KEY_SECRET')
+                    string(credentialsId: 'jwt-refresh-key', variable: 'JWT_REFRESH_KEY_SECRET'),
+                    string(credentialsId: 'redis-host', variable: 'REDIS_HOST_SECRET'),
+                    string(credentialsId: 'redis-port', variable: 'REDIS_PORT_SECRET'),
+                    string(credentialsId: 'redis-password', variable: 'REDIS_PASSWORD_SECRET'),
+                    string(credentialsId: 'mail-username', variable: 'MAIL_USERNAME_SECRET'),
+                    string(credentialsId: 'mail-password', variable: 'MAIL_PASSWORD_SECRET')
                 ]) {
                     sshagent(['yhcho-ssh']) {
                         // Here Document(<<EOF) 대신 모든 명령어를 && 로 연결하여 하나의 명령어로 실행
                         sh """
-                            ssh -o StrictHostKeyChecking=no yhcho@192.168.50.35 " \\
-                                docker stop ${APP_NAME} || true && docker rm ${APP_NAME} || true && \\
-                                docker pull ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER} && \\
-                                docker run -d --name ${APP_NAME} -p 8080:8080 \\
-                                    -e SPRING_PROFILES_ACTIVE=prod \\
-                                    -e SPRING_DATASOURCE_URL=${DB_URL_SECRET} \\
-                                    -e SPRING_DATASOURCE_USERNAME=${DB_USERNAME_SECRET} \\
-                                    -e SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_SECRET} \\
-                                    -e SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.MySQLDialect \\
-                                    -e CUSTOM_JWT_ACCESSTOKEN_SECRETKEY=${JWT_ACCESS_KEY_SECRET} \\
-                                    -e CUSTOM_JWT_ACCESSTOKEN_EXPIRESECONDS=3600 \\
-                                    -e CUSTOM_JWT_REFRESHTOKEN_SECRETKEY=${JWT_REFRESH_KEY_SECRET} \\
-                                    -e CUSTOM_JWT_REFRESHTOKEN_EXPIRESECONDS=604800 \\
+                            ssh -o StrictHostKeyChecking=no yhcho@192.168.50.35 " \
+                                docker stop ${APP_NAME} || true && docker rm ${APP_NAME} || true && \
+                                docker pull ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER} && \
+                                docker run -d --name ${APP_NAME} -p 8080:8080 \
+                                    -e SPRING_PROFILES_ACTIVE=prod \
+                                    -e SPRING_DATASOURCE_URL=${DB_URL_SECRET} \
+                                    -e SPRING_DATASOURCE_USERNAME=${DB_USERNAME_SECRET} \
+                                    -e SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_SECRET} \
+                                    -e SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.MySQLDialect \
+                                    -e CUSTOM_JWT_ACCESSTOKEN_SECRETKEY=${JWT_ACCESS_KEY_SECRET} \
+                                    -e CUSTOM_JWT_ACCESSTOKEN_EXPIRESECONDS=3600 \
+                                    -e CUSTOM_JWT_REFRESHTOKEN_SECRETKEY=${JWT_REFRESH_KEY_SECRET} \
+                                    -e CUSTOM_JWT_REFRESHTOKEN_EXPIRESECONDS=604800 \
+                                    -e SPRING_DATA_REDIS_HOST=${REDIS_HOST_SECRET} \
+                                    -e SPRING_DATA_REDIS_PORT=${REDIS_PORT_SECRET} \
+                                    -e SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD_SECRET} \
+                                    -e SPRING_MAIL_USERNAME=${MAIL_USERNAME_SECRET} \
+                                    -e SPRING_MAIL_PASSWORD=${MAIL_PASSWORD_SECRET} \
                                     ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER}
                             "
                         """
