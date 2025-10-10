@@ -274,11 +274,11 @@ class ApiV1ApplicationControllerTest {
         ).andDo(print());
 
         resultActions
-                .andExpect(status().isNotFound())
+                .andExpect(status().isForbidden())
                 .andExpect(handler().handlerType(ApiV1ApplicationController.class))
                 .andExpect(handler().methodName("getAllMe"))
-                .andExpect(jsonPath("$.resultCode").value("404-1"))
-                .andExpect(jsonPath("$.msg").value("존재하지 않는 엔티티에 접근했습니다."));
+                .andExpect(jsonPath("$.resultCode").value("403-1"))
+                .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
     }
 
     @Test
