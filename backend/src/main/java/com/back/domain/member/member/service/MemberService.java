@@ -19,7 +19,7 @@ import java.util.Optional;
 public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailServiceInterface emailService;
+    private final EmailService emailService;
 
     private boolean initFlag = false;
 

@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Profile("test")
-public class TestEmailService implements EmailServiceInterface{
+public class MockEmailService implements EmailService {
 
     public void sendEmailMessage(String toEmail, String subject, String text) {
     }

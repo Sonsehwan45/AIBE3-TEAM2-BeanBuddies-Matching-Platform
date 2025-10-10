@@ -2,7 +2,7 @@ package com.back.domain.member.member.controller;
 
 import com.back.domain.member.member.dto.*;
 import com.back.domain.member.member.entity.Member;
-import com.back.domain.member.member.service.EmailServiceInterface;
+import com.back.domain.member.member.service.EmailService;
 import com.back.domain.member.member.service.MemberService;
 import com.back.global.response.ApiResponse;
 import com.back.global.security.CustomUserDetails;
@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MemberController {
     private final MemberService memberService;
-    private final EmailServiceInterface emailService;
+    private final EmailService emailService;
 
     @Transactional
     @PostMapping
@@ -49,7 +49,7 @@ public class MemberController {
     }
 
     @PostMapping("/join/verify-code")
-    public ApiResponse<Void> verifyJoinCode(@Valid @RequestBody JoinVerifyCodeReq req) {
+    public ApiResponse<Void> verifyJoinCode(@Valid @RequestBody JoinVerifyReq req) {
         emailService.verifyEmailCode("JOIN", req.email(), req.code());
         return new ApiResponse<>("200-4", "이메일 인증이 완료되었습니다.");
     }
@@ -70,7 +70,7 @@ public class MemberController {
     }
 
     @PostMapping("/temp-password/send-email")
-    public ApiResponse<Void> sendTempPasswordCode(@Valid @RequestBody PasswordResetEmailReq reqBody) {
+    public ApiResponse<Void> sendTempPasswordCode(@Valid @RequestBody TempPasswordEmailReq reqBody) {
         memberService.sendTempPasswordCode(
                 reqBody.username(),
                 reqBody.email()
@@ -79,7 +79,7 @@ public class MemberController {
     }
 
     @PostMapping("/temp-password/verify-code")
-    public ApiResponse<Void> issueTempPassword(@Valid @RequestBody PasswordResetVerifyReq reqBody) {
+    public ApiResponse<Void> issueTempPassword(@Valid @RequestBody TempPasswordVerifyReq reqBody) {
         memberService.issueTempPassword(
                 reqBody.username(),
                 reqBody.email(),
