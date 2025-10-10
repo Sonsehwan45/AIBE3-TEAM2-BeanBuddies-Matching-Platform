@@ -44,7 +44,7 @@ public class ApiV1ApplicationController {
             @AuthenticationPrincipal CustomUserDetails user
             ) {
         Member member = memberService.findById(user.getId());
-        Freelancer freelancer = freelancerService.findById(member.getId());
+        Freelancer freelancer = member.getFreelancer();
         if (freelancer == null) {
             throw new ServiceException("403-1", "권한이 없습니다.");
         }
@@ -105,7 +105,7 @@ public class ApiV1ApplicationController {
             @AuthenticationPrincipal CustomUserDetails user
     ) {
         Member member = memberService.findById(user.getId());
-        Freelancer freelancer = freelancerService.findById(member.getId());
+        Freelancer freelancer = member.getFreelancer();
 
         Application application = applicationService.findById(id);
 
@@ -160,11 +160,8 @@ public class ApiV1ApplicationController {
             @PathVariable long projectId,
             @AuthenticationPrincipal CustomUserDetails user
     ) {
-        if (user == null) {
-            throw new ServiceException("404-1", "로그인 후 사용해주세요.");
-        }
         Member member = memberService.findById(user.getId());
-        Freelancer freelancer = freelancerService.findById(member.getId());
+        Freelancer freelancer = member.getFreelancer();
         if (freelancer == null) {
             throw new ServiceException("403-1", "권한이 없습니다.");
         }

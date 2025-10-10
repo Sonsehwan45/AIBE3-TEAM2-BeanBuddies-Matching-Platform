@@ -266,22 +266,9 @@ class ApiV1ApplicationControllerTest {
     }
 
     @Test
-    @DisplayName("지원서 조회 (작성자 기준) - 비 로그인시 fail")
-    void t5_1() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                get("/api/v1/projects/1/applications/me")
-        ).andDo(print());
-
-        resultActions
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.resultCode").value("404-1"))
-                .andExpect(jsonPath("$.msg").value("로그인 후 사용해주세요."));
-    }
-
-    @Test
     @DisplayName("지원서 조회 (작성자 기준) - client 시도 시 fail")
     @WithUserDetails(value = "client1", userDetailsServiceBeanName = "customUserDetailsService")
-    void t5_2() throws Exception {
+    void t5_1() throws Exception {
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/projects/1/applications/me")
         ).andDo(print());

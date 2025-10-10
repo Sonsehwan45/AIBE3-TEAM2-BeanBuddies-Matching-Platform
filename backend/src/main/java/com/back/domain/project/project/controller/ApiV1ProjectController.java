@@ -46,9 +46,6 @@ public class ApiV1ProjectController {
             ) {
         Member member = memberService.findById(user.getId());
         Client client = member.getClient();
-        if (client == null) {
-            throw new ServiceException("403-1", "권한이 없습니다.");
-        }
 
         Project project = projectService.create(
                 client,

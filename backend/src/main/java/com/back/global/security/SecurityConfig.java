@@ -30,8 +30,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/*/test/public").permitAll()
                         .requestMatchers("/api/*/members/join/**").permitAll()
                         .requestMatchers("/api/*/members/temp-password/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트 단건/다건 조회
-                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/*/applications/**").permitAll() // 지원서 단건/다건 조회
+                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서 단건/다건 조회
 
                         //인증된 사용자만 접근 가능
                         .requestMatchers("/api/*/test/auth").authenticated()
