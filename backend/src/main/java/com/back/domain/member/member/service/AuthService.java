@@ -22,7 +22,7 @@ public class AuthService {
     public Map<String, Object> login(String username, String password) {
         //가입된 ID인지 확인
         Member member = memberService.findByUsername(username)
-                .orElseThrow(() -> new ServiceException("401-1", "존재하지 않는 회원입니다."));
+                .orElseThrow(() -> new ServiceException("401-1", "해당 회원을 찾을 수 없습니다."));
 
         //password 일치하는지 확인
         memberService.checkPassword(member, password);

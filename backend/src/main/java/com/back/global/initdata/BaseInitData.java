@@ -46,6 +46,8 @@ public class BaseInitData {
     @Transactional
     public void addMember() {
 
+        memberService.setInitFlag(true);
+
         if (memberService.count() > 0) return;
 
         //임의 데이터 추가
@@ -58,6 +60,8 @@ public class BaseInitData {
         //클라이언트2, 프리랜서2는 활동 정지 상태로 변경
         memberService.changeStatus(client2, "INACTIVE");
         memberService.changeStatus(freelancer2, "INACTIVE");
+
+        memberService.setInitFlag(false);
     }
 
     @Transactional
