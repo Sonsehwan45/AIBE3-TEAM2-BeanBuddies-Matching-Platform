@@ -44,6 +44,8 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
     //redis
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    //email
+    implementation("org.springframework.boot:spring-boot-starter-mail")
 }
 
 tasks.withType<Test> {

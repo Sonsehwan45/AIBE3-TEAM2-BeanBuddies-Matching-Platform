@@ -1,7 +1,9 @@
 spring:
   profiles:
     active: dev
-    include: secret
+    include:
+      - secret
+      - mail
   output:
     ansi:
       enabled: always
