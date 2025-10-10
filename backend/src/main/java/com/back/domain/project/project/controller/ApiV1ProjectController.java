@@ -10,13 +10,17 @@ import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.dto.*;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
+import com.back.global.exception.ServiceException;
 import com.back.global.response.ApiResponse;
+import com.back.global.security.CustomUserDetails;
+import com.back.global.security.annotation.OnlyActiveMember;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,10 +39,20 @@ public class ApiV1ProjectController {
 
     @PostMapping
     @Transactional
-    public ApiResponse<ProjectDto> write(@Valid @RequestBody ProjectWriteReqBody reqBody) {
+    @OnlyActiveMember
+    public ApiResponse<ProjectDto> write(
+            @Valid @RequestBody ProjectWriteReqBody reqBody,
+            @AuthenticationPrincipal CustomUserDetails user
+            ) {
         // 임시로 회원 데이터 1개 가져옴
-        Member member = memberService.findByUsername("client1").get();
+//        Member member = memberService.findByUsername("client1").get();
+//        Client client = member.getClient();
+        // 실제 유저 데이터 가져오기
+        Member member = memberService.findById(user.getId());
         Client client = member.getClient();
+        if (client == null) {
+            throw new ServiceException("403-1", "권한이 없습니다.");
+        }
 
         Project project = projectService.create(
                 client,
@@ -69,8 +83,19 @@ public class ApiV1ProjectController {
 
     @DeleteMapping("/{id}")
     @Transactional
-    public ApiResponse<Void> delete(@PathVariable long id) {
+    @OnlyActiveMember
+    public ApiResponse<Void> delete(
+            @PathVariable long id,
+            @AuthenticationPrincipal CustomUserDetails user
+            ) {
+        Member member = memberService.findById(user.getId());
+        Client client = member.getClient();
         Project project = projectService.findById(id);
+
+        // 해당 프로젝트의 삭제 권한 확인
+        if (!project.getClient().equals(client)) {
+            throw new ServiceException("403-1", "권한이 없습니다.");
+        }
 
         projectService.delete(project);
 
@@ -79,11 +104,21 @@ public class ApiV1ProjectController {
 
     @PatchMapping("/{id}")
     @Transactional
+    @OnlyActiveMember
     public ApiResponse<ProjectDto> modify(
             @PathVariable long id,
-            @Valid @RequestBody ProjectModifyReqBody reqBody
+            @Valid @RequestBody ProjectModifyReqBody reqBody,
+            @AuthenticationPrincipal CustomUserDetails user
             ) {
+        Member member = memberService.findById(user.getId());
+        Client client = member.getClient();
         Project project = projectService.findById(id);
+
+        // 해당 프로젝트의 수정 권한 확인
+        if (!project.getClient().equals(client)) {
+            throw new ServiceException("403-1", "권한이 없습니다.");
+        }
+
         projectService.update(
                 project,
                 reqBody.title(),
