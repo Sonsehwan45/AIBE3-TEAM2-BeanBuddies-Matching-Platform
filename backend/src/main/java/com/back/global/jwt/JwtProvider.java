@@ -89,4 +89,12 @@ public class JwtProvider {
             return false;
         }
     }
+
+    //남은 만료 시간
+    public long getRemainingSeconds(String token, boolean isAccessToken) {
+        Claims claims = getClaims(token, isAccessToken);
+        if(claims == null) return 0;
+        long remainingMillis = claims.getExpiration().getTime() - new Date().getTime();
+        return remainingMillis / 1000;
+    }
 }
