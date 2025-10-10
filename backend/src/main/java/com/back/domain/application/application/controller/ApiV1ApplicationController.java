@@ -52,6 +52,7 @@ public class ApiV1ApplicationController {
     }
 
     // 수정
+    // 클라이언트가 자신의 프로젝트에 등록된 지원서의 상태(status)를 전환
     @PatchMapping("/{id}")
     @Transactional
     public ApiResponse<ApplicationDto> update(
