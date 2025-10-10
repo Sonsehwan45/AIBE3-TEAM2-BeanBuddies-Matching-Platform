@@ -13,10 +13,6 @@ import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -24,6 +20,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @Configuration
@@ -73,6 +74,7 @@ public class BaseInitData {
         Member freelancer3 = memberService.join("FREELANCER", "프리랜서3", "freelancer3", "1234", "1234", "test@test.com");
         Member freelancer4 = memberService.join("FREELANCER", "프리랜서4", "freelancer4", "1234", "1234", "test@test.com");
         Member freelancer5 = memberService.join("FREELANCER", "프리랜서5", "freelancer5", "1234", "1234", "test@test.com");
+        Member client3 = memberService.join("CLIENT", "클라이언트3", "client3", "1234", "1234", "test@test.com");
 
         //클라이언트2, 프리랜서2는 활동 정지 상태로 변경
         memberService.changeStatus(client2, "INACTIVE");
@@ -117,7 +119,7 @@ public class BaseInitData {
         Client client2 = clientService.findById(clientMember2.getId());
 
         projectService.create(
-                client2,
+                client1,
                 "테스트 프로젝트 1",
                 "테스트 요약 1",
                 BigDecimal.valueOf(1_000_000),
@@ -209,7 +211,7 @@ public class BaseInitData {
                         "주 4일, 혼합 근무",
                         "기술 자료 요청"
                 ),
-                freelancer2,
+                freelancer1,
                 project3
         );
     }

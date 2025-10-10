@@ -2,18 +2,24 @@ package com.back.domain.application.application.controller;
 
 import com.back.domain.application.application.dto.ApplicationDto;
 import com.back.domain.application.application.dto.ApplicationModifyReqBody;
+import com.back.domain.application.application.dto.ApplicationSummaryDto;
 import com.back.domain.application.application.dto.ApplicationWriteReqBody;
 import com.back.domain.application.application.entity.Application;
 import com.back.domain.application.application.service.ApplicationService;
+import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.freelancer.freelancer.service.FreelancerService;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
+import com.back.global.exception.ServiceException;
 import com.back.global.response.ApiResponse;
+import com.back.global.security.CustomUserDetails;
+import com.back.global.security.annotation.OnlyActiveMember;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,13 +37,17 @@ public class ApiV1ApplicationController {
     // 등록
     @PostMapping
     @Transactional
+    @OnlyActiveMember
     public ApiResponse<ApplicationDto> create(
             @PathVariable long projectId,
-            @Valid @RequestBody ApplicationWriteReqBody reqBody
+            @Valid @RequestBody ApplicationWriteReqBody reqBody,
+            @AuthenticationPrincipal CustomUserDetails user
             ) {
-        // 임시로 회원 하나의 freelancer 정보 넣음
-        Member freelancerMember1 = memberService.findByUsername("freelancer1").get();
-        Freelancer freelancer = freelancerService.findById(freelancerMember1.getId());
+        Member member = memberService.findById(user.getId());
+        Freelancer freelancer = member.getFreelancer();
+        if (freelancer == null) {
+            throw new ServiceException("403-1", "권한이 없습니다.");
+        }
 
         // 프로젝트 정보 받아오기
         Project project = ProjectService.findById(projectId);
@@ -55,22 +65,23 @@ public class ApiV1ApplicationController {
     // 클라이언트가 자신의 프로젝트에 등록된 지원서의 상태(status)를 전환
     @PatchMapping("/{id}")
     @Transactional
+    @OnlyActiveMember
     public ApiResponse<ApplicationDto> update(
             @PathVariable long projectId,
             @PathVariable long id,
-            @Valid @RequestBody ApplicationModifyReqBody reqBody
+            @Valid @RequestBody ApplicationModifyReqBody reqBody,
+            @AuthenticationPrincipal CustomUserDetails user
             ) {
-        // TODO: 권한 체크
-        // 임시로 프로젝트 등록 유저 정보 받아오기
-//        Member member = memberService.findByUsername("client1").get();
-//        Client client = member.getClient();
+        // 권한 체크
+        Member member = memberService.findById(user.getId());
+        Client client = member.getClient();
 
-//        Project project = ProjectService.findById(projectId);
+        Project project = ProjectService.findById(projectId);
 
         // 수정 권한 체크
-//        if (!project.getClient().equals(client)) {
-//            throw new ServiceException("404-1", "지원서 수정 권한이 없습니다.");
-//        }
+        if (!project.getClient().equals(client)) {
+            throw new ServiceException("403-1", "권한이 없습니다.");
+        }
 
         Application application = applicationService.findById(id);
 
@@ -87,8 +98,20 @@ public class ApiV1ApplicationController {
     // 삭제
     @DeleteMapping("/{id}")
     @Transactional
-    public ApiResponse<Void> delete(@PathVariable long projectId, @PathVariable long id) {
+    @OnlyActiveMember
+    public ApiResponse<Void> delete(
+            @PathVariable long projectId,
+            @PathVariable long id,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        Member member = memberService.findById(user.getId());
+        Freelancer freelancer = member.getFreelancer();
+
         Application application = applicationService.findById(id);
+
+        if (!application.getFreelancer().equals(freelancer)) {
+            throw new ServiceException("403-1", "권한이 없습니다.");
+        }
 
         applicationService.delete(application);
 
@@ -108,45 +131,52 @@ public class ApiV1ApplicationController {
                 new ApplicationDto(application)
                 );
     }
-    // 클라이언트가 프로젝트의 지원 보기
+
+    // 클라이언트가 프로젝트의 지원 목록 보기
+    // 우선 다른 유저가 프로젝트에 달린 지원 보기 기능으로 활용될 수 있어 인증인가 추가하지 않음
     @GetMapping
     @Transactional(readOnly = true)
-    public ApiResponse<List<ApplicationDto>> getAll(@PathVariable long projectId) {
+    public ApiResponse<List<ApplicationSummaryDto>> getAll(@PathVariable long projectId) {
         Project project = ProjectService.findById(projectId);
         List<Application> applicationList = applicationService.findAllByProject(project);
 
         // List<ApplicationDto>로 넣어주기
-        List<ApplicationDto> applicationDtoList = applicationList.stream()
-                .map(ApplicationDto::new)
+        List<ApplicationSummaryDto> applicationSummaryDtoList = applicationList.stream()
+                .map(ApplicationSummaryDto::new)
                 .toList();
 
         return new ApiResponse<>(
                 "200-1",
                 "%d번 프로젝트의 지원서가 조회되었습니다.".formatted(projectId),
-                applicationDtoList
+                applicationSummaryDtoList
         );
     }
-    // 프리랜서가 자신의 지원 보기
+
+    // 프리랜서가 자신의 지원 목록 보기
     @GetMapping("/me") // 임시로 매핑한 상태며 RESTful 한 URI를 위해 Freelancer로 옮기거나 수정될 예정
     @Transactional(readOnly = true)
-    public ApiResponse<List<ApplicationDto>> getAllMe(
-            @PathVariable long projectId // 이것도 안쓰임
+    @OnlyActiveMember
+    public ApiResponse<List<ApplicationSummaryDto>> getAllMe(
+            @PathVariable long projectId,
+            @AuthenticationPrincipal CustomUserDetails user
     ) {
-        // 임시로 회원 하나의 freelancer 정보 불러옴
-        Member freelancerMember1 = memberService.findByUsername("freelancer1").get();
-        Freelancer freelancer = freelancerService.findById(freelancerMember1.getId());
+        Member member = memberService.findById(user.getId());
+        Freelancer freelancer = member.getFreelancer();
+        if (freelancer == null) {
+            throw new ServiceException("403-1", "권한이 없습니다.");
+        }
 
         List<Application> applicationList = applicationService.findAllByFreeLancer(freelancer);
 
         // List<ApplicationDto>로 넣어주기
-        List<ApplicationDto> applicationDtoList = applicationList.stream()
-                .map(ApplicationDto::new)
+        List<ApplicationSummaryDto> applicationSummaryDtoList = applicationList.stream()
+                .map(ApplicationSummaryDto::new)
                 .toList();
 
         return new ApiResponse<>(
                 "200-1",
                 "%d번 프리랜서의 지원서가 조회되었습니다.".formatted(freelancer.getId()),
-                applicationDtoList
+                applicationSummaryDtoList
         );
     }
 }
