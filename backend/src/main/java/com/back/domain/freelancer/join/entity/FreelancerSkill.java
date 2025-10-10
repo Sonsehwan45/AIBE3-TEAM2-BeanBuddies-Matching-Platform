@@ -9,9 +9,11 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
+@NoArgsConstructor
 public class FreelancerSkill {
 
     @EmbeddedId
@@ -26,4 +28,10 @@ public class FreelancerSkill {
     @ManyToOne
     @JoinColumn(name = "skill_id")
     private Skill skill;
+
+    public FreelancerSkill(Freelancer freelancer, Skill skill) {
+        this.freelancer = freelancer;
+        this.skill = skill;
+        this.id = new FreelancerSkillId(freelancer.getId(), skill.getId());
+    }
 }

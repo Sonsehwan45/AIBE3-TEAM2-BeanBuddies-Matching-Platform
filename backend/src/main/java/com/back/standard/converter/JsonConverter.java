@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Converter
-public class CareerConverter implements AttributeConverter<Map<String, Integer>, String> {
+public class JsonConverter implements AttributeConverter<Map<String, Integer>, String> {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 

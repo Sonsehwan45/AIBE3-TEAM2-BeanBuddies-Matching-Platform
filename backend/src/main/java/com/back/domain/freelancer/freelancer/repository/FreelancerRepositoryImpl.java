@@ -20,11 +20,12 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
 @RequiredArgsConstructor
-public class FreelancerSearchRepositoryImpl implements FreelancerSearchRepositoryCustom {
+public class FreelancerRepositoryImpl implements FreelancerRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
 
-    //검색조건 : 경력, 평점, 스킬
+    // 검색조건 : 경력, 평점, 스킬
+    // TODO : 정렬조건 추가
     public Page<FreelancerSummary> findAll(FreelancerSearchCondition condition, Pageable pageable) {
         long offset = pageable.getOffset();
         int limit = pageable.getPageSize();
@@ -35,6 +36,7 @@ public class FreelancerSearchRepositoryImpl implements FreelancerSearchRepositor
                         freelancer.careerTotalYears,
                         freelancer.ratingAvg
                 )
+                .distinct()
                 .where(
                         ratingAvgGoe(condition.ratingAvg()),
                         careerYearBetween(condition.careerLevel()),
@@ -82,7 +84,6 @@ public class FreelancerSearchRepositoryImpl implements FreelancerSearchRepositor
                 .toList();
 
         // 총 개수 쿼리
-        // TODO : where절에 같은 조건 추가
         long total = queryFactory
                 .select(freelancer.countDistinct())
                 .from(freelancer)
@@ -97,25 +98,25 @@ public class FreelancerSearchRepositoryImpl implements FreelancerSearchRepositor
         return new PageImpl<>(results, pageable, total);
     }
 
-    private BooleanExpression skillIn(List<Long> skillIds) {
-        if (skillIds == null || skillIds.isEmpty()) {
-            return null;
-        }
-        return freelancer.skills.any().skill.id.in(skillIds);
-    }
-
-    private BooleanExpression careerYearBetween(CareerLevel careerLevel) {
-        if (careerLevel == CareerLevel.UNDEFINED) {
-            return null;
-        }
-        return freelancer.careerTotalYears.between(careerLevel.getMinYear(), careerLevel.getMaxYear());
-    }
-
     private BooleanExpression ratingAvgGoe(Float ratingAvg) {
         if (ratingAvg == null) {
             return null;
         }
         return freelancer.ratingAvg.goe(ratingAvg);
+    }
+
+    private BooleanExpression careerYearBetween(CareerLevel careerLevel) {
+        if (careerLevel == null || careerLevel == CareerLevel.UNDEFINED) {
+            return null;
+        }
+        return freelancer.careerTotalYears.between(careerLevel.getMinYear(), careerLevel.getMaxYear());
+    }
+
+    private BooleanExpression skillIn(List<Long> skillIds) {
+        if (skillIds == null || skillIds.isEmpty()) {
+            return null;
+        }
+        return freelancer.skills.any().skill.id.in(skillIds);
     }
 
     private Map<Long, List<SkillDto>> groupByFreelancerSkill(List<Tuple> freelancersSkills) {

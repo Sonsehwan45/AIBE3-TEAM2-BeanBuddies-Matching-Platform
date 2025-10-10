@@ -60,4 +60,15 @@ public class GlobalExceptionHandler {
 
         return apiResponse;
     }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse<Void>> handle(IllegalArgumentException e) {
+        return new ResponseEntity<>(
+                new ApiResponse<>(
+                        "400-1",
+                        "잘못된 요청입니다."
+                ),
+                BAD_REQUEST
+        );
+    }
 }
