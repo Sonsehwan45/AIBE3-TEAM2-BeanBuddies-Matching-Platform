@@ -133,6 +133,7 @@ public class ApiV1ApplicationController {
     }
 
     // 클라이언트가 프로젝트의 지원 목록 보기
+    // 우선 다른 유저가 프로젝트에 달린 지원 보기 기능으로 활용될 수 있어 인증인가 추가하지 않음
     @GetMapping
     @Transactional(readOnly = true)
     public ApiResponse<List<ApplicationSummaryDto>> getAll(@PathVariable long projectId) {
@@ -155,11 +156,14 @@ public class ApiV1ApplicationController {
     @GetMapping("/me") // 임시로 매핑한 상태며 RESTful 한 URI를 위해 Freelancer로 옮기거나 수정될 예정
     @Transactional(readOnly = true)
     public ApiResponse<List<ApplicationSummaryDto>> getAllMe(
-            @PathVariable long projectId
+            @PathVariable long projectId,
+            @AuthenticationPrincipal CustomUserDetails user
     ) {
-        // 임시로 회원 하나의 freelancer 정보 불러옴
-        Member freelancerMember1 = memberService.findByUsername("freelancer1").get();
-        Freelancer freelancer = freelancerService.findById(freelancerMember1.getId());
+        Member member = memberService.findById(user.getId());
+        Freelancer freelancer = freelancerService.findById(member.getId());
+        if (freelancer == null) {
+            throw new ServiceException("403-1", "권한이 없습니다.");
+        }
 
         List<Application> applicationList = applicationService.findAllByFreeLancer(freelancer);
 
