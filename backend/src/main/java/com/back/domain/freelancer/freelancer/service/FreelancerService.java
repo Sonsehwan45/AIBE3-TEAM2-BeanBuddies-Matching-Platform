@@ -26,6 +26,7 @@ public class FreelancerService {
     private final FreelancerSkillRepository freelancerSkillRepository;
     private final SkillRepository skillRepository;
 
+    @Transactional(readOnly = true)
     public Freelancer findById(Long id) {
         return freelancerRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 프리랜서입니다."));

@@ -9,6 +9,7 @@ import com.back.domain.common.interest.service.InterestService;
 import com.back.domain.common.skill.dto.SkillDto;
 import com.back.domain.common.skill.entity.Skill;
 import com.back.domain.common.skill.service.SkillService;
+import com.back.domain.member.member.entity.Member;
 import com.back.domain.project.project.constant.ProjectStatus;
 import com.back.domain.project.project.dto.ProjectSearchDto;
 import com.back.domain.project.project.dto.ProjectSummaryDto;
@@ -99,7 +100,7 @@ public class ProjectService {
 
     public Project findById(long id) {
         return projectRepository.findById(id).orElseThrow(
-                () -> new ServiceException("401-1", "해당 프로젝트가 존재하지 않습니다.")
+                () -> new ServiceException("404-1", "해당 프로젝트가 존재하지 않습니다.")
         );
     }
 
@@ -198,5 +199,9 @@ public class ProjectService {
                 });
     }
 
-
+    @Transactional
+    public boolean isAuthor(Member member, Long projectId) {
+        Project project = findById(projectId);
+        return project.getClient().getMember().equals(member);
+    }
 }
