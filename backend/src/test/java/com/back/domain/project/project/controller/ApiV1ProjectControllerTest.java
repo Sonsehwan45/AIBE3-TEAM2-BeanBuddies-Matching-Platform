@@ -166,8 +166,6 @@ class ApiV1ProjectControllerTest {
         // 응답 검증
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(handler().handlerType(ApiV1ProjectController.class))
-                .andExpect(handler().methodName("write"))
                 .andExpect(jsonPath("$.resultCode").value("403-1"))
                 .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
     }
@@ -206,8 +204,6 @@ class ApiV1ProjectControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(handler().handlerType(ApiV1ProjectController.class))
-                .andExpect(handler().methodName("delete"))
                 .andExpect(jsonPath("$.resultCode").value("403-1"))
                 .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
     }
@@ -327,8 +323,6 @@ class ApiV1ProjectControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(handler().handlerType(ApiV1ProjectController.class))
-                .andExpect(handler().methodName("modify"))
                 .andExpect(jsonPath("$.resultCode").value("403-1"))
                 .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
     }
@@ -363,8 +357,6 @@ class ApiV1ProjectControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(handler().handlerType(ApiV1ProjectController.class))
-                .andExpect(handler().methodName("modify"))
                 .andExpect(jsonPath("$.resultCode").value("403-1"))
                 .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
     }

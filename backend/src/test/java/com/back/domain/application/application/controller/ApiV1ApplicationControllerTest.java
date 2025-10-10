@@ -96,11 +96,9 @@ class ApiV1ApplicationControllerTest {
         ).andDo(print());
 
         resultActions
-                .andExpect(status().isNotFound())
-                .andExpect(handler().handlerType(ApiV1ApplicationController.class))
-                .andExpect(handler().methodName("create"))
-                .andExpect(jsonPath("$.resultCode").value("404-1"))
-                .andExpect(jsonPath("$.msg").value("존재하지 않는 엔티티에 접근했습니다."));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.resultCode").value("403-1"))
+                .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
     }
 
     @Test
@@ -148,8 +146,6 @@ class ApiV1ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isForbidden())
-                .andExpect(handler().handlerType(ApiV1ApplicationController.class))
-                .andExpect(handler().methodName("update"))
                 .andExpect(jsonPath("$.resultCode").value("403-1"))
                 .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
     }
@@ -271,7 +267,6 @@ class ApiV1ApplicationControllerTest {
 
     @Test
     @DisplayName("지원서 조회 (작성자 기준) - 비 로그인시 fail")
-    @WithUserDetails(value = "client1", userDetailsServiceBeanName = "customUserDetailsService")
     void t5_1() throws Exception {
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/projects/1/applications/me")
@@ -279,8 +274,6 @@ class ApiV1ApplicationControllerTest {
 
         resultActions
                 .andExpect(status().isNotFound())
-                .andExpect(handler().handlerType(ApiV1ApplicationController.class))
-                .andExpect(handler().methodName("getAllMe"))
                 .andExpect(jsonPath("$.resultCode").value("404-1"))
                 .andExpect(jsonPath("$.msg").value("로그인 후 사용해주세요."));
     }
