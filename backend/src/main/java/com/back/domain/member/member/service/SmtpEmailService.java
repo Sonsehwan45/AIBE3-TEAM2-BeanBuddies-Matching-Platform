@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 
 @Service
-@Profile("dev")
+@Profile({"dev", "prod"})
 @RequiredArgsConstructor
 public class SmtpEmailService implements EmailService {
 
