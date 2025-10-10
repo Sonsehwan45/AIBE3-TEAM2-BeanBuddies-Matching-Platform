@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface FreelancerEvaluationRepository extends JpaRepository<FreelancerEvaluation, Long> {
-    List<FreelancerEvaluation> findByEvaluationId(Long evaluationId);
+    List<FreelancerEvaluation> findByFreelancerId(Long freelancerId);
 }
