@@ -104,10 +104,7 @@ public class ProjectService {
     }
 
     public void delete(Project project) {
-        // ProjectSkill, ProjectInterest 우선 삭제
-        projectSkillRepository.deleteAllByProject(project);
-        projectInterestRepository.deleteAllByProject(project);
-
+        // projectSkill과 projectInterest는 orphanRemoval 옵션을 통해 자동 삭제
         // application 삭제
         List<Application> applications = applicationService.findAllByProject(project);
         for(Application application: applications) applicationService.delete(application);
