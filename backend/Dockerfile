@@ -14,7 +14,7 @@ RUN ./gradlew dependencies
 
 COPY src ./src
 
-RUN ./gradlew build -x test
+RUN ./gradlew clean build -x test
 
 # =========================================
 # 2. 최종 실행(Final) 스테이지
