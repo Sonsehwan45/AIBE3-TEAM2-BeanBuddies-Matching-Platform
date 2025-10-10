@@ -140,6 +140,39 @@ class ApiV1ProjectControllerTest {
     }
 
     @Test
+    @DisplayName("프로젝트 생성 - client 아닌 유저 등록 시도 시 Fail")
+    @WithUserDetails(value = "freelancer1", userDetailsServiceBeanName = "customUserDetailsService")
+    void t1_2() throws  Exception {
+        ResultActions resultActions = mvc.perform(
+                post("/api/v1/projects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                {
+                    "title": "테스트 프로젝트",
+                    "summary": "테스트 요약",
+                    "duration": "1개월",
+                    "price": 1000000,
+                    "preferredCondition": "우대 조건",
+                    "payCondition": "급여 조건",
+                    "workingCondition": "업무 조건",
+                    "description": "상세 설명",
+                    "deadline": "2025-12-31T23:59:59",
+                    "skills": [1, 2],
+                    "interests": [1, 2]
+                }
+                """)
+        ).andDo(print());
+
+        // 응답 검증
+        resultActions
+                .andExpect(status().isForbidden())
+                .andExpect(handler().handlerType(ApiV1ProjectController.class))
+                .andExpect(handler().methodName("write"))
+                .andExpect(jsonPath("$.resultCode").value("403-1"))
+                .andExpect(jsonPath("$.msg").value("권한이 없습니다."));
+    }
+
+    @Test
     @DisplayName("프로젝트 삭제")
     @WithUserDetails(value = "client1", userDetailsServiceBeanName = "customUserDetailsService")
     void t2() throws  Exception {

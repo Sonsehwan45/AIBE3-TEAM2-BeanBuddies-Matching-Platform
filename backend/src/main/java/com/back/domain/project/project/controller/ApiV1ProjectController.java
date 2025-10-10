@@ -44,10 +44,6 @@ public class ApiV1ProjectController {
             @Valid @RequestBody ProjectWriteReqBody reqBody,
             @AuthenticationPrincipal CustomUserDetails user
             ) {
-        // 임시로 회원 데이터 1개 가져옴
-//        Member member = memberService.findByUsername("client1").get();
-//        Client client = member.getClient();
-        // 실제 유저 데이터 가져오기
         Member member = memberService.findById(user.getId());
         Client client = member.getClient();
         if (client == null) {

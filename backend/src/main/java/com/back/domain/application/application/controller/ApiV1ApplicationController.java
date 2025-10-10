@@ -5,15 +5,20 @@ import com.back.domain.application.application.dto.ApplicationModifyReqBody;
 import com.back.domain.application.application.dto.ApplicationWriteReqBody;
 import com.back.domain.application.application.entity.Application;
 import com.back.domain.application.application.service.ApplicationService;
+import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.freelancer.freelancer.service.FreelancerService;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
+import com.back.global.exception.ServiceException;
 import com.back.global.response.ApiResponse;
+import com.back.global.security.CustomUserDetails;
+import com.back.global.security.annotation.OnlyActiveMember;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,13 +36,17 @@ public class ApiV1ApplicationController {
     // 등록
     @PostMapping
     @Transactional
+    @OnlyActiveMember
     public ApiResponse<ApplicationDto> create(
             @PathVariable long projectId,
-            @Valid @RequestBody ApplicationWriteReqBody reqBody
+            @Valid @RequestBody ApplicationWriteReqBody reqBody,
+            @AuthenticationPrincipal CustomUserDetails user
             ) {
-        // 임시로 회원 하나의 freelancer 정보 넣음
-        Member freelancerMember1 = memberService.findByUsername("freelancer1").get();
-        Freelancer freelancer = freelancerService.findById(freelancerMember1.getId());
+        Member member = memberService.findById(user.getId());
+        Freelancer freelancer = freelancerService.findById(member.getId());
+        if (freelancer == null) {
+            throw new ServiceException("403-1", "권한이 없습니다.");
+        }
 
         // 프로젝트 정보 받아오기
         Project project = ProjectService.findById(projectId);
@@ -55,22 +64,23 @@ public class ApiV1ApplicationController {
     // 클라이언트가 자신의 프로젝트에 등록된 지원서의 상태(status)를 전환
     @PatchMapping("/{id}")
     @Transactional
+    @OnlyActiveMember
     public ApiResponse<ApplicationDto> update(
             @PathVariable long projectId,
             @PathVariable long id,
-            @Valid @RequestBody ApplicationModifyReqBody reqBody
+            @Valid @RequestBody ApplicationModifyReqBody reqBody,
+            @AuthenticationPrincipal CustomUserDetails user
             ) {
-        // TODO: 권한 체크
-        // 임시로 프로젝트 등록 유저 정보 받아오기
-//        Member member = memberService.findByUsername("client1").get();
-//        Client client = member.getClient();
+        // 권한 체크
+        Member member = memberService.findById(user.getId());
+        Client client = member.getClient();
 
-//        Project project = ProjectService.findById(projectId);
+        Project project = ProjectService.findById(projectId);
 
         // 수정 권한 체크
-//        if (!project.getClient().equals(client)) {
-//            throw new ServiceException("404-1", "지원서 수정 권한이 없습니다.");
-//        }
+        if (!project.getClient().equals(client)) {
+            throw new ServiceException("403-1", "권한이 없습니다.");
+        }
 
         Application application = applicationService.findById(id);
 
@@ -87,8 +97,20 @@ public class ApiV1ApplicationController {
     // 삭제
     @DeleteMapping("/{id}")
     @Transactional
-    public ApiResponse<Void> delete(@PathVariable long projectId, @PathVariable long id) {
+    @OnlyActiveMember
+    public ApiResponse<Void> delete(
+            @PathVariable long projectId,
+            @PathVariable long id,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        Member member = memberService.findById(user.getId());
+        Freelancer freelancer = freelancerService.findById(member.getId());
+
         Application application = applicationService.findById(id);
+
+        if (!application.getFreelancer().equals(freelancer)) {
+            throw new ServiceException("403-1", "권한이 없습니다.");
+        }
 
         applicationService.delete(application);
 
@@ -130,7 +152,7 @@ public class ApiV1ApplicationController {
     @GetMapping("/me") // 임시로 매핑한 상태며 RESTful 한 URI를 위해 Freelancer로 옮기거나 수정될 예정
     @Transactional(readOnly = true)
     public ApiResponse<List<ApplicationDto>> getAllMe(
-            @PathVariable long projectId // 이것도 안쓰임
+            @PathVariable long projectId
     ) {
         // 임시로 회원 하나의 freelancer 정보 불러옴
         Member freelancerMember1 = memberService.findByUsername("freelancer1").get();
