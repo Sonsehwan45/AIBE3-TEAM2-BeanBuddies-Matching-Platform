@@ -76,6 +76,10 @@ pipeline {
                                     -e SPRING_DATA_REDIS_HOST=${REDIS_HOST_SECRET} \
                                     -e SPRING_DATA_REDIS_PORT=${REDIS_PORT_SECRET} \
                                     -e SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD_SECRET} \
+                                    -e SPRING_MAIL_HOST=smtp.gmail.com \
+                                    -e SPRING_MAIL_PORT=587 \
+                                    -e SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true \
+                                    -e SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true \
                                     -e SPRING_MAIL_USERNAME=${MAIL_USERNAME_SECRET} \
                                     -e SPRING_MAIL_PASSWORD=${MAIL_PASSWORD_SECRET} \
                                     ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER}
