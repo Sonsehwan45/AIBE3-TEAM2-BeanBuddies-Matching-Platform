@@ -10,10 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 @RestController
@@ -42,19 +39,19 @@ public class MemberController {
         );
     }
 
-    @PostMapping("/join/send-email")
+    @PostMapping("/join/email")
     public ApiResponse<Void> sendJoinCode(@Valid @RequestBody JoinEmailReq reqBody) {
         emailService.sendEmailCode("JOIN", reqBody.email());
         return new ApiResponse<>("200-3", "인증 코드가 이메일로 전송되었습니다.");
     }
 
-    @PostMapping("/join/verify-code")
+    @PostMapping("/join/verification")
     public ApiResponse<Void> verifyJoinCode(@Valid @RequestBody JoinVerifyReq req) {
         emailService.verifyEmailCode("JOIN", req.email(), req.code());
         return new ApiResponse<>("200-4", "이메일 인증이 완료되었습니다.");
     }
 
-    @PostMapping("/password-update")
+    @PatchMapping("/password")
     public ApiResponse<Void> updatePassword(
             @AuthenticationPrincipal CustomUserDetails user,
             @Valid @RequestBody PasswordUpdateReq reqBody
@@ -69,7 +66,7 @@ public class MemberController {
         return new ApiResponse<>("200-5", "비밀번호 수정이 완료되었습니다.");
     }
 
-    @PostMapping("/temp-password/send-email")
+    @PostMapping("/password-reset/email")
     public ApiResponse<Void> sendTempPasswordCode(@Valid @RequestBody TempPasswordEmailReq reqBody) {
         memberService.sendTempPasswordCode(
                 reqBody.username(),
@@ -78,7 +75,7 @@ public class MemberController {
         return new ApiResponse<>("200-3", "인증 코드가 이메일로 전송되었습니다.");
     }
 
-    @PostMapping("/temp-password/verify-code")
+    @PostMapping("/password-reset")
     public ApiResponse<Void> issueTempPassword(@Valid @RequestBody TempPasswordVerifyReq reqBody) {
         memberService.issueTempPassword(
                 reqBody.username(),

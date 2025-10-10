@@ -16,6 +16,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -176,7 +177,7 @@ public class MemberControllerTest {
     @WithUserDetails("client1")
     public void t5_updatePassword() throws Exception {
         ResultActions resultActions = mvc.perform(
-                post("/api/v1/members/password-update")
+                patch("/api/v1/members/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -205,7 +206,7 @@ public class MemberControllerTest {
     @WithUserDetails("client1")
     public void t6_updatePassword_exception() throws Exception {
         ResultActions resultActions = mvc.perform(
-                post("/api/v1/members/password-update")
+                patch("/api/v1/members/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -234,7 +235,7 @@ public class MemberControllerTest {
     @WithUserDetails("client1")
     public void t7_updatePassword_exception() throws Exception {
         ResultActions resultActions = mvc.perform(
-                post("/api/v1/members/password-update")
+                patch("/api/v1/members/password")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -262,7 +263,7 @@ public class MemberControllerTest {
     @DisplayName("임시 비밀번호 발급 성공")
     public void t8_issueTempPassword() throws Exception {
         ResultActions resultActions = mvc.perform(
-                post("/api/v1/members/temp-password/verify-code")
+                post("/api/v1/members/password-reset")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -290,7 +291,7 @@ public class MemberControllerTest {
     @DisplayName("임시 비밀번호 발급 실패 - 존재하지 않는 사용자")
     public void t9_issueTempPassword() throws Exception {
         ResultActions resultActions = mvc.perform(
-                post("/api/v1/members/temp-password/verify-code")
+                post("/api/v1/members/password-reset")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -318,7 +319,7 @@ public class MemberControllerTest {
     @DisplayName("임시 비밀번호 발급 실패 - 이메일 불일치")
     public void t10_issueTempPassword() throws Exception {
         ResultActions resultActions = mvc.perform(
-                post("/api/v1/members/temp-password/verify-code")
+                post("/api/v1/members/password-reset")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
