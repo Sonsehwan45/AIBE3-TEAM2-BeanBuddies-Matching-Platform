@@ -8,6 +8,7 @@ import com.back.domain.project.proposal.dto.ProposalWriteReqBody;
 import com.back.domain.project.proposal.service.ProposalService;
 import com.back.global.response.ApiResponse;
 import com.back.global.security.CustomUserDetails;
+import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -30,18 +31,25 @@ public class ProposalController {
     private final MemberService memberService;
 
     @GetMapping
-    public List<ProposalDto> getProposals(@PathVariable Long projectId) {
-        return proposalService.findAll(projectId);
+    public ApiResponse<List<ProposalDto>> getProposals(@PathVariable Long projectId) {
+        List<ProposalDto> proposals = proposalService.findAll(projectId);
+
+        return new ApiResponse<>(
+                "200",
+                "제안서 목록 조회 성공",
+                proposals
+        );
     }
 
     @PostMapping
     public ApiResponse<ProposalDto> create(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable Long projectId,
-            @RequestBody ProposalWriteReqBody reqBody
+            @RequestBody @Valid ProposalWriteReqBody reqBody
     ) {
         Member member = memberService.findById(user.getId());
-        ProposalDto proposal = proposalService.createProposal(member, projectId, reqBody.freelancerId(), reqBody.message());
+        ProposalDto proposal = proposalService.createProposal(member, projectId, reqBody.freelancerId(),
+                reqBody.message());
 
         return new ApiResponse<>(
                 "201",
@@ -53,10 +61,11 @@ public class ProposalController {
     @GetMapping("/{proposalId}")
     public ApiResponse<ProposalDto> getProposal(
             @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable Long projectId,
             @PathVariable Long proposalId
     ) {
         Member member = memberService.findById(user.getId());
-        ProposalDto proposal = proposalService.findBy(member, proposalId);
+        ProposalDto proposal = proposalService.findBy(member, projectId, proposalId);
 
         return new ApiResponse<>(
                 "200",
@@ -68,12 +77,13 @@ public class ProposalController {
     @PatchMapping("/{proposalId}")
     public ApiResponse<ProposalDto> updateState(
             @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable Long projectId,
             @PathVariable Long proposalId,
-            @RequestBody ProposalStateUpdateReqBody reqBody
+            @RequestBody @Valid ProposalStateUpdateReqBody reqBody
     ) {
         Member member = memberService.findById(user.getId());
 
-        ProposalDto proposal = proposalService.updateState(member, proposalId, reqBody.toStatus());
+        ProposalDto proposal = proposalService.updateState(member, projectId, proposalId, reqBody.toStatus());
 
         return new ApiResponse<>(
                 "200",
@@ -83,12 +93,18 @@ public class ProposalController {
     }
 
     @DeleteMapping("/{proposalId}")
-    public void delete(
+    public ApiResponse<Void> delete(
             @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable Long projectId,
             @PathVariable Long proposalId
     ) {
         Member member = memberService.findById(user.getId());
 
-        proposalService.deleteProposal(member, proposalId);
+        proposalService.deleteProposal(member, projectId, proposalId);
+
+        return new ApiResponse<>(
+                "204",
+                "제안서 삭제 성공"
+        );
     }
 }

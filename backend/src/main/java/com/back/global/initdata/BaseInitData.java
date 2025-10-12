@@ -42,7 +42,7 @@ public class BaseInitData {
     private final InterestService interestService;
     private final ApplicationService applicationService;
     private final FreelancerService freelancerService;
-    private ProposalService proposalService;
+    private final ProposalService proposalService;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {
@@ -59,13 +59,10 @@ public class BaseInitData {
 
     @Transactional
     public void addMember() {
-
         if (memberService.count() > 0) {
             return;
         }
         memberService.setInitFlag(true);
-
-        if (memberService.count() > 0) return;
 
         //임의 데이터 추가
         Member admin = memberService.join("ADMIN", "관리자", "admin", "1234", "1234", "test@test.com");
@@ -224,9 +221,10 @@ public class BaseInitData {
             return;
         }
 
-        Member clientMember1 = memberService.findByUsername("client1").get();
-        proposalService.createProposal(clientMember1, 1L, 4L, "프로젝트 제안 메시지 1");
-        proposalService.createProposal(clientMember1, 1L, 5L, "프로젝트 제안 메시지 2");
+        Project project = projectService.findById(1L);
+        Member member = project.getClient().getMember();
+        proposalService.createProposal(member, 1L, 4L, "프로젝트 제안 메시지 1");
+        proposalService.createProposal(member, 1L, 6L, "프로젝트 제안 메시지 2");
     }
 
     @Transactional

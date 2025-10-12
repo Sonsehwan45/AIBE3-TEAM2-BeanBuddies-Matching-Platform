@@ -36,12 +36,12 @@ public class ProposalService {
         Project project = projectService.findByIdWithAuthor(projectId);
 
         if (isNotProjectAuthor(client, project)) {
-            throw new ServiceException("403-1", "프로젝트 담당 클라이언트가 아닙니다. 제안서 작성 권한이 없습니다.");
+            throw new ServiceException("403-1", "프로젝트 작성자가 아닙니다. 제안서 작성 권한이 없습니다.");
         }
 
         Freelancer freelancer = freelancerService.findByIdWithMember(freelancerId);
         if (!freelancer.getMember().isActive()) {
-            throw new ServiceException("400-1", "활성화 상태가 아닌 프리랜서에게는 제안서를 보낼 수 없습니다.");
+            throw new ServiceException("400-2", "활성화 상태가 아닌 프리랜서에게는 제안서를 보낼 수 없습니다.");
         }
 
         Proposal proposal = new Proposal(project, freelancer, message);
@@ -53,14 +53,18 @@ public class ProposalService {
     }
 
     @Transactional(readOnly = true)
-    public ProposalDto findBy(Member member, Long proposalId) {
+    public ProposalDto findBy(Member member, Long projectId, Long proposalId) {
         Proposal proposal = findByIdWithDetails(proposalId);
         Project project = proposal.getProject();
+
+        if (hasProjectProposal(projectId, project)) {
+            throw new ServiceException("400-1", "해당 프로젝트의 제안서가 아닙니다.");
+        }
 
         // 클라이언트라면, 제안서 작성자(= 프로젝트 작성자)인지 확인
         // 프리랜서라면, 제안서 대상자인지 확인
         if ((member.isClient() && isNotProjectAuthor(member, project)) ||
-           (member.isFreelancer() && isNotProposalTarget(member, proposal))
+                (member.isFreelancer() && isNotProposalTarget(member, proposal))
         ) {
             throw new ServiceException("403-2", "제안서를 열람할 권한이 없습니다.");
         }
@@ -73,16 +77,26 @@ public class ProposalService {
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 제안서입니다."));
     }
 
+    private boolean hasProjectProposal(Long projectId, Project project) {
+        return !project.getId().equals(projectId);
+    }
+
     private boolean isNotProposalTarget(Member member, Proposal proposal) {
         return !proposal.getFreelancer().getMember().getId().equals(member.getId());
     }
 
+    // WAIT 일때만 상태변경 가능하게 해야?
     @Transactional
-    public ProposalDto updateState(Member client, Long proposalId, ProposalStatus state) {
+    public ProposalDto updateState(Member client, Long projectId, Long proposalId, ProposalStatus state) {
         Proposal proposal = findByIdWithDetails(proposalId);
         Project project = proposal.getProject();
+
+        if (hasProjectProposal(projectId, project)) {
+            throw new ServiceException("400-1", "해당 프로젝트의 제안서가 아닙니다.");
+        }
+
         if (isNotProjectAuthor(client, project)) {
-            throw new ServiceException("403-3", "프로젝트 작성자가 아닙니다. 상태 변경 권한이 없습니다.");
+            throw new ServiceException("403-2", "프로젝트 작성자가 아닙니다. 상태 변경 권한이 없습니다.");
         }
 
         proposal.updateStatus(state);
@@ -91,11 +105,16 @@ public class ProposalService {
     }
 
     @Transactional
-    public void deleteProposal(Member client, Long proposalId) {
+    public void deleteProposal(Member client, Long projectId, Long proposalId) {
         Proposal proposal = findByIdWithDetails(proposalId);
         Project project = proposal.getProject();
+
+        if (hasProjectProposal(projectId, project)) {
+            throw new ServiceException("400-1", "해당 프로젝트의 제안서가 아닙니다.");
+        }
+
         if (isNotProjectAuthor(client, project)) {
-            throw new ServiceException("403-4", "프로젝트 작성자가 아닙니다. 제안서 삭제 권한이 없습니다.");
+            throw new ServiceException("403-2", "프로젝트 작성자가 아닙니다. 제안서 삭제 권한이 없습니다.");
         }
 
         proposalRepository.delete(proposal);

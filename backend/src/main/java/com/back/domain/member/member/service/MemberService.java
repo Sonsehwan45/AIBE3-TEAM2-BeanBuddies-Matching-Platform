@@ -55,11 +55,11 @@ public class MemberService {
         Member member = new Member(role, name, username, encodedPassword, email);
 
         //회원 유형에 따른 엔티티 등록
-        if (member.isClient()) {
+        if (member.isFreelancer()) {
             Freelancer freelancer = new Freelancer(member);
             member.registerFreelancer(freelancer);
         }
-        if (member.isFreelancer()) {
+        if (member.isClient()) {
             Client client = new Client(member);
             member.registerClient(client);
         }

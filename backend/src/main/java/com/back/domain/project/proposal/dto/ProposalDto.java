@@ -8,6 +8,7 @@ public record ProposalDto(
         String message,
         Long projectId,
         Long freelancerId,
+        String freelancerName,
         Long clientId,
         String clientName,
         ProposalStatus status
@@ -18,6 +19,7 @@ public record ProposalDto(
                 proposal.getMessage(),
                 proposal.getProject().getId(),
                 proposal.getFreelancer().getId(),
+                proposal.getFreelancer().getMember().getName(),
                 proposal.getProject().getClient().getId(),
                 proposal.getProject().getClient().getMember().getName(),
                 proposal.getStatus()

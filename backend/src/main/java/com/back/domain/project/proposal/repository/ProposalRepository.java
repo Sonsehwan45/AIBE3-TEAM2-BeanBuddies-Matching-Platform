@@ -12,9 +12,9 @@ public interface ProposalRepository extends JpaRepository<Proposal, Long> {
 
     @Query("""
                 SELECT p FROM Proposal p
+                JOIN FETCH p.project pr
                 JOIN FETCH p.freelancer f
                 JOIN FETCH f.member fm
-                JOIN FETCH p.project pr
                 JOIN FETCH pr.client c
                 JOIN FETCH c.member cm
                 WHERE pr.id = :projectId                                
@@ -24,13 +24,13 @@ public interface ProposalRepository extends JpaRepository<Proposal, Long> {
 
     @Query("""
                 SELECT p FROM Proposal p
+                JOIN FETCH p.project pr
                 JOIN FETCH p.freelancer f
                 JOIN FETCH f.member fm
-                JOIN FETCH p.project pr
                 JOIN FETCH pr.client c
                 JOIN FETCH c.member cm
-                WHERE pr.id = :projectId
+                WHERE p.id = :proposalId
             """
     )
-    Optional<Proposal> findByIdWithDetails(Long id);
+    Optional<Proposal> findByIdWithDetails(Long proposalId);
 }
