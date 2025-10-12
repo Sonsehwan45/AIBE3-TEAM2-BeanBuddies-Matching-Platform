@@ -14,9 +14,12 @@ import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.repository.MemberRepository;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.repository.ProjectRepository;
+import com.back.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +32,7 @@ public class EvaluationService {
     private final ClientRepository clientRepository;
     private final ProjectRepository projectRepository;
 
+    //평가 생성
     @Transactional
     public void createEvaluation(Long evaluatorId, EvaluationCreateReq evaluationCreateReq){
         Member evaluatorMember = memberRepository.findById(evaluatorId)
@@ -55,6 +59,8 @@ public class EvaluationService {
                     ratings.communication(), ratings.proactiveness());
             freelancerEvaluationRepository.save(review);
 
+            updateFreelancerRatingAvg(freelancerEvaluatee.getId());
+
         //평가자가 프리랜서
         } else if (evaluatorMember.getRole() == Role.FREELANCER) {
             Freelancer freelancerEvaluator = freelancerRepository.findById(evaluatorId)
@@ -66,6 +72,36 @@ public class EvaluationService {
                     satisfactionScore, ratings.professionalism(), ratings.scheduleAdherence(),
                     ratings.communication(), ratings.proactiveness());
             clientEvaluationRepository.save(review);
+
+            updateClientRatingAvg(clientEvaluatee.getId());
         }
+    }
+
+    private void updateFreelancerRatingAvg(Long freelancerId){
+        List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerId(freelancerId);
+
+        double average = evaluations.stream()
+                .mapToInt(FreelancerEvaluation::getRatingSatisfaction)
+                .average()
+                .orElse(0.0);
+
+        Freelancer freelancer = freelancerRepository.findById(freelancerId)
+                .orElseThrow(() -> new ServiceException("404", "프리랜서를 찾을 수 없습니다."));
+
+        freelancer.updateRatingAvg(average);
+    }
+
+    private void updateClientRatingAvg(Long clientId) {
+        List<ClientEvaluation> evaluations = clientEvaluationRepository.findByClientId(clientId);
+
+        double average = evaluations.stream()
+                .mapToInt(ClientEvaluation::getRatingSatisfaction)
+                .average()
+                .orElse(0.0);
+
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new ServiceException("404", "클라이언트를 찾을 수 없습니다."));
+
+        client.updateRatingAvg(average);
     }
 }
