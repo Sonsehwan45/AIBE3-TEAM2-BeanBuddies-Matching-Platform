@@ -8,7 +8,6 @@ import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 
 import java.time.LocalDateTime;
@@ -74,5 +73,13 @@ public class Member extends BaseEntity {
     //비밀번호 변경
     public void updatePassword(String password) {
         this.password = password;
+    }
+
+    public void updateProfileImgUrl(String profileImgUrl) {
+        this.profileImgUrl = profileImgUrl;
+    }
+
+    public void updateName(String name) {
+        this.name = name;
     }
 }

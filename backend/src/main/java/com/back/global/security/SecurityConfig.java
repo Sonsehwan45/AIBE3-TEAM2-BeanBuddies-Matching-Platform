@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/*/test/auth/me").authenticated()
                         .requestMatchers("/api/*/members/password-update").authenticated()
                         .requestMatchers("/api/v1/members/me").authenticated() // 내 프로필 조회
+                        .requestMatchers("/api/v1/members/me/profile").authenticated() // 내 프로필 수정
 
 
                         //프리랜서만 접근 가능

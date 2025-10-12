@@ -72,8 +72,8 @@ public class MemberService {
     @Transactional
     public void updateProfile(Member member, ProfileUpdateRequestDto dto) {
         // Update common fields
-        if (dto.getName() != null) dto.setName(dto.getName());
-        if (dto.getProfileImgUrl() != null) dto.setProfileImgUrl(dto.getProfileImgUrl());
+        if (dto.getName() != null) member.updateName(dto.getName());
+        if (dto.getProfileImgUrl() != null) member.updateProfileImgUrl(dto.getProfileImgUrl());
 
         if (member.getRole() == Role.FREELANCER && member.getFreelancer() != null) {
             Freelancer freelancer = member.getFreelancer();
