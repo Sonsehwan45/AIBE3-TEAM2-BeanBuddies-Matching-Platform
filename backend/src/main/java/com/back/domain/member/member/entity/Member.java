@@ -8,6 +8,7 @@ import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 import java.time.LocalDateTime;
@@ -31,7 +32,7 @@ public class Member extends BaseEntity {
 
     private String email;
 
-    //private String profileImgUrl;
+    private String profileImgUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
