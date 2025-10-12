@@ -13,6 +13,7 @@ import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
+import com.back.domain.project.proposal.service.ProposalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -41,7 +42,7 @@ public class BaseInitData {
     private final InterestService interestService;
     private final ApplicationService applicationService;
     private final FreelancerService freelancerService;
-
+    private ProposalService proposalService;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {
@@ -51,6 +52,7 @@ public class BaseInitData {
             self.addProject();
             self.addApplication();
             self.updateFreelancerInfo();
+            self.addProposal();
         };
     }
 
@@ -217,9 +219,18 @@ public class BaseInitData {
     }
 
     @Transactional
-    public void updateFreelancerInfo() {
-        Freelancer freelancer1 = freelancerService.findById(4L);
+    public void addProposal() {
+        if (proposalService.count() > 0) {
+            return;
+        }
 
+        Member clientMember1 = memberService.findByUsername("client1").get();
+        proposalService.createProposal(clientMember1, 1L, 4L, "프로젝트 제안 메시지 1");
+        proposalService.createProposal(clientMember1, 1L, 5L, "프로젝트 제안 메시지 2");
+    }
+
+    @Transactional
+    public void updateFreelancerInfo() {
         freelancerService.updateFreelancer(4L, "백엔드", "test@test.com", "안녕하세요",
                 Map.of("Spring", 24, "JPA", 30), List.of(1L, 2L));
 

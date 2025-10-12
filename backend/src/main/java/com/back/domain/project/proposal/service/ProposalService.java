@@ -2,7 +2,6 @@ package com.back.domain.project.proposal.service;
 
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.freelancer.freelancer.service.FreelancerService;
-import com.back.domain.member.member.constant.MemberStatus;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
@@ -34,14 +33,13 @@ public class ProposalService {
 
     @Transactional
     public ProposalDto createProposal(Member client, Long projectId, Long freelancerId, String message) {
-        // NOTE : findById에서 404 -> 수정하였음
-        Project project = projectService.findById(projectId);
+        Project project = projectService.findByIdWithAuthor(projectId);
 
-        if (isNotProjectAuthor(client, projectId)) {
+        if (isNotProjectAuthor(client, project)) {
             throw new ServiceException("403-1", "프로젝트 담당 클라이언트가 아닙니다. 제안서 작성 권한이 없습니다.");
         }
 
-        Freelancer freelancer = freelancerService.findById(freelancerId);
+        Freelancer freelancer = freelancerService.findByIdWithMember(freelancerId);
         if (!freelancer.getMember().isActive()) {
             throw new ServiceException("400-1", "활성화 상태가 아닌 프리랜서에게는 제안서를 보낼 수 없습니다.");
         }
@@ -50,52 +48,61 @@ public class ProposalService {
         return new ProposalDto(proposalRepository.save(proposal));
     }
 
+    private boolean isNotProjectAuthor(Member member, Project project) {
+        return !projectService.isAuthor(member, project);
+    }
+
     @Transactional(readOnly = true)
-    public ProposalDto findBy(Member member, Long projectId, Long proposalId) {
-        // 클라이언트라면, 프로젝트 작성자인지 확인
+    public ProposalDto findBy(Member member, Long proposalId) {
+        Proposal proposal = findByIdWithDetails(proposalId);
+        Project project = proposal.getProject();
+
+        // 클라이언트라면, 제안서 작성자(= 프로젝트 작성자)인지 확인
         // 프리랜서라면, 제안서 대상자인지 확인
-        if (isNotProjectAuthor(member, projectId) || isNotProposalTarget(member, proposalId)) {
+        if ((member.isClient() && isNotProjectAuthor(member, project)) ||
+           (member.isFreelancer() && isNotProposalTarget(member, proposal))
+        ) {
             throw new ServiceException("403-2", "제안서를 열람할 권한이 없습니다.");
         }
 
-        Proposal proposal = findById(proposalId);
         return new ProposalDto(proposal);
     }
 
-    private Proposal findById(Long proposalId) {
-        return proposalRepository.findById(proposalId)
+    private Proposal findByIdWithDetails(Long proposalId) {
+        return proposalRepository.findByIdWithDetails(proposalId)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 제안서입니다."));
     }
 
-    private boolean isNotProjectAuthor(Member member, Long projectId) {
-        return !projectService.isAuthor(member, projectId);
-    }
-
-    private boolean isNotProposalTarget(Member member, Long proposalId) {
-        Proposal proposal = findById(proposalId);
-
-        return !proposal.getFreelancer().equals(member.getFreelancer());
+    private boolean isNotProposalTarget(Member member, Proposal proposal) {
+        return !proposal.getFreelancer().getMember().getId().equals(member.getId());
     }
 
     @Transactional
-    public ProposalDto updateState(Member client, Long projectId, Long proposalId, ProposalStatus state) {
-        if (isNotProjectAuthor(client, projectId)) {
+    public ProposalDto updateState(Member client, Long proposalId, ProposalStatus state) {
+        Proposal proposal = findByIdWithDetails(proposalId);
+        Project project = proposal.getProject();
+        if (isNotProjectAuthor(client, project)) {
             throw new ServiceException("403-3", "프로젝트 작성자가 아닙니다. 상태 변경 권한이 없습니다.");
         }
 
-        Proposal proposal = findById(proposalId);
         proposal.updateStatus(state);
 
         return new ProposalDto(proposal);
     }
 
     @Transactional
-    public void deleteProposal(Member client, Long projectId, Long proposalId) {
-        if (isNotProjectAuthor(client, projectId)) {
+    public void deleteProposal(Member client, Long proposalId) {
+        Proposal proposal = findByIdWithDetails(proposalId);
+        Project project = proposal.getProject();
+        if (isNotProjectAuthor(client, project)) {
             throw new ServiceException("403-4", "프로젝트 작성자가 아닙니다. 제안서 삭제 권한이 없습니다.");
         }
 
-        Proposal proposal = findById(proposalId);
         proposalRepository.delete(proposal);
+    }
+
+    // 테스트를 위한 메소드
+    public long count() {
+        return proposalRepository.count();
     }
 }

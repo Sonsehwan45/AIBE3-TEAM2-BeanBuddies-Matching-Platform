@@ -74,4 +74,10 @@ public class FreelancerService {
         // 양방향 연관관계 동기화
         freelancer.getSkills().addAll(newFreelancerSkills);
     }
+
+    @Transactional(readOnly = true)
+    public Freelancer findByIdWithMember(Long id) {
+        return freelancerRepository.findByIdWithMember(id)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 프리랜서입니다."));
+    }
 }

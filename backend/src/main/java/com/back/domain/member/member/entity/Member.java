@@ -78,4 +78,12 @@ public class Member extends BaseEntity {
     public boolean isActive() {
         return status == MemberStatus.ACTIVE;
     }
+
+    public boolean isClient() {
+        return role == Role.CLIENT;
+    }
+
+    public boolean isFreelancer() {
+        return role == Role.FREELANCER;
+    }
 }

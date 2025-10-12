@@ -14,11 +14,4 @@ public enum Role {
         this.description = description;
     }
 
-    public static boolean isFreelancer(Member member) {
-        return member.getRole() == Role.FREELANCER;
-    }
-
-    public static boolean isClient(Member member) {
-        return member.getRole() == Role.CLIENT;
-    }
 }

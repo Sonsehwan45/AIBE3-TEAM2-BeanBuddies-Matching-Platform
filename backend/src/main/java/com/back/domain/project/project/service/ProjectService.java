@@ -21,6 +21,7 @@ import com.back.domain.project.project.repository.ProjectRepository;
 import com.back.domain.project.project.repository.ProjectSkillRepository;
 import com.back.domain.project.project.spec.ProjectSpec;
 import com.back.global.exception.ServiceException;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -98,7 +99,8 @@ public class ProjectService {
         return projectRepository.findFirstByOrderByIdDesc();
     }
 
-    public Project findById(long id) {
+    public Project
+    findById(long id) {
         return projectRepository.findById(id).orElseThrow(
                 () -> new ServiceException("404-1", "해당 프로젝트가 존재하지 않습니다.")
         );
@@ -199,9 +201,14 @@ public class ProjectService {
                 });
     }
 
-    @Transactional
-    public boolean isAuthor(Member member, Long projectId) {
-        Project project = findById(projectId);
-        return project.getClient().getMember().equals(member);
+    @Transactional(readOnly = true)
+    public Project findByIdWithAuthor(Long id) {
+        return projectRepository.findByIdWithAuthor(id).orElseThrow(
+                () -> new EntityNotFoundException("해당 프로젝트가 존재하지 않습니다.")
+        );
+    }
+
+    public boolean isAuthor(Member member, Project project) {
+        return project.getClient().getMember().getId().equals(member.getId());
     }
 }

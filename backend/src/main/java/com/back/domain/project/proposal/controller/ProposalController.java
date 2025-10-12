@@ -53,11 +53,10 @@ public class ProposalController {
     @GetMapping("/{proposalId}")
     public ApiResponse<ProposalDto> getProposal(
             @AuthenticationPrincipal CustomUserDetails user,
-            @PathVariable Long projectId,
             @PathVariable Long proposalId
     ) {
         Member member = memberService.findById(user.getId());
-        ProposalDto proposal = proposalService.findBy(member, projectId, proposalId);
+        ProposalDto proposal = proposalService.findBy(member, proposalId);
 
         return new ApiResponse<>(
                 "200",
@@ -69,13 +68,12 @@ public class ProposalController {
     @PatchMapping("/{proposalId}")
     public ApiResponse<ProposalDto> updateState(
             @AuthenticationPrincipal CustomUserDetails user,
-            @PathVariable Long projectId,
             @PathVariable Long proposalId,
             @RequestBody ProposalStateUpdateReqBody reqBody
     ) {
         Member member = memberService.findById(user.getId());
 
-        ProposalDto proposal = proposalService.updateState(member, projectId, proposalId, reqBody.toStatus());
+        ProposalDto proposal = proposalService.updateState(member, proposalId, reqBody.toStatus());
 
         return new ApiResponse<>(
                 "200",
@@ -87,11 +85,10 @@ public class ProposalController {
     @DeleteMapping("/{proposalId}")
     public void delete(
             @AuthenticationPrincipal CustomUserDetails user,
-            @PathVariable Long projectId,
             @PathVariable Long proposalId
     ) {
         Member member = memberService.findById(user.getId());
 
-        proposalService.deleteProposal(member, projectId, proposalId);
+        proposalService.deleteProposal(member, proposalId);
     }
 }
