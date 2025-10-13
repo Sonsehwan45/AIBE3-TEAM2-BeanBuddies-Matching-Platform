@@ -87,6 +87,9 @@ public class ProjectRepositoryImpl implements ProjectRepositoryCustom{
             case "title" -> project.title.containsIgnoreCase(keyword);
             case "summary" -> project.summary.containsIgnoreCase(keyword);
             case "description" -> project.description.containsIgnoreCase(keyword);
+            case "" -> project.title.containsIgnoreCase(keyword)
+                    .or(project.summary.containsIgnoreCase(keyword))
+                    .or(project.description.containsIgnoreCase(keyword));
             default -> null;
         };
     }
