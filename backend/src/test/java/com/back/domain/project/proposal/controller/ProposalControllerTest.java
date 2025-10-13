@@ -1,5 +1,6 @@
 package com.back.domain.project.proposal.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -11,6 +12,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.back.domain.member.member.entity.Member;
+import com.back.domain.member.member.service.MemberService;
+import com.back.domain.project.proposal.constant.ProposalStatus;
+import com.back.domain.project.proposal.dto.ProposalDto;
 import com.back.domain.project.proposal.service.ProposalService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,6 +40,8 @@ class ProposalControllerTest {
     private MockMvc mvc;
     @Autowired
     private ProposalService proposalService;
+    @Autowired
+    private MemberService memberService;
 
     @Test
     @DisplayName("제안서 프로젝트별 목록보기")
@@ -245,10 +252,10 @@ class ProposalControllerTest {
                         post("/api/v1/projects/{projectId}/proposals", projectId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
-                                    {
-                                            "message" : "" // 메시지 필드 누락 또는 빈 값
-                                    }
-                                    """)
+                                        {
+                                                "message" : "" // 메시지 필드 누락 또는 빈 값
+                                        }
+                                        """)
                 )
                 .andDo(print());
 
@@ -256,7 +263,8 @@ class ProposalControllerTest {
                 .andExpect(handler().methodName("create"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-1"))
-                .andExpect(jsonPath("$.msg").value(org.hamcrest.Matchers.containsString("요청 본문 형식이 잘못되었거나 필수 값이 누락되었습니다.")));
+                .andExpect(jsonPath("$.msg").value(
+                        org.hamcrest.Matchers.containsString("요청 본문 형식이 잘못되었거나 필수 값이 누락되었습니다.")));
     }
 
     @Test
@@ -270,11 +278,11 @@ class ProposalControllerTest {
                         post("/api/v1/projects/{projectId}/proposals", projectId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("""
-                                    {
-                                            "freelancerId" : 7,
-                                            "message" : ""
-                                    }
-                                    """)
+                                        {
+                                                "freelancerId" : 7,
+                                                "message" : ""
+                                        }
+                                        """)
                 )
                 .andDo(print());
 
@@ -282,7 +290,8 @@ class ProposalControllerTest {
                 .andExpect(handler().methodName("create"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-1"))
-                .andExpect(jsonPath("$.msg").value(org.hamcrest.Matchers.containsString("message-NotBlank-메시지는 필수이며 공백일 수 없습니다.")));
+                .andExpect(jsonPath("$.msg").value(
+                        org.hamcrest.Matchers.containsString("message-NotBlank-메시지는 필수이며 공백일 수 없습니다.")));
     }
 
     @Test
@@ -343,7 +352,7 @@ class ProposalControllerTest {
 
     @Test
     @DisplayName("제안서 상태 변경")
-    @WithUserDetails(value = "client1", userDetailsServiceBeanName = "customUserDetailsService")
+    @WithUserDetails(value = "freelancer1", userDetailsServiceBeanName = "customUserDetailsService")
     void t4() throws Exception {
         Long projectId = 1L;
         Long proposalId = 1L;
@@ -373,8 +382,8 @@ class ProposalControllerTest {
     }
 
     @Test
-    @DisplayName("제안서 상태 변경 실패(403) - 프로젝트 작성 클라이언트가 아님")
-    @WithUserDetails(value = "client2", userDetailsServiceBeanName = "customUserDetailsService")
+    @DisplayName("제안서 상태 변경 실패(403) - 제안서 대상 프리랜서가 아님")
+    @WithUserDetails(value = "freelancer2", userDetailsServiceBeanName = "customUserDetailsService")
     void t4_forbidden() throws Exception {
         Long projectId = 1L;
         Long proposalId = 1L;
@@ -396,15 +405,14 @@ class ProposalControllerTest {
                 .andExpect(handler().methodName("updateState"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.resultCode").value("403-2"))
-                .andExpect(jsonPath("$.msg").value("프로젝트 작성자가 아닙니다. 상태 변경 권한이 없습니다."))
+                .andExpect(jsonPath("$.msg").value("제안서 대상자가 아닙니다. 상태 변경 권한이 없습니다."))
                 .andExpect(jsonPath("$.data").doesNotExist());
-        // 기타 dto 데이터 검증 생략
     }
 
     @Test
     @DisplayName("제안서 상태 변경 실패(400) - enum 값 불일치")
-    @WithUserDetails(value = "client1", userDetailsServiceBeanName = "customUserDetailsService")
-    void t4_bad_request() throws Exception {
+    @WithUserDetails(value = "freelancer1", userDetailsServiceBeanName = "customUserDetailsService")
+    void t4_bad_request_enum_incorrect() throws Exception {
         Long projectId = 1L;
         Long proposalId = 1L;
 
@@ -428,6 +436,41 @@ class ProposalControllerTest {
                 .andExpect(jsonPath("$.msg").value("잘못된 요청입니다.\n"
                         + "ProposalStatus는 ACCEPT1가 없습니다.\n"
                         + "ProposalStatus는 [WAIT, ACCEPT, DENIED]만 가능합니다."))
+                .andExpect(jsonPath("$.data").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("제안서 상태 변경 실패(400) - 이미 처리된 제안서")
+    @WithUserDetails(value = "freelancer1", userDetailsServiceBeanName = "customUserDetailsService")
+    void t4_bad_request_not_wait() throws Exception {
+        Long projectId = 1L;
+        Long proposalId = 1L;
+
+        Member member = memberService.findById(4L);// freelancer1
+        ProposalDto before = proposalService.findBy(member, projectId, proposalId);
+        assertThat(before.status()).isEqualTo(ProposalStatus.WAIT);
+
+        // 상태 변경 (WAIT -> DENIED)
+        proposalService.updateState(member, projectId, proposalId, ProposalStatus.DENIED);
+
+        ResultActions resultActions = mvc
+                .perform(
+                        patch("/api/v1/projects/{projectId}/proposals/{proposalId}", projectId, proposalId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                                "status" : "ACCEPT"
+                                        }
+                                        """)
+                )
+                .andDo(print());
+
+        resultActions
+                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().methodName("updateState"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.resultCode").value("400-3"))
+                .andExpect(jsonPath("$.msg").value("대기 상태가 아닌 제안서는 상태를 변경할 수 없습니다."))
                 .andExpect(jsonPath("$.data").doesNotExist());
     }
 

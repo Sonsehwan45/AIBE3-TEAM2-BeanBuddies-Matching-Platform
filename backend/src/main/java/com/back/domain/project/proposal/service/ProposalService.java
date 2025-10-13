@@ -85,9 +85,8 @@ public class ProposalService {
         return !proposal.getFreelancer().getMember().getId().equals(member.getId());
     }
 
-    // WAIT 일때만 상태변경 가능하게 해야?
     @Transactional
-    public ProposalDto updateState(Member client, Long projectId, Long proposalId, ProposalStatus state) {
+    public ProposalDto updateState(Member freelancer, Long projectId, Long proposalId, ProposalStatus state) {
         Proposal proposal = findByIdWithDetails(proposalId);
         Project project = proposal.getProject();
 
@@ -95,8 +94,12 @@ public class ProposalService {
             throw new ServiceException("400-1", "해당 프로젝트의 제안서가 아닙니다.");
         }
 
-        if (isNotProjectAuthor(client, project)) {
-            throw new ServiceException("403-2", "프로젝트 작성자가 아닙니다. 상태 변경 권한이 없습니다.");
+        if (isNotProposalTarget(freelancer, proposal)) {
+            throw new ServiceException("403-2", "제안서 대상자가 아닙니다. 상태 변경 권한이 없습니다.");
+        }
+
+        if (!proposal.isStatusWait()) {
+            throw new ServiceException("400-3", "대기 상태가 아닌 제안서는 상태를 변경할 수 없습니다.");
         }
 
         proposal.updateStatus(state);

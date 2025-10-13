@@ -22,13 +22,7 @@ import org.springframework.data.annotation.CreatedDate;
 @Entity
 @Getter
 @NoArgsConstructor
-public class Proposal {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @CreatedDate
-    private LocalDateTime createDate;
+public class Proposal extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     private String message;
@@ -49,10 +43,13 @@ public class Proposal {
         this.freelancer = freelancer;
         this.message = message;
         this.status = ProposalStatus.WAIT;
-        this.createDate = LocalDateTime.now();
     }
 
     public void updateStatus(ProposalStatus state) {
         this.status = state;
+    }
+
+    public boolean isStatusWait() {
+        return this.status == ProposalStatus.WAIT;
     }
 }
