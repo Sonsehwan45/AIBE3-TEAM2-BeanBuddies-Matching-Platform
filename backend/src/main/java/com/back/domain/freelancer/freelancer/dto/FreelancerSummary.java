@@ -10,7 +10,7 @@ public record FreelancerSummary(
         Long id,
         String name,
         CareerLevel careerLevel,
-        float ratingAvg,
+        double ratingAvg,
         List<SkillDto> skills
 ) {
     public FreelancerSummary(Freelancer freelancer) {
@@ -26,7 +26,7 @@ public record FreelancerSummary(
         );
     }
 
-    public FreelancerSummary(Long id, String name, Integer careerTotalYears, float ratingAvg, List<SkillDto> skills) {
+    public FreelancerSummary(Long id, String name, Integer careerTotalYears, double ratingAvg, List<SkillDto> skills) {
         this(
                 id,
                 name,
