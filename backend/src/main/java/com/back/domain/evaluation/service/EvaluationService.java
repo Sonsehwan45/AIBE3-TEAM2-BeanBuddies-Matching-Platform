@@ -4,6 +4,7 @@ import com.back.domain.client.client.entity.Client;
 import com.back.domain.client.client.repository.ClientRepository;
 import com.back.domain.evaluation.dto.EvaluationCreateReq;
 import com.back.domain.evaluation.dto.EvaluationResponse;
+import com.back.domain.evaluation.dto.EvaluationUpdateReq;
 import com.back.domain.evaluation.entity.ClientEvaluation;
 import com.back.domain.evaluation.entity.FreelancerEvaluation;
 import com.back.domain.evaluation.repository.ClientEvaluationRepository;
@@ -80,6 +81,58 @@ public class EvaluationService {
         }
 
         throw new ServiceException("403", "평가를 등록할 권한이 없는 사용자입니다.");
+    }
+
+    @Transactional
+    public EvaluationResponse updateEvaluation(Long evaluatorId, EvaluationUpdateReq request){
+        Member member = memberRepository.findById(evaluatorId)
+                .orElseThrow(() -> new ServiceException("404", "평가자를 찾을 수 없습니다."));
+
+        EvaluationUpdateReq.Ratings  ratings = request.ratings();
+        double average = (ratings.professionalism() + ratings.scheduleAdherence() +
+                ratings.communication() + ratings.proactiveness()) / 4.0;
+        int satisfactionScore = (int)Math.round(average);
+
+        if(member.getRole() == Role.CLIENT) {
+            //클라이언트가 프리랜서에 대한 평가 수정
+            FreelancerEvaluation evaluation = freelancerEvaluationRepository.findById(request.evaluationId())
+                    .orElseThrow(() -> new ServiceException("404", "해당 프리랜서 평가를 찾을 수 없습니다."));
+
+            //현재 사용자가 이 평가를 등록한 클라이언트인지 확인
+            if(!evaluation.getClient().getMember().getId().equals(evaluatorId)){
+                throw new ServiceException("403", "해당 평가를 수정할 권한이 없습니다.");
+            }
+
+            evaluation.modify(
+                    request.comment(), satisfactionScore, ratings.professionalism(),
+                    ratings.scheduleAdherence(), ratings.communication(), ratings.proactiveness()
+            );
+
+            // 평점 재계산 (수정 후에도 평균을 다시 계산해야 함)
+            updateFreelancerRatingAvg(evaluation.getFreelancer().getId());
+
+            return EvaluationResponse.from(evaluation);
+        }else if (member.getRole() == Role.FREELANCER) {
+            // 프리랜서가 클라이언트에 대한 평가 수정
+            ClientEvaluation evaluation = clientEvaluationRepository.findById(request.evaluationId())
+                    .orElseThrow(() -> new ServiceException("404", "해당 클라이언트 평가를 찾을 수 없습니다."));
+
+            // 현재 사용자가 이 평가를 등록한 프리랜서인지 확인
+            if (!evaluation.getFreelancer().getMember().getId().equals(evaluatorId)) {
+                throw new ServiceException("403", "해당 평가를 수정할 권한이 없습니다.");
+            }
+
+            evaluation.modify(
+                    request.comment(), satisfactionScore, ratings.professionalism(),
+                    ratings.scheduleAdherence(), ratings.communication(), ratings.proactiveness()
+            );
+
+            // 평점 재계산
+            updateClientRatingAvg(evaluation.getClient().getId());
+
+            return EvaluationResponse.from(evaluation);
+        }
+        throw new ServiceException("403", "평가를 수정할 권한이 없는 사용자입니다.");
     }
 
     private void updateFreelancerRatingAvg(Long freelancerId) {

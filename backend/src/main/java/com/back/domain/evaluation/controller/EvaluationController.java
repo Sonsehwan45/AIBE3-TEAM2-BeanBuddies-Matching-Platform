@@ -2,16 +2,14 @@ package com.back.domain.evaluation.controller;
 
 import com.back.domain.evaluation.dto.EvaluationCreateReq;
 import com.back.domain.evaluation.dto.EvaluationResponse;
+import com.back.domain.evaluation.dto.EvaluationUpdateReq;
 import com.back.domain.evaluation.service.EvaluationService;
 import com.back.global.response.ApiResponse;
 import com.back.global.security.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -34,5 +32,17 @@ public class EvaluationController {
 
         // 생성된 평가 데이터를 포함하여 성공 응답을 반환합니다.
         return new ApiResponse<>("201", "평가가 성공적으로 등록되었습니다.", responseData);
+    }
+
+    @PatchMapping
+    public ApiResponse<EvaluationResponse> updateEvaluation(
+            @Valid @RequestBody EvaluationUpdateReq request,
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ){
+        Long currentUserId = userDetails.getId();
+
+        EvaluationResponse responseData = evaluationService.updateEvaluation(currentUserId, request);
+
+        return new ApiResponse<>("200", "평가가 성공적으로 수정되었습니다.",  responseData);
     }
 }

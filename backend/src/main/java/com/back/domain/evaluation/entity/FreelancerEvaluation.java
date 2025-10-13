@@ -55,4 +55,14 @@ public class FreelancerEvaluation {
         this.ratingProactiveness = proactiveness;
         this.createdAt = LocalDateTime.now();
     }
+
+    public void modify(
+            String comment, int satisfaction, int professionalism, int scheduleAdherence, int communication, int proactiveness) {
+        this.comment = comment;
+        this.ratingSatisfaction = satisfaction;
+        this.ratingProfessionalism = professionalism;
+        this.ratingScheduleAdherence = scheduleAdherence;
+        this.ratingCommunication = communication;
+        this.ratingProactiveness = proactiveness;
+    }
 }
