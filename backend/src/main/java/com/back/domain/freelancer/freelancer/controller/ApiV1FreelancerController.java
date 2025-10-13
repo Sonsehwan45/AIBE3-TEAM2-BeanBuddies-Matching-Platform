@@ -8,6 +8,10 @@ import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.freelancer.freelancer.service.FreelancerService;
 import com.back.global.response.ApiResponse;
 import com.back.standard.converter.FreelancerSearchConditionConverter;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
+import io.swagger.v3.oas.annotations.security.SecurityScheme;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,14 +29,15 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
+@Tag(name="ApiV1FreelancerController", description = "API 프리랜서 컨트롤러")
 @RequestMapping("/api/v1/freelancers")
-public class FreelancerController {
+public class ApiV1FreelancerController {
 
     private final FreelancerService freelancerService;
     private final FreelancerSearchConditionConverter converter;
 
-    // 프리랜서 정보 수정
     @PutMapping("/{id}")
+    @Operation(summary = "프리랜서 개인정보 수정")
     public ApiResponse<FreelancerUpdateResponse> updateFreelancer(@PathVariable Long id,
                                                                   @RequestBody FreelancerUpdateForm form) {
         Freelancer freelancer = freelancerService.updateFreelancer(
@@ -53,8 +58,8 @@ public class FreelancerController {
         );
     }
 
-    // 프리랜서 목록 조회
     @GetMapping
+    @Operation(summary = "프리랜서 목록 조회")
     public ApiResponse<Page<FreelancerSummary>> getFreelancers(
             @RequestParam(required = false) String careerLevel,
             @RequestParam(required = false) Float ratingAvg,
