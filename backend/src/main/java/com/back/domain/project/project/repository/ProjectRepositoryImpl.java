@@ -2,6 +2,7 @@ package com.back.domain.project.project.repository;
 
 import com.back.domain.project.project.constant.ProjectStatus;
 import com.back.domain.project.project.entity.Project;
+import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
@@ -48,7 +49,7 @@ public class ProjectRepositoryImpl implements ProjectRepositoryCustom{
             pageable.getSort().forEach(order -> {
                 query.orderBy(
                         new OrderSpecifier(
-                                order.isAscending() ? com.querydsl.core.types.Order.ASC : com.querydsl.core.types.Order.DESC,
+                                order.isAscending() ? Order.ASC : Order.DESC,
                                 pathBuilder.get(order.getProperty())
                         )
                 );
