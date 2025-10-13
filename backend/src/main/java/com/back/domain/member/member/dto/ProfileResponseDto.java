@@ -10,7 +10,6 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -18,6 +17,7 @@ import java.util.stream.Collectors;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProfileResponseDto {
     // Common Member fields
+    private String username;
     private String name;
     private Role role;
     private LocalDateTime createdAt;
@@ -43,6 +43,7 @@ public class ProfileResponseDto {
 
     public static ProfileResponseDto of(Member member) {
         ProfileResponseDtoBuilder builder = ProfileResponseDto.builder()
+                .username(member.getUsername())
                 .name(member.getName())
                 .role(member.getRole())
                 .createdAt(member.getCreateDate())

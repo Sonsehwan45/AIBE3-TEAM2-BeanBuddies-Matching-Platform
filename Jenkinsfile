@@ -12,7 +12,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 // GitHub 저장소에서 코드를 가져옵니다.
-                git branch: 'main', url: 'https://github.com/prgrms-aibe-devcourse/AIBE3-TEAM2-BeanBuddies-MatchingPlatform.git'
+                git branch: 'main', url: 'https://github.com/prgrms-aibe-devcourse/AIBE3-TEAM2-BeanBuddies-MatchingPlatform'
             }
         }
 

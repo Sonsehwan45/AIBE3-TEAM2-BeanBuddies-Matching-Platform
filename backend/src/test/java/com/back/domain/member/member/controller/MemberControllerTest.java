@@ -1,5 +1,7 @@
 package com.back.domain.member.member.controller;
 
+import com.back.domain.client.client.entity.Client;
+import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
 import org.hamcrest.Matchers;
@@ -15,8 +17,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -47,7 +51,8 @@ public class MemberControllerTest {
                                                 "passwordConfirm" : "1234",
                                                 "email" : "test@test.com"
                                         }
-                                        """)
+                                        """
+                                )
                 )
                 .andDo(print());
 
@@ -87,7 +92,8 @@ public class MemberControllerTest {
                                         "passwordConfirm" : "12345",
                                         "email" : " "
                                 }
-                                """)
+                                """
+                        )
         ).andDo(print());
 
         resultActions
@@ -123,7 +129,8 @@ public class MemberControllerTest {
                                         "passwordConfirm" : "1234",
                                         "email" : "test@test.com"
                                 }
-                                """)
+                                """
+                        )
         ).andDo(print());
 
         resultActions
@@ -155,7 +162,8 @@ public class MemberControllerTest {
                                         "passwordConfirm" : "12345",
                                         "email" : "test@test.com"
                                 }
-                                """)
+                                """
+                        )
         ).andDo(print());
 
         resultActions
@@ -185,7 +193,8 @@ public class MemberControllerTest {
                                     "newPassword": "5678",
                                     "newPasswordConfirm": "5678"
                                 }
-                                """)
+                                """
+                        )
         ).andDo(print());
 
         resultActions
@@ -214,7 +223,8 @@ public class MemberControllerTest {
                                     "newPassword": "5678",
                                     "newPasswordConfirm": "5678"
                                 }
-                                """)
+                                """
+                        )
         ).andDo(print());
 
         resultActions
@@ -243,7 +253,8 @@ public class MemberControllerTest {
                                     "newPassword": "5678",
                                     "newPasswordConfirm": "9999"
                                 }
-                                """)
+                                """
+                        )
         ).andDo(print());
 
         resultActions
@@ -271,7 +282,8 @@ public class MemberControllerTest {
                                     "email":  "test@test.com",
                                     "code": "blahblah"
                                 }
-                                """)
+                                """
+                        )
         ).andDo(print());
 
         resultActions
@@ -299,7 +311,8 @@ public class MemberControllerTest {
                                     "email":  "test@test.com",
                                     "code": "blahblah"
                                 }
-                                """)
+                                """
+                        )
         ).andDo(print());
 
         resultActions
@@ -327,7 +340,8 @@ public class MemberControllerTest {
                                     "email":  "testtest@test.com",
                                     "code": "blahblah"
                                 }
-                                """)
+                                """
+                        )
         ).andDo(print());
 
         resultActions
@@ -343,5 +357,187 @@ public class MemberControllerTest {
                 .andExpect(jsonPath("$.msg").value("이메일이 회원 정보와 일치하지 않습니다."));
     }
 
+    @Test
+    @DisplayName("프리랜서 프로필 수정 성공")
+    @WithUserDetails("freelancer1")
+    void t11_updateFreelancerProfile_success() throws Exception {
+        // GIVEN
+        Member beforeMember = memberService.findByUsername("freelancer1").get();
 
+        // WHEN
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/members/me/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "프리랜서1_수정",
+                                    "profileImgUrl": "new_freelancer_url",
+                                    "job": "Backend Developer",
+                                    "freelancerEmail": "freelancer_new@test.com",
+                                    "comment": "한 줄 소개 수정"
+                                }
+                                """
+                        )
+        ).andDo(print());
+
+        // THEN
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(handler().handlerType(MemberController.class))
+                .andExpect(handler().methodName("updateMyProfile"))
+                .andExpect(jsonPath("$.resultCode").value("200-8"))
+                .andExpect(jsonPath("$.msg").value("프로필 수정 성공"));
+
+        Member afterMember = memberService.findById(beforeMember.getId());
+        Freelancer afterFreelancer = afterMember.getFreelancer();
+
+        assertThat(afterMember.getName()).isEqualTo("프리랜서1_수정");
+        assertThat(afterMember.getProfileImgUrl()).isEqualTo("new_freelancer_url");
+        assertThat(afterFreelancer.getJob()).isEqualTo("Backend Developer");
+        assertThat(afterFreelancer.getFreelancerEmail()).isEqualTo("freelancer_new@test.com");
+        assertThat(afterFreelancer.getComment()).isEqualTo("한 줄 소개 수정");
+    }
+
+    @Test
+    @DisplayName("클라이언트 프로필 수정 성공")
+    @WithUserDetails("client1")
+    void t12_updateClientProfile_success() throws Exception {
+        // GIVEN
+        Member beforeMember = memberService.findByUsername("client1").get();
+
+        // WHEN
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/members/me/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "name": "클라이언트1_수정",
+                                    "profileImgUrl": "new_client_url",
+                                    "companySize": "10-50",
+                                    "companyDescription": "회사 설명 수정",
+                                    "companyEmail": "client_new@test.com"
+                                }
+                                """
+                        )
+        ).andDo(print());
+
+        // THEN
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(handler().handlerType(MemberController.class))
+                .andExpect(handler().methodName("updateMyProfile"))
+                .andExpect(jsonPath("$.resultCode").value("200-8"))
+                .andExpect(jsonPath("$.msg").value("프로필 수정 성공"));
+
+        Member afterMember = memberService.findById(beforeMember.getId());
+        Client afterClient = afterMember.getClient();
+
+        assertThat(afterMember.getName()).isEqualTo("클라이언트1_수정");
+        assertThat(afterMember.getProfileImgUrl()).isEqualTo("new_client_url");
+        assertThat(afterClient.getCompanySize()).isEqualTo("10-50");
+        assertThat(afterClient.getCompanyDescription()).isEqualTo("회사 설명 수정");
+        assertThat(afterClient.getCompanyEmail()).isEqualTo("client_new@test.com");
+    }
+
+    @Test
+    @DisplayName("내 프로필 조회 성공")
+    @WithUserDetails("freelancer1")
+    void t13_getMyProfile_success() throws Exception {
+        // WHEN
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/members/me")
+        ).andDo(print());
+
+        // THEN
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(handler().handlerType(MemberController.class))
+                .andExpect(handler().methodName("getMyProfile"))
+                .andExpect(jsonPath("$.resultCode").value("200-7"))
+                .andExpect(jsonPath("$.msg").value("프로필 조회 성공"))
+                .andExpect(jsonPath("$.data.username").value("freelancer1"));
+    }
+
+    @Test
+    @DisplayName("다른 사용자 프로필 조회 성공")
+    void t14_getUserProfile_success() throws Exception {
+        // GIVEN
+        Member client = memberService.findByUsername("client1").get();
+
+        // WHEN
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/members/{userId}/profile", client.getId())
+        ).andDo(print());
+
+        // THEN
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(handler().handlerType(MemberController.class))
+                .andExpect(handler().methodName("getProfile"))
+                .andExpect(jsonPath("$.resultCode").value("200-7"))
+                .andExpect(jsonPath("$.msg").value("프로필 조회 성공"))
+                .andExpect(jsonPath("$.data.username").value("client1"));
+    }
+
+    @Test
+    @DisplayName("프리랜서 프로필 수정 - 클라이언트 필드는 무시됨")
+    @WithUserDetails("freelancer1")
+    void t15_updateFreelancerProfile_with_clientFields_ignored() throws Exception {
+        // GIVEN
+        Member beforeMember = memberService.findByUsername("freelancer1").get();
+        String originalComment = beforeMember.getFreelancer().getComment();
+
+        // WHEN
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/members/me/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "comment": "프리랜서 한 줄 소개만 수정",
+                                    "companyDescription": "이 필드는 무시되어야 합니다."
+                                }
+                                """
+                        )
+        ).andDo(print());
+
+        // THEN
+        resultActions.andExpect(status().isOk());
+
+        Member afterMember = memberService.findById(beforeMember.getId());
+        assertThat(afterMember.getFreelancer().getComment()).isEqualTo("프리랜서 한 줄 소개만 수정");
+        // Verify that the original data of another member type is not affected.
+        Member clientMember = memberService.findByUsername("client1").get();
+        assertThat(clientMember.getClient().getCompanyDescription()).isNotEqualTo("이 필드는 무시되어야 합니다.");
+    }
+
+    @Test
+    @DisplayName("클라이언트 프로필 수정 - 프리랜서 필드는 무시됨")
+    @WithUserDetails("client1")
+    void t16_updateClientProfile_with_freelancerFields_ignored() throws Exception {
+        // GIVEN
+        Member beforeMember = memberService.findByUsername("client1").get();
+        String originalCompanyDescription = beforeMember.getClient().getCompanyDescription();
+
+        // WHEN
+        ResultActions resultActions = mvc.perform(
+                patch("/api/v1/members/me/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "companyDescription": "클라이언트 회사 소개만 수정",
+                                    "comment": "이 필드는 무시되어야 합니다."
+                                }
+                                """
+                        )
+        ).andDo(print());
+
+        // THEN
+        resultActions.andExpect(status().isOk());
+
+        Member afterMember = memberService.findById(beforeMember.getId());
+        assertThat(afterMember.getClient().getCompanyDescription()).isEqualTo("클라이언트 회사 소개만 수정");
+        // Verify that the original data of another member type is not affected.
+        Member freelancerMember = memberService.findByUsername("freelancer1").get();
+        assertThat(freelancerMember.getFreelancer().getComment()).isNotEqualTo("이 필드는 무시되어야 합니다.");
+    }
 }

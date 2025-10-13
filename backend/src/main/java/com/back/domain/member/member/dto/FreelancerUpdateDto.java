@@ -8,7 +8,7 @@ import java.util.Map;
 
 @Getter
 @Setter
-public class ProfileUpdateRequestDto {
+public class FreelancerUpdateDto {
     // Common Member fields
     private String name;
     private String profileImgUrl;
@@ -20,12 +20,4 @@ public class ProfileUpdateRequestDto {
     private String comment;
     private List<String> skills;
     private List<String> interests;
-
-    // Client fields
-    private String companySize;
-    private String companyDescription;
-    private String representative;
-    private String businessNo;
-    private String companyPhone;
-    private String companyEmail;
 }
