@@ -51,6 +51,28 @@ public class MemberController {
         return new ApiResponse<>("200-4", "이메일 인증이 완료되었습니다.");
     }
 
+    @GetMapping("/me")
+    public ApiResponse<ProfileResponseDto> getMyProfile(@AuthenticationPrincipal CustomUserDetails user) {
+        Member member = memberService.findById(user.getId());
+        return new ApiResponse<>("200-7", "프로필 조회 성공", ProfileResponseDto.of(member));
+    }
+
+    @GetMapping("/{userId}/profile")
+    public ApiResponse<ProfileResponseDto> getProfile(@PathVariable Long userId) {
+        Member member = memberService.findById(userId);
+        return new ApiResponse<>("200-7", "프로필 조회 성공", ProfileResponseDto.of(member));
+    }
+
+    @PatchMapping("/me/profile")
+    public ApiResponse<Void> updateMyProfile(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestBody ProfileUpdateRequestDto reqBody
+    ) {
+        Member member = memberService.findById(user.getId());
+        memberService.updateProfile(member, reqBody);
+        return new ApiResponse<>("200-8", "프로필 수정 성공");
+    }
+
     @PatchMapping("/password")
     public ApiResponse<Void> updatePassword(
             @AuthenticationPrincipal CustomUserDetails user,
@@ -84,7 +106,6 @@ public class MemberController {
         );
         return new ApiResponse<>("200-6", "임시 비밀번호가 이메일로 발송되었습니다.");
     }
-
 
 
 }

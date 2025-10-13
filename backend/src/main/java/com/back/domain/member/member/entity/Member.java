@@ -31,7 +31,7 @@ public class Member extends BaseEntity {
 
     private String email;
 
-    //private String profileImgUrl;
+    private String profileImgUrl;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -75,6 +75,14 @@ public class Member extends BaseEntity {
         this.password = password;
     }
 
+    public void updateProfileImgUrl(String profileImgUrl) {
+        this.profileImgUrl = profileImgUrl;
+    }
+
+    public void updateName(String name) {
+        this.name = name;
+    }
+  
     public boolean isActive() {
         return status == MemberStatus.ACTIVE;
     }

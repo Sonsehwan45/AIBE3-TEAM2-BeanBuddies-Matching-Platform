@@ -30,12 +30,16 @@ public class SecurityConfig {
                         .requestMatchers("/api/*/test/public").permitAll()
                         .requestMatchers("/api/*/members/join/**").permitAll()
                         .requestMatchers("/api/*/members/temp-password/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서 단건/다건 조회
+                        .requestMatchers(HttpMethod.GET, "/api/v1/members/*/profile").permitAll() // 다른 사용자 프로필 조회
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서/제안서 단건/다건 조회
 
                         //인증된 사용자만 접근 가능
                         .requestMatchers("/api/*/test/auth").authenticated()
                         .requestMatchers("/api/*/test/auth/me").authenticated()
                         .requestMatchers("/api/*/members/password-update").authenticated()
+                        .requestMatchers("/api/v1/members/me").authenticated() // 내 프로필 조회
+                        .requestMatchers("/api/v1/members/me/profile").authenticated() // 내 프로필 수정
 
 
                         //프리랜서만 접근 가능
