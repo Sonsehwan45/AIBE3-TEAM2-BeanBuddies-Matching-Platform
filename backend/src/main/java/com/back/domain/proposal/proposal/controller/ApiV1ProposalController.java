@@ -8,6 +8,8 @@ import com.back.domain.proposal.proposal.dto.ProposalWriteReqBody;
 import com.back.domain.proposal.proposal.service.ProposalService;
 import com.back.global.response.ApiResponse;
 import com.back.global.security.CustomUserDetails;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -21,16 +23,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-// 제안서 (클라이언트 -> 프리랜서) 컨트롤러
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/projects/{projectId}/proposals")
-public class ProposalController {
+@Tag(name="ApiV1ProposalController", description = "API 제안서(클라이언트 -> 프리랜서) 컨트롤러")
+public class ApiV1ProposalController {
 
     private final ProposalService proposalService;
     private final MemberService memberService;
 
     @GetMapping
+    @Operation(summary = "프로젝트에 해당하는 제안서 목록 조회")
     // NOTE : 권한 설정 및 DTO 데이터에 대한 변경 이후에 논의 필요함
     // 1. 프로젝트 작성자가 프로젝트에 해당하는 제안서를 모두 보려는 경우 -> 권한설정만 추가
     // 2. 프로젝트 상세보기에서 간략하게 제안서 목록을 보려는 경우 -> DTO 변경 필요
@@ -46,6 +49,7 @@ public class ProposalController {
     }
 
     @PostMapping
+    @Operation(summary = "프로젝트에 제안서 등록")
     public ApiResponse<ProposalDto> create(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable Long projectId,
@@ -63,6 +67,7 @@ public class ProposalController {
     }
 
     @GetMapping("/{proposalId}")
+    @Operation(summary = "프로젝트에 해당하는 특정 ID 제안서를 조회")
     public ApiResponse<ProposalDto> getProposal(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable Long projectId,
@@ -79,6 +84,7 @@ public class ProposalController {
     }
 
     @PatchMapping("/{proposalId}")
+    @Operation(summary = "프로젝트에 해당하는 특정 ID 제안서의 상태 변경")
     public ApiResponse<ProposalDto> updateState(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable Long projectId,
@@ -97,6 +103,7 @@ public class ProposalController {
     }
 
     @DeleteMapping("/{proposalId}")
+    @Operation(summary = "프로젝트에 해당하는 특정 ID 제안서 삭제")
     public ApiResponse<Void> delete(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable Long projectId,

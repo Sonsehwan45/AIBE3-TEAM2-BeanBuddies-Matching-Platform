@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
 import com.back.domain.proposal.proposal.constant.ProposalStatus;
-import com.back.domain.proposal.proposal.controller.ProposalController;
+import com.back.domain.proposal.proposal.controller.ApiV1ProposalController;
 import com.back.domain.proposal.proposal.dto.ProposalDto;
 import com.back.domain.proposal.proposal.service.ProposalService;
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 @DisplayName("제안서 (클라이언트 -> 프리랜서) 컨트롤러 테스트")
-class ProposalControllerTest {
+class ApiV1ProposalControllerTest {
 
     @Autowired
     private MockMvc mvc;
@@ -56,7 +56,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("getProposals"))
                 .andExpect(status().isOk())
 
@@ -101,7 +101,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("getProposal"))
                 .andExpect(status().isOk())
 
@@ -133,7 +133,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("getProposal"))
                 .andExpect(status().isOk());
     }
@@ -152,7 +152,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("getProposal"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-1"))
@@ -174,7 +174,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("getProposal"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.resultCode").value("403-2"))
@@ -196,7 +196,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("getProposal"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.resultCode").value("403-2"))
@@ -224,7 +224,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("create"))
                 .andExpect(status().isCreated())
 
@@ -315,7 +315,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("create"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.resultCode").value("403-1"))
@@ -343,7 +343,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("create"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-2"))
@@ -371,7 +371,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("updateState"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.resultCode").value("200"))
@@ -402,7 +402,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("updateState"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.resultCode").value("403-2"))
@@ -430,7 +430,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("updateState"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-1"))
@@ -467,7 +467,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("updateState"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.resultCode").value("400-3"))
@@ -488,7 +488,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("delete"))
                 .andExpect(status().isNoContent())
                 .andExpect(jsonPath("$.data").doesNotExist());
@@ -507,7 +507,7 @@ class ProposalControllerTest {
                 .andDo(print());
 
         resultActions
-                .andExpect(handler().handlerType(ProposalController.class))
+                .andExpect(handler().handlerType(ApiV1ProposalController.class))
                 .andExpect(handler().methodName("delete"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.resultCode").value("403-2"))
