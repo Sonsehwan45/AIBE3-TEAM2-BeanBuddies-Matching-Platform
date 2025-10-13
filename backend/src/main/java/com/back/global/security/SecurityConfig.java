@@ -32,6 +32,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/*/members/temp-password/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서 단건/다건 조회
                         .requestMatchers(HttpMethod.GET, "/api/v1/members/*/profile").permitAll() // 다른 사용자 프로필 조회
+                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서/제안서 단건/다건 조회
 
                         //인증된 사용자만 접근 가능
                         .requestMatchers("/api/*/test/auth").authenticated()
@@ -45,6 +46,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/*/test/auth/freelancer").hasRole("FREELANCER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects/*/applications").hasRole("FREELANCER") // 지원서 등록
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/projects/*/applications/**").hasRole("FREELANCER") // 지원서 삭제
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/proposals/*").hasRole("FREELANCER") // 제안서 상태 변경(수락, 거절)
 
                         //클라이언트만 접근 가능
                         .requestMatchers("/api/*/test/auth/client").hasRole("CLIENT")
@@ -52,9 +54,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/*/projects/**").hasRole("CLIENT") // 프로젝트 삭제
                         .requestMatchers(HttpMethod.PATCH, "/api/*/projects/**").hasRole("CLIENT") // 프로젝트 수정
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/applications/**").hasRole("CLIENT") // 지원서 수정 (클라이언트가 하는 기능!)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/projects/*/proposals/*").hasRole("CLIENT") // 제안서 등록
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/projects/*/proposals/*").hasRole("CLIENT") // 제안서 삭제
 
                         //관리자만 접근 가능
                         .requestMatchers("/api/*/test/auth/admin").hasRole("ADMIN")
+
+
 
                         //그 외 요청은 인증 필요없음
                         .anyRequest().permitAll()

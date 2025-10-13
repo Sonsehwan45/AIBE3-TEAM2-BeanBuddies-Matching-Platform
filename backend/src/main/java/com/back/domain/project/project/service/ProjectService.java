@@ -9,6 +9,7 @@ import com.back.domain.common.interest.service.InterestService;
 import com.back.domain.common.skill.dto.SkillDto;
 import com.back.domain.common.skill.entity.Skill;
 import com.back.domain.common.skill.service.SkillService;
+import com.back.domain.member.member.entity.Member;
 import com.back.domain.project.project.constant.ProjectStatus;
 import com.back.domain.project.project.dto.ProjectSearchDto;
 import com.back.domain.project.project.dto.ProjectSummaryDto;
@@ -18,12 +19,11 @@ import com.back.domain.project.project.entity.ProjectSkill;
 import com.back.domain.project.project.repository.ProjectInterestRepository;
 import com.back.domain.project.project.repository.ProjectRepository;
 import com.back.domain.project.project.repository.ProjectSkillRepository;
-import com.back.domain.project.project.spec.ProjectSpec;
 import com.back.global.exception.ServiceException;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -97,9 +97,10 @@ public class ProjectService {
         return projectRepository.findFirstByOrderByIdDesc();
     }
 
-    public Project findById(long id) {
+    public Project
+    findById(long id) {
         return projectRepository.findById(id).orElseThrow(
-                () -> new ServiceException("401-1", "해당 프로젝트가 존재하지 않습니다.")
+                () -> new ServiceException("404-1", "해당 프로젝트가 존재하지 않습니다.")
         );
     }
 
@@ -171,32 +172,32 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public Page<ProjectSummaryDto> search(ProjectSearchDto searchDto, Pageable pageable) {
-        Specification<Project> spec = (root, query, cb) -> cb.conjunction();
+        // QueryDSL 기반 search 호출
+        Page<Project> projects = projectRepository.searchProjects(
+                searchDto.keywordType(),
+                searchDto.keyword(),
+                searchDto.skillIds(),
+                searchDto.interestIds(),
+                searchDto.status(),
+                pageable
+        );
 
-        if (!searchDto.isEmpty()) {
-            if (searchDto.keyword() != null && !searchDto.keyword().isBlank()) {
-                spec = spec.and(ProjectSpec.hasKeyword(searchDto.keywordType(), searchDto.keyword()));
-            }
-            if (searchDto.status() != null) {
-                spec = spec.and(ProjectSpec.hasStatus(searchDto.status()));
-            }
-            if (searchDto.skillIds() != null && !searchDto.skillIds().isEmpty()) {
-                spec = spec.and(ProjectSpec.hasSkills(searchDto.skillIds()));
-            }
-            if (searchDto.interestIds() != null && !searchDto.interestIds().isEmpty()) {
-                spec = spec.and(ProjectSpec.hasInterests(searchDto.interestIds()));
-            }
-        }
-
-
-        // 조회 후 DTO 변환
-        return projectRepository.findAll(spec, pageable)
-                .map(project -> {
-                    List<SkillDto> skills = skillService.findByProjectId(project.getId());
-                    List<InterestDto> interests = interestService.findByProjectId(project.getId());
-                    return new ProjectSummaryDto(project, skills, interests);
-                });
+        // DTO 변환
+        return projects.map(project -> {
+            List<SkillDto> skills = skillService.findByProjectId(project.getId());
+            List<InterestDto> interests = interestService.findByProjectId(project.getId());
+            return new ProjectSummaryDto(project, skills, interests);
+        });
     }
 
+    @Transactional(readOnly = true)
+    public Project findByIdWithAuthor(Long id) {
+        return projectRepository.findByIdWithAuthor(id).orElseThrow(
+                () -> new EntityNotFoundException("해당 프로젝트가 존재하지 않습니다.")
+        );
+    }
 
+    public boolean isAuthor(Member member, Project project) {
+        return project.getClient().getMember().getId().equals(member.getId());
+    }
 }

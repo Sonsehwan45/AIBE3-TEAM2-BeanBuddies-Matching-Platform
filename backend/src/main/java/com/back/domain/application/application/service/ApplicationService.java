@@ -8,6 +8,8 @@ import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.project.project.entity.Project;
 import com.back.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -50,7 +52,15 @@ public class ApplicationService {
         return applicationRepository.findAllByProject(project);
     }
 
+    public Page<Application> findAllByProject(Project project, Pageable pageable) {
+        return applicationRepository.findAllByProject(project, pageable);
+    }
+
     public List<Application> findAllByFreeLancer(Freelancer freelancer) {
         return applicationRepository.findAllByFreelancer(freelancer);
+    }
+
+    public Page<Application> findAllByFreeLancer(Freelancer freelancer, Pageable pageable) {
+        return applicationRepository.findAllByFreelancer(freelancer, pageable);
     }
 }

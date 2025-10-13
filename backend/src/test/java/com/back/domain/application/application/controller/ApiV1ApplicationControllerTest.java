@@ -21,8 +21,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -239,29 +242,42 @@ class ApiV1ApplicationControllerTest {
     @DisplayName("지원서 조회 (작성자 기준)")
     @WithUserDetails(value = "freelancer1", userDetailsServiceBeanName = "customUserDetailsService")
     void t5() throws Exception {
+        int page = 0;
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/projects/1/applications/me")
+                        .param("page", String.valueOf(page))
+                        .param("size", "10")
         ).andDo(print());
 
         Member member = memberService.findByUsername("freelancer1").get();
         Freelancer freelancer = freelancerService.findById(member.getFreelancer().getId());
-        List<Application> applications = applicationService.findAllByFreeLancer(freelancer);
+        // 정렬 기준 통일
+        List<Application> applications = applicationService.findAllByFreeLancer(freelancer).stream()
+                .sorted(Comparator.comparing(Application::getCreateDate).reversed())
+                .toList();
 
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(handler().handlerType(ApiV1ApplicationController.class))
                 .andExpect(handler().methodName("getAllMe"))
                 .andExpect(jsonPath("$.resultCode").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("%d번 프리랜서의 지원서가 조회되었습니다.".formatted(freelancer.getId())));
+                .andExpect(jsonPath("$.msg").value("%d번 프리랜서의 지원서 %d 페이지가 조회되었습니다.".formatted(freelancer.getId(), page)))
+                // ✅ 페이지 기능 추가로 인해 content 내부로 접근하도록 변경
+                .andExpect(jsonPath("$.data.content").isArray());
 
         for (int i = 0; i < applications.size(); i++) {
             Application application = applications.get(i);
             resultActions
-                    .andExpect(jsonPath("$.data[" + i + "].estimatedPay").value(org.hamcrest.Matchers.closeTo(application.getEstimatedPay().doubleValue(), 0.01)))
-                    .andExpect(jsonPath("$.data[" + i + "].expectedDuration").value(application.getExpectedDuration()))
-                    .andExpect(jsonPath("$.data[" + i + "].workPlan").value(application.getWorkPlan()))
-                    .andExpect(jsonPath("$.data[" + i + "].projectId").value(application.getProject().getId()))
-                    .andExpect(jsonPath("$.data[" + i + "].freelancerName").value(application.getFreelancer().getMember().getName()));
+                    .andExpect(jsonPath("$.data.content[" + i + "].estimatedPay")
+                            .value(org.hamcrest.Matchers.closeTo(application.getEstimatedPay().doubleValue(), 0.01)))
+                    .andExpect(jsonPath("$.data.content[" + i + "].expectedDuration")
+                            .value(application.getExpectedDuration()))
+                    .andExpect(jsonPath("$.data.content[" + i + "].workPlan")
+                            .value(application.getWorkPlan()))
+                    .andExpect(jsonPath("$.data.content[" + i + "].projectId")
+                            .value(application.getProject().getId()))
+                    .andExpect(jsonPath("$.data.content[" + i + "].freelancerName")
+                            .value(application.getFreelancer().getMember().getName()));
         }
     }
 
@@ -271,6 +287,8 @@ class ApiV1ApplicationControllerTest {
     void t5_1() throws Exception {
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/projects/1/applications/me")
+                        .param("page", "0")
+                        .param("size", "10")
         ).andDo(print());
 
         resultActions
@@ -286,29 +304,115 @@ class ApiV1ApplicationControllerTest {
     void t6() throws Exception {
         long projectId = 1;
         Project project = projectService.findById(projectId);
+        int page = 0;
 
         ResultActions resultActions = mvc.perform(
                 get("/api/v1/projects/{projectId}/applications", projectId)
+                        .param("page", String.valueOf(page))
+                        .param("size", "10")
         ).andDo(print());
 
-        List<Application> applications = applicationService.findAllByProject(project);
+        List<Application> applications = applicationService.findAllByProject(project).stream()
+                .sorted(Comparator.comparing(Application::getCreateDate).reversed())
+                .toList();
 
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(handler().handlerType(ApiV1ApplicationController.class))
                 .andExpect(handler().methodName("getAll"))
                 .andExpect(jsonPath("$.resultCode").value("200-1"))
-                .andExpect(jsonPath("$.msg").value("%d번 프로젝트의 지원서가 조회되었습니다.".formatted(projectId)));
+                .andExpect(jsonPath("$.msg").value("%d번 프로젝트의 지원서 %d 페이지가 조회되었습니다.".formatted(projectId, page)))
+                // ✅ Page 응답 구조 반영
+                .andExpect(jsonPath("$.data.content").isArray());
 
         for (int i = 0; i < applications.size(); i++) {
             Application application = applications.get(i);
             resultActions
-                    .andExpect(jsonPath("$.data[" + i + "].estimatedPay").value(org.hamcrest.Matchers.closeTo(application.getEstimatedPay().doubleValue(), 0.01)))
-                    .andExpect(jsonPath("$.data[" + i + "].expectedDuration").value(application.getExpectedDuration()))
-                    .andExpect(jsonPath("$.data[" + i + "].workPlan").value(application.getWorkPlan()))
-                    .andExpect(jsonPath("$.data[" + i + "].projectId").value(application.getProject().getId()))
-                    .andExpect(jsonPath("$.data[" + i + "].freelancerName").value(application.getFreelancer().getMember().getName()));
+                    .andExpect(jsonPath("$.data.content[" + i + "].estimatedPay")
+                            .value(org.hamcrest.Matchers.closeTo(application.getEstimatedPay().doubleValue(), 0.01)))
+                    .andExpect(jsonPath("$.data.content[" + i + "].expectedDuration")
+                            .value(application.getExpectedDuration()))
+                    .andExpect(jsonPath("$.data.content[" + i + "].workPlan")
+                            .value(application.getWorkPlan()))
+                    .andExpect(jsonPath("$.data.content[" + i + "].projectId")
+                            .value(application.getProject().getId()))
+                    .andExpect(jsonPath("$.data.content[" + i + "].freelancerName")
+                            .value(application.getFreelancer().getMember().getName()));
+        }
+    }
+
+    @Test
+    @DisplayName("지원서 조회 (프로젝트 기준) - 페이지 처리 및 메타데이터 확인")
+    void t6_1() throws Exception {
+        long projectId = 1;
+        Project project = projectService.findById(projectId);
+
+        int page = 0; // 첫 페이지 (Spring은 0부터 시작)
+        int size = 2;
+
+        ResultActions resultActions = mvc.perform(
+                get("/api/v1/projects/{projectId}/applications", projectId)
+                        .param("page", String.valueOf(page))
+                        .param("size", String.valueOf(size))
+                        .param("sort", "createDate,DESC")
+        ).andDo(print());
+
+        // 실제 DB 데이터 정렬 후 비교용 리스트 준비
+        List<Application> allApplications = applicationService.findAllByProject(project).stream()
+                .sorted(Comparator.comparing(Application::getCreateDate).reversed())
+                .toList();
+
+        // 요청 페이지에 해당하는 부분만 추출
+        List<Application> pagedApplications = allApplications.stream()
+                .skip((long) page * size)
+                .limit(size)
+                .toList();
+
+        // ✅ 상태, 핸들러, 메시지 검증
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(handler().handlerType(ApiV1ApplicationController.class))
+                .andExpect(handler().methodName("getAll"))
+                .andExpect(jsonPath("$.resultCode").value("200-1"))
+                .andExpect(jsonPath("$.msg").value("%d번 프로젝트의 지원서 %d 페이지가 조회되었습니다."
+                        .formatted(projectId, page)));
+
+        // ✅ 콘텐츠 구조 검증
+        resultActions
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content.length()").value(pagedApplications.size()));
+
+        // ✅ 페이지 메타데이터 검증
+        resultActions
+                .andExpect(jsonPath("$.data.number").value(page))
+                .andExpect(jsonPath("$.data.size").value(size))
+                .andExpect(jsonPath("$.data.totalElements").value(allApplications.size()))
+                .andExpect(jsonPath("$.data.totalPages").value((int) Math.ceil((double) allApplications.size() / size)))
+                .andExpect(jsonPath("$.data.first").value(page == 0))
+                .andExpect(jsonPath("$.data.last").value((page + 1) * size >= allApplications.size()));
+
+        // ✅ 정렬 순서 검증 (createDate DESC)
+        if (pagedApplications.size() > 1) {
+            LocalDateTime firstDate = pagedApplications.get(0).getCreateDate();
+            LocalDateTime secondDate = pagedApplications.get(1).getCreateDate();
+            assertThat(firstDate).isAfterOrEqualTo(secondDate);
         }
 
+        // ✅ 데이터 일부 값 검증 (정상 매핑 확인)
+        for (int i = 0; i < pagedApplications.size(); i++) {
+            Application application = pagedApplications.get(i);
+            resultActions
+                    .andExpect(jsonPath("$.data.content[" + i + "].estimatedPay")
+                            .value(org.hamcrest.Matchers.closeTo(application.getEstimatedPay().doubleValue(), 0.01)))
+                    .andExpect(jsonPath("$.data.content[" + i + "].expectedDuration")
+                            .value(application.getExpectedDuration()))
+                    .andExpect(jsonPath("$.data.content[" + i + "].workPlan")
+                            .value(application.getWorkPlan()))
+                    .andExpect(jsonPath("$.data.content[" + i + "].projectId")
+                            .value(application.getProject().getId()))
+                    .andExpect(jsonPath("$.data.content[" + i + "].freelancerName")
+                            .value(application.getFreelancer().getMember().getName()));
+        }
     }
+
 }
