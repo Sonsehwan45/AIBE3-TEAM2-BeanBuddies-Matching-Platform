@@ -1,0 +1,41 @@
+
+import { useRoutes } from 'react-router-dom';
+import { useNavigate, type NavigateFunction } from 'react-router-dom';
+import { useEffect } from 'react';
+import routes from './config';
+
+let navigateResolver: (navigate: ReturnType<typeof useNavigate>) => void;
+
+declare global {
+  interface Window {
+    REACT_APP_NAVIGATE: ReturnType<typeof useNavigate>;
+  }
+}
+
+export const navigatePromise = new Promise<NavigateFunction>((resolve) => {
+  navigateResolver = resolve;
+});
+
+interface AppRoutesProps {
+  userType: 'client' | 'freelancer';
+  setUserType: (type: 'client' | 'freelancer') => void;
+}
+
+export function AppRoutes({ userType, setUserType }: AppRoutesProps) {
+  const navigate = useNavigate();
+  const element = useRoutes(routes.map(route => ({
+    ...route,
+    element: typeof route.element === 'function' 
+      ? route.element({ userType, setUserType })
+      : route.element
+  })));
+
+  useEffect(() => {
+    if (!window.REACT_APP_NAVIGATE) {
+      window.REACT_APP_NAVIGATE = navigate;
+      navigateResolver(navigate);
+    }
+  }, [navigate]);
+
+  return element;
+}
