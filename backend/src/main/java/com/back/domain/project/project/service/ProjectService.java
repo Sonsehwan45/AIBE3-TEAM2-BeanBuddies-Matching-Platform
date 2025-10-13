@@ -18,12 +18,10 @@ import com.back.domain.project.project.entity.ProjectSkill;
 import com.back.domain.project.project.repository.ProjectInterestRepository;
 import com.back.domain.project.project.repository.ProjectRepository;
 import com.back.domain.project.project.repository.ProjectSkillRepository;
-import com.back.domain.project.project.spec.ProjectSpec;
 import com.back.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -171,31 +169,22 @@ public class ProjectService {
 
     @Transactional(readOnly = true)
     public Page<ProjectSummaryDto> search(ProjectSearchDto searchDto, Pageable pageable) {
-        Specification<Project> spec = (root, query, cb) -> cb.conjunction();
+        // QueryDSL 기반 search 호출
+        Page<Project> projects = projectRepository.searchProjects(
+                searchDto.keywordType(),
+                searchDto.keyword(),
+                searchDto.skillIds(),
+                searchDto.interestIds(),
+                searchDto.status(),
+                pageable
+        );
 
-        if (!searchDto.isEmpty()) {
-            if (searchDto.keyword() != null && !searchDto.keyword().isBlank()) {
-                spec = spec.and(ProjectSpec.hasKeyword(searchDto.keywordType(), searchDto.keyword()));
-            }
-            if (searchDto.status() != null) {
-                spec = spec.and(ProjectSpec.hasStatus(searchDto.status()));
-            }
-            if (searchDto.skillIds() != null && !searchDto.skillIds().isEmpty()) {
-                spec = spec.and(ProjectSpec.hasSkills(searchDto.skillIds()));
-            }
-            if (searchDto.interestIds() != null && !searchDto.interestIds().isEmpty()) {
-                spec = spec.and(ProjectSpec.hasInterests(searchDto.interestIds()));
-            }
-        }
-
-
-        // 조회 후 DTO 변환
-        return projectRepository.findAll(spec, pageable)
-                .map(project -> {
-                    List<SkillDto> skills = skillService.findByProjectId(project.getId());
-                    List<InterestDto> interests = interestService.findByProjectId(project.getId());
-                    return new ProjectSummaryDto(project, skills, interests);
-                });
+        // DTO 변환
+        return projects.map(project -> {
+            List<SkillDto> skills = skillService.findByProjectId(project.getId());
+            List<InterestDto> interests = interestService.findByProjectId(project.getId());
+            return new ProjectSummaryDto(project, skills, interests);
+        });
     }
 
 

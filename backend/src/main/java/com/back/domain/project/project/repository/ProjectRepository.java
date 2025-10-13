@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface ProjectRepository extends JpaRepository<Project,Long>, JpaSpecificationExecutor<Project> {
+public interface ProjectRepository extends JpaRepository<Project,Long>, JpaSpecificationExecutor<Project>, ProjectRepositoryCustom {
     Optional<Project> findFirstByOrderByIdDesc();
 }
