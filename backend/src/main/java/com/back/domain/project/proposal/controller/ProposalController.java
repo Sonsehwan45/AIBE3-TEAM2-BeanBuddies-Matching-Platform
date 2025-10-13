@@ -31,6 +31,10 @@ public class ProposalController {
     private final MemberService memberService;
 
     @GetMapping
+    // NOTE : 권한 설정 및 DTO 데이터에 대한 변경 이후에 논의 필요함
+    // 1. 프로젝트 작성자가 프로젝트에 해당하는 제안서를 모두 보려는 경우 -> 권한설정만 추가
+    // 2. 프로젝트 상세보기에서 간략하게 제안서 목록을 보려는 경우 -> DTO 변경 필요
+    // 현재는 권한확인 없이 모두가 목록을 확인할 수 있음
     public ApiResponse<List<ProposalDto>> getProposals(@PathVariable Long projectId) {
         List<ProposalDto> proposals = proposalService.findAll(projectId);
 
