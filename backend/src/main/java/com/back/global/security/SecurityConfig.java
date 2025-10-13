@@ -37,6 +37,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/*/test/auth/me").authenticated()
                         .requestMatchers("/api/*/members/password-update").authenticated()
 
+                        //평가 생성 및 수정은 인증된 사용자만 가능
+                        .requestMatchers(HttpMethod.POST, "/api/v1/evaluations").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/evaluations").authenticated()
 
                         //프리랜서만 접근 가능
                         .requestMatchers("/api/*/test/auth/freelancer").hasRole("FREELANCER")
