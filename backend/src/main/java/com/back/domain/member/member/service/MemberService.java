@@ -3,7 +3,8 @@ package com.back.domain.member.member.service;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.member.member.constant.Role;
-import com.back.domain.member.member.dto.ProfileUpdateRequestDto;
+import com.back.domain.member.member.dto.ClientUpdateDto;
+import com.back.domain.member.member.dto.FreelancerUpdateDto;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.repository.MemberRepository;
 import com.back.global.exception.ServiceException;
@@ -70,19 +71,32 @@ public class MemberService {
     }
 
     @Transactional
-    public void updateProfile(Member member, ProfileUpdateRequestDto dto) {
+    public void updateFreelancerProfile(Member member, FreelancerUpdateDto dto) {
+        if (member.getRole() != Role.FREELANCER || member.getFreelancer() == null) {
+            throw new ServiceException("403-1", "프리랜서 회원만 프로필을 수정할 수 있습니다.");
+        }
         // Update common fields
         if (dto.getName() != null) member.updateName(dto.getName());
         if (dto.getProfileImgUrl() != null) member.updateProfileImgUrl(dto.getProfileImgUrl());
 
-        if (member.getRole() == Role.FREELANCER && member.getFreelancer() != null) {
-            Freelancer freelancer = member.getFreelancer();
-            freelancer.updateInfo(dto.getJob(), dto.getFreelancerEmail(), dto.getComment(), dto.getCareer());
-            // TODO: skills and interests update logic
-        } else if (member.getRole() == Role.CLIENT && member.getClient() != null) {
-            Client client = member.getClient();
-            client.update(dto.getCompanySize(), dto.getCompanyDescription(), dto.getRepresentative(), dto.getBusinessNo(), dto.getCompanyPhone(), dto.getCompanyEmail());
+        Freelancer freelancer = member.getFreelancer();
+        freelancer.updateInfo(dto.getJob(), dto.getFreelancerEmail(), dto.getComment(), dto.getCareer());
+        // TODO: skills and interests update logic
+
+        memberRepository.save(member);
+    }
+
+    @Transactional
+    public void updateClientProfile(Member member, ClientUpdateDto dto) {
+        if (member.getRole() != Role.CLIENT || member.getClient() == null) {
+            throw new ServiceException("403-2", "클라이언트 회원만 프로필을 수정할 수 있습니다.");
         }
+        // Update common fields
+        if (dto.getName() != null) member.updateName(dto.getName());
+        if (dto.getProfileImgUrl() != null) member.updateProfileImgUrl(dto.getProfileImgUrl());
+
+        Client client = member.getClient();
+        client.update(dto.getCompanySize(), dto.getCompanyDescription(), dto.getRepresentative(), dto.getBusinessNo(), dto.getCompanyPhone(), dto.getCompanyEmail());
 
         memberRepository.save(member);
     }

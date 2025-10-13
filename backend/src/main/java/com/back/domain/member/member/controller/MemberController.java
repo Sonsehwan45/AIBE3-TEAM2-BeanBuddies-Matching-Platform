@@ -1,16 +1,20 @@
 package com.back.domain.member.member.controller;
 
+import com.back.domain.member.member.constant.Role;
 import com.back.domain.member.member.dto.*;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.EmailService;
 import com.back.domain.member.member.service.MemberService;
 import com.back.global.response.ApiResponse;
 import com.back.global.security.CustomUserDetails;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 
 @RestController
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class MemberController {
     private final MemberService memberService;
     private final EmailService emailService;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     @PostMapping
@@ -66,10 +71,18 @@ public class MemberController {
     @PatchMapping("/me/profile")
     public ApiResponse<Void> updateMyProfile(
             @AuthenticationPrincipal CustomUserDetails user,
-            @RequestBody ProfileUpdateRequestDto reqBody
+            @RequestBody Map<String, Object> reqBody
     ) {
         Member member = memberService.findById(user.getId());
-        memberService.updateProfile(member, reqBody);
+
+        if (member.getRole() == Role.FREELANCER) {
+            FreelancerUpdateDto dto = objectMapper.convertValue(reqBody, FreelancerUpdateDto.class);
+            memberService.updateFreelancerProfile(member, dto);
+        } else if (member.getRole() == Role.CLIENT) {
+            ClientUpdateDto dto = objectMapper.convertValue(reqBody, ClientUpdateDto.class);
+            memberService.updateClientProfile(member, dto);
+        }
+
         return new ApiResponse<>("200-8", "프로필 수정 성공");
     }
 
