@@ -1,9 +1,8 @@
-package com.back.domain.project.proposal.dto;
+package com.back.domain.proposal.proposal.dto;
 
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 
 public record ProposalWriteReqBody(
         @NotNull(message = "프리랜서 ID는 필수입니다.")

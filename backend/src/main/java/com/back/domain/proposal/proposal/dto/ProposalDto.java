@@ -1,7 +1,7 @@
-package com.back.domain.project.proposal.dto;
+package com.back.domain.proposal.proposal.dto;
 
-import com.back.domain.project.proposal.constant.ProposalStatus;
-import com.back.domain.project.proposal.entity.Proposal;
+import com.back.domain.proposal.proposal.constant.ProposalStatus;
+import com.back.domain.proposal.proposal.entity.Proposal;
 
 public record ProposalDto(
         Long id,

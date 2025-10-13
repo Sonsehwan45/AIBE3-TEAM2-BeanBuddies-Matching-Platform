@@ -1,14 +1,14 @@
-package com.back.domain.project.proposal.service;
+package com.back.domain.proposal.proposal.service;
 
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.freelancer.freelancer.service.FreelancerService;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
-import com.back.domain.project.proposal.constant.ProposalStatus;
-import com.back.domain.project.proposal.dto.ProposalDto;
-import com.back.domain.project.proposal.entity.Proposal;
-import com.back.domain.project.proposal.repository.ProposalRepository;
+import com.back.domain.proposal.proposal.constant.ProposalStatus;
+import com.back.domain.proposal.proposal.dto.ProposalDto;
+import com.back.domain.proposal.proposal.entity.Proposal;
+import com.back.domain.proposal.proposal.repository.ProposalRepository;
 import com.back.global.exception.ServiceException;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;

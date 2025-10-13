@@ -1,4 +1,4 @@
-package com.back.domain.project.proposal.constant;
+package com.back.domain.proposal.proposal.constant;
 
 import java.util.Arrays;
 

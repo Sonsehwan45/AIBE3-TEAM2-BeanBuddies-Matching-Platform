@@ -1,6 +1,6 @@
-package com.back.domain.project.proposal.repository;
+package com.back.domain.proposal.proposal.repository;
 
-import com.back.domain.project.proposal.entity.Proposal;
+import com.back.domain.proposal.proposal.entity.Proposal;
 import java.util.Collection;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

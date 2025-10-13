@@ -1,11 +1,11 @@
-package com.back.domain.project.proposal.controller;
+package com.back.domain.proposal.proposal.controller;
 
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
-import com.back.domain.project.proposal.dto.ProposalDto;
-import com.back.domain.project.proposal.dto.ProposalStateUpdateReqBody;
-import com.back.domain.project.proposal.dto.ProposalWriteReqBody;
-import com.back.domain.project.proposal.service.ProposalService;
+import com.back.domain.proposal.proposal.dto.ProposalDto;
+import com.back.domain.proposal.proposal.dto.ProposalStateUpdateReqBody;
+import com.back.domain.proposal.proposal.dto.ProposalWriteReqBody;
+import com.back.domain.proposal.proposal.service.ProposalService;
 import com.back.global.response.ApiResponse;
 import com.back.global.security.CustomUserDetails;
 import jakarta.validation.Valid;

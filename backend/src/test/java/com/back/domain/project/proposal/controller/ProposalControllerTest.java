@@ -14,9 +14,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
-import com.back.domain.project.proposal.constant.ProposalStatus;
-import com.back.domain.project.proposal.dto.ProposalDto;
-import com.back.domain.project.proposal.service.ProposalService;
+import com.back.domain.proposal.proposal.constant.ProposalStatus;
+import com.back.domain.proposal.proposal.controller.ProposalController;
+import com.back.domain.proposal.proposal.dto.ProposalDto;
+import com.back.domain.proposal.proposal.service.ProposalService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
