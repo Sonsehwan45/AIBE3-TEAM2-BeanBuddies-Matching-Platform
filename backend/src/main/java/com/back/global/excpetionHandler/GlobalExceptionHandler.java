@@ -5,7 +5,9 @@ import com.back.global.response.ApiResponse;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.NoSuchElementException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -66,9 +68,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(
                 new ApiResponse<>(
                         "400-1",
-                        "잘못된 요청입니다."
+                        "잘못된 요청입니다.\n" + e.getMessage()
                 ),
                 BAD_REQUEST
         );
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(HttpMessageNotReadableException e) {
+        String message = "요청 본문 형식이 잘못되었거나 필수 값이 누락되었습니다.";
+        ApiResponse<Void> response = new ApiResponse<>("400-1", message);
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 }

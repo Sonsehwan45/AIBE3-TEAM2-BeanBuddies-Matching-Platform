@@ -19,11 +19,13 @@ import com.back.global.security.CustomUserDetails;
 import com.back.global.security.annotation.OnlyActiveMember;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/projects/{projectId}/applications")
@@ -136,19 +138,20 @@ public class ApiV1ApplicationController {
     // 우선 다른 유저가 프로젝트에 달린 지원 보기 기능으로 활용될 수 있어 인증인가 추가하지 않음
     @GetMapping
     @Transactional(readOnly = true)
-    public ApiResponse<List<ApplicationSummaryDto>> getAll(@PathVariable long projectId) {
+    public ApiResponse<Page<ApplicationSummaryDto>> getAll(
+            @PathVariable long projectId,
+            @PageableDefault(size = 5, sort = "createDate", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
         Project project = ProjectService.findById(projectId);
-        List<Application> applicationList = applicationService.findAllByProject(project);
+        Page<Application> applicationListPage = applicationService.findAllByProject(project, pageable);
 
-        // List<ApplicationDto>로 넣어주기
-        List<ApplicationSummaryDto> applicationSummaryDtoList = applicationList.stream()
-                .map(ApplicationSummaryDto::new)
-                .toList();
+        // Page<ApplicationSummaryDto로 넣어주기
+        Page<ApplicationSummaryDto> applicationSummaryDtoPage = applicationListPage.map(ApplicationSummaryDto::new);
 
         return new ApiResponse<>(
                 "200-1",
-                "%d번 프로젝트의 지원서가 조회되었습니다.".formatted(projectId),
-                applicationSummaryDtoList
+                "%d번 프로젝트의 지원서 %d 페이지가 조회되었습니다.".formatted(projectId, pageable.getPageNumber()),
+                applicationSummaryDtoPage
         );
     }
 
@@ -156,9 +159,10 @@ public class ApiV1ApplicationController {
     @GetMapping("/me") // 임시로 매핑한 상태며 RESTful 한 URI를 위해 Freelancer로 옮기거나 수정될 예정
     @Transactional(readOnly = true)
     @OnlyActiveMember
-    public ApiResponse<List<ApplicationSummaryDto>> getAllMe(
+    public ApiResponse<Page<ApplicationSummaryDto>> getAllMe(
             @PathVariable long projectId,
-            @AuthenticationPrincipal CustomUserDetails user
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PageableDefault(size = 5, sort = "createDate", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         Member member = memberService.findById(user.getId());
         Freelancer freelancer = member.getFreelancer();
@@ -166,17 +170,15 @@ public class ApiV1ApplicationController {
             throw new ServiceException("403-1", "권한이 없습니다.");
         }
 
-        List<Application> applicationList = applicationService.findAllByFreeLancer(freelancer);
+        Page<Application> applicationPage = applicationService.findAllByFreeLancer(freelancer, pageable);
 
         // List<ApplicationDto>로 넣어주기
-        List<ApplicationSummaryDto> applicationSummaryDtoList = applicationList.stream()
-                .map(ApplicationSummaryDto::new)
-                .toList();
+        Page<ApplicationSummaryDto> applicationSummaryDtoPage = applicationPage.map(ApplicationSummaryDto::new);
 
         return new ApiResponse<>(
                 "200-1",
-                "%d번 프리랜서의 지원서가 조회되었습니다.".formatted(freelancer.getId()),
-                applicationSummaryDtoList
+                "%d번 프리랜서의 지원서 %d 페이지가 조회되었습니다.".formatted(freelancer.getId(), pageable.getPageNumber()),
+                applicationSummaryDtoPage
         );
     }
 }
