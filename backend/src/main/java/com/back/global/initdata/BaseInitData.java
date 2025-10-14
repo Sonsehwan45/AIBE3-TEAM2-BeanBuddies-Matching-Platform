@@ -103,64 +103,37 @@ public class BaseInitData {
             return;
         }
 
-        List<Long> skillIds1 = List.of(1L, 2L);
-        List<Long> interestIds1 = List.of(1L, 2L);
-
-        List<Long> skillIds2 = List.of(2L, 3L);
-        List<Long> interestIds2 = List.of(2L, 3L);
-
-        List<Long> skillIds3 = List.of(1L, 2L, 3L);
-        List<Long> interestIds3 = List.of(1L, 2L, 3L);
+        // skill, interest id 목록
+        List<Long> allSkillIds = List.of(1L, 2L, 3L);
+        List<Long> allInterestIds = List.of(1L, 2L, 3L);
 
         Member clientMember1 = memberService.findByUsername("client1").get();
         Client client1 = clientService.findById(clientMember1.getId());
-        Member clientMember2 = memberService.findByUsername("client2").get();
-        Client client2 = clientService.findById(clientMember2.getId());
+        Member clientMember3 = memberService.findByUsername("client3").get();
+        Client client3 = clientService.findById(clientMember3.getId());
 
-        projectService.create(
-                client1,
-                "테스트 프로젝트 1",
-                "테스트 요약 1",
-                BigDecimal.valueOf(1_000_000),
-                "우대 조건 1",
-                "급여 조건 1",
-                "업무 조건 1",
-                "1개월",
-                "상세 설명 1",
-                LocalDateTime.now().plusMonths(1),
-                skillIds1,
-                interestIds1
-        );
+        for (int i = 1; i <= 25; i++) {
+            Client client = (i % 2 == 1) ? client1 : client3;
 
-        projectService.create(
-                client1,
-                "테스트 프로젝트 2",
-                "테스트 요약 2",
-                BigDecimal.valueOf(2_000_000),
-                "우대 조건 2",
-                "급여 조건 2",
-                "업무 조건 2",
-                "2개월",
-                "상세 설명 2",
-                LocalDateTime.now().plusMonths(2),
-                skillIds2,
-                interestIds2
-        );
+            // skill, interest 조합을 다양하게 생성
+            List<Long> skillIds = allSkillIds.subList(0, (i % 3) + 1); // 1~3개
+            List<Long> interestIds = allInterestIds.subList(0, ((i + 1) % 3) + 1); // 1~3개
 
-        projectService.create(
-                client1,
-                "테스트 프로젝트 3",
-                "테스트 요약 3",
-                BigDecimal.valueOf(3_000_000),
-                "우대 조건 3",
-                "급여 조건 3",
-                "업무 조건 3",
-                "3개월",
-                "상세 설명 3",
-                LocalDateTime.now().plusMonths(3),
-                skillIds3,
-                interestIds3
-        );
+            projectService.create(
+                    client,
+                    "테스트 프로젝트 " + i,
+                    "테스트 요약 " + i,
+                    BigDecimal.valueOf(1_000_000L * i),
+                    "우대 조건 " + i,
+                    "급여 조건 " + i,
+                    "업무 조건 " + i,
+                    i + "개월",
+                    "상세 설명 " + i,
+                    LocalDateTime.now().plusMonths(i),
+                    skillIds,
+                    interestIds
+            );
+        }
     }
 
     @Transactional
