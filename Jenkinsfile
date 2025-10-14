@@ -86,7 +86,7 @@ pipeline {
                     string(credentialsId: 'mail-password', variable: 'MAIL_PASSWORD_SECRET')
                 ]) {
                     sshagent(['yhcho-ssh']) {
-                        sh '''
+                        sh '''#!/bin/bash
                             ssh -o StrictHostKeyChecking=no yhcho@192.168.50.35 " \
                                 docker stop ${APP_NAME} || true && docker rm ${APP_NAME} || true && \
                                 docker pull ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER} && \
