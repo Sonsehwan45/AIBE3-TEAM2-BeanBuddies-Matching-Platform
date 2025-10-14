@@ -34,4 +34,8 @@ public class InterestService {
     public List<Interest> findAllById(List<Long> interestsId) {
         return interestRepository.findAllById(interestsId);
     }
+
+    public List<Interest> findAll() {
+        return interestRepository.findAll();
+    }
 }

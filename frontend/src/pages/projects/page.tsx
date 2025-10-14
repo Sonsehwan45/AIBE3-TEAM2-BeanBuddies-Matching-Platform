@@ -323,6 +323,14 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
             )}
           </>
         )}
+        <div className="pt-6 flex justify-end">
+          <Link
+            to="/projects/create"
+            className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition"
+          >
+            프로젝트 등록
+          </Link>
+        </div>
       </div>
     </div>
   );
