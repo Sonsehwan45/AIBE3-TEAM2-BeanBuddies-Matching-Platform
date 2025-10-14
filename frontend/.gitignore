@@ -39,5 +39,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-src\global\backend\apiV1\schema.d.ts
 /src/global/backend/apiV1/schema.d.ts
