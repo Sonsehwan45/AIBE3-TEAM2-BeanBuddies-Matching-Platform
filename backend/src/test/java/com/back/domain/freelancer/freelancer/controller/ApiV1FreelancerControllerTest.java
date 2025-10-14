@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@DisplayName("프리랜서 컨트롤러 테스트")
 class ApiV1FreelancerControllerTest {
 
     @Autowired

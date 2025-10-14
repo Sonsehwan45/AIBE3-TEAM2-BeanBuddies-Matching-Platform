@@ -229,20 +229,26 @@ public class BaseInitData {
 
     @Transactional
     public void updateFreelancerInfo() {
-        freelancerService.updateFreelancer(4L, "백엔드", "test@test.com", "안녕하세요",
+        Long freelancerId1 = memberService.findByUsername("freelancer1").get().getFreelancer().getId();
+        Long freelancerId2 = memberService.findByUsername("freelancer2").get().getFreelancer().getId();
+        Long freelancerId3 = memberService.findByUsername("freelancer3").get().getFreelancer().getId();
+        Long freelancerId4 = memberService.findByUsername("freelancer4").get().getFreelancer().getId();
+        Long freelancerId5 = memberService.findByUsername("freelancer5").get().getFreelancer().getId();
+
+        freelancerService.updateFreelancer(freelancerId1, "백엔드", "test@test.com", "안녕하세요",
                 Map.of("Spring", 24, "JPA", 30), List.of(1L, 2L));
 
-        freelancerService.updateFreelancer(5L, "백엔드", "test@test.com", "안녕하세요",
+        freelancerService.updateFreelancer(freelancerId2, "백엔드", "test@test.com", "안녕하세요",
                 Map.of("Python", 10), List.of(1L, 2L));
 
-        freelancerService.updateFreelancer(6L, "풀스택", "test@test.com", "안녕하세요",
+        freelancerService.updateFreelancer(freelancerId3, "풀스택", "test@test.com", "안녕하세요",
                 Map.of("스프링", 24, "리액트", 48), List.of(1L, 2L, 3L));
 
-        freelancerService.updateFreelancer(7L, "프론트엔드", "test@test.com", "안녕하세요",
+        freelancerService.updateFreelancer(freelancerId4, "프론트엔드", "test@test.com", "안녕하세요",
                 Map.of("React", 100, "Next.js", 30), List.of(3L));
 
-        freelancerService.updateFreelancer(8L, "프론트엔드", "test@test.com", "안녕하세요",
-                null, null);
+        freelancerService.updateFreelancer(freelancerId5, "프론트엔드", "test@test.com", "안녕하세요",
+                null, List.of());
     }
 }
 

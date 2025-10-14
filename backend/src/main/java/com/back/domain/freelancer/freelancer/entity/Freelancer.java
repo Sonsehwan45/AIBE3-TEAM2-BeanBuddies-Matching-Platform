@@ -1,5 +1,6 @@
 package com.back.domain.freelancer.freelancer.entity;
 
+import com.back.domain.common.skill.entity.Skill;
 import com.back.domain.freelancer.join.entity.FreelancerInterest;
 import com.back.domain.freelancer.join.entity.FreelancerSkill;
 import com.back.domain.member.member.entity.Member;
@@ -81,5 +82,10 @@ public class Freelancer {
             return;
         }
         this.careerTotalYears = career.values().stream().mapToInt(Integer::intValue).sum() / 12;
+    }
+
+    public void updateSkills(List<Skill> newSkills) {
+        skills.clear();
+        newSkills.forEach(skill -> skills.add(new FreelancerSkill(this, skill)));
     }
 }
