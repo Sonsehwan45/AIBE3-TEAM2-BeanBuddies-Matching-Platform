@@ -34,7 +34,7 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
   const [totalElements, setTotalElements] = useState(0);
 
   const keywordTypeOptions = [
-    { value: "", label: "검색 필터" },
+    { value: "all", label: "검색 필터" },
     { value: "title", label: "제목" },
     { value: "summary", label: "요약" },
     { value: "description", label: "설명" },
