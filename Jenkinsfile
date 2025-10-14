@@ -36,11 +36,13 @@ pipeline {
             steps {
                 dir('backend') {
                     sh 'chmod +x gradlew'
-                    // PR일 경우 테스트를 포함하여 빌드하고, main 브랜치일 경우 테스트를 제외하고 빌드합니다.
-                    if (env.CHANGE_ID) {
-                        sh './gradlew clean build'
-                    } else {
-                        sh './gradlew clean build -x test'
+                    // main 브랜치가 아닐 경우 테스트를 포함하여 빌드하고, main 브랜치일 경우 테스트를 제외하고 빌드합니다.
+                    script {
+                        if (env.BRANCH_NAME != 'main') {
+                            sh './gradlew clean build'
+                        } else {
+                            sh './gradlew clean build -x test'
+                        }
                     }
                 }
             }
