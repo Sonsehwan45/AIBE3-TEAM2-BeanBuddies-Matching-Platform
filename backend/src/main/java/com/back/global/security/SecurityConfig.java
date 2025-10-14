@@ -25,17 +25,27 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                // REST API용 Security 기본 기능 비활성화
+                .csrf(AbstractHttpConfigurer::disable) // csrf 보호기능 비활성화
+                .formLogin(AbstractHttpConfigurer::disable) // 기본 로그인 폼 비활성
+                .logout(AbstractHttpConfigurer::disable) // 로그아웃 기능 비활성화
+                .httpBasic(AbstractHttpConfigurer::disable) // HTTP Basic 인증 비활성화
+                .sessionManagement(AbstractHttpConfigurer::disable) // 세션 관리 비활성화
+
+                //jwt 인증 필터 추가
+                .addFilterAfter(jwtAuthenticationFilter, org.springframework.web.filter.CorsFilter.class)
+
                 //요청에 대한 권한 설정
                 .authorizeHttpRequests(auth -> auth
                         // Preflight-Request(OPTIONS) 허용
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         //누구나 접근 가능
+                        .requestMatchers("/api/*/auth/**").permitAll()
                         .requestMatchers("/api/*/test/public").permitAll()
                         .requestMatchers("/api/*/members/join/**").permitAll()
                         .requestMatchers("/api/*/members/temp-password/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서 단건/다건 조회
                         .requestMatchers(HttpMethod.GET, "/api/v1/members/*/profile").permitAll() // 다른 사용자 프로필 조회
-                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서/제안서 단건/다건 조회
 
                         //인증된 사용자만 접근 가능
                         .requestMatchers("/api/*/test/auth").authenticated()
@@ -67,21 +77,9 @@ public class SecurityConfig {
                         //관리자만 접근 가능
                         .requestMatchers("/api/*/test/auth/admin").hasRole("ADMIN")
 
-
-
-                        //그 외 요청은 인증 필요없음
-                        .anyRequest().permitAll()
+                        //그 외 요청은 인증 필요
+                        .anyRequest().authenticated()
                 )
-
-                // REST API용 Security 기본 기능 비활성화
-                .csrf(AbstractHttpConfigurer::disable) // csrf 보호기능 비활성화
-                .formLogin(AbstractHttpConfigurer::disable) // 기본 로그인 폼 비활성
-                .logout(AbstractHttpConfigurer::disable) // 로그아웃 기능 비활성화
-                .httpBasic(AbstractHttpConfigurer::disable) // HTTP Basic 인증 비활성화
-                .sessionManagement(AbstractHttpConfigurer::disable) // 세션 관리 비활성화
-
-                //jwt 인증 필터 추가
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
 
                 //인증/인가 예외 처리
                 .exceptionHandling(
@@ -128,7 +126,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         //cors 설정
-        configuration.setAllowedOrigins(List.of("*")); // 모든 출처(origin) 허용
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "https://*.yhcho.com")); // 허용할 출처(origin) 패턴
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")); // 허용할 메서드
         configuration.setAllowCredentials(true); //인증 정보를 포함한 요청(쿠키, 헤더) 허용 여부
         configuration.addExposedHeader("Authorization"); // 프론트에서 Header 읽기 설정
