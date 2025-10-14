@@ -1,5 +1,6 @@
 package com.back.domain.freelancer.freelancer.entity;
 
+import com.back.domain.common.skill.entity.Skill;
 import com.back.domain.freelancer.join.entity.FreelancerInterest;
 import com.back.domain.freelancer.join.entity.FreelancerSkill;
 import com.back.domain.member.member.entity.Member;
@@ -83,6 +84,10 @@ public class Freelancer {
         this.careerTotalYears = career.values().stream().mapToInt(Integer::intValue).sum() / 12;
     }
 
+    public void updateSkills(List<Skill> newSkills) {
+        skills.clear();
+        newSkills.forEach(skill -> skills.add(new FreelancerSkill(this, skill)));
+  
     //이미 계산된 평가 평균을 소수점 첫째 자리까지 반올림하기 위한 메서드
     public void updateRatingAvg(double ratingAvg) {
         this.ratingAvg = Math.round(ratingAvg * 10.0) / 10.0;
