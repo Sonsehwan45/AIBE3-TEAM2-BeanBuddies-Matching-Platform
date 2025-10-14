@@ -11,6 +11,7 @@ import Freelancers from "../pages/freelancers/page";
 import Home from "../pages/home/page";
 import MyPage from "../pages/mypage/page";
 import ProjectApply from "../pages/projects/[id]/apply/page";
+import ProjectsEditPage from "../pages/projects/[id]/edit/page";
 import ProjectDetail from "../pages/projects/[id]/page";
 import ProjectCreate from "../pages/projects/create/page";
 import Projects from "../pages/projects/page";
@@ -94,6 +95,10 @@ const routes: RouteObject[] = [
   {
     path: "/test/my-info",
     element: <MyInfo />, // 로그인 토큰 테스트 페이지
+  },
+  {
+    path: "/projects/:id/edit",
+    element: <ProjectsEditPage />,
   },
   {
     path: "*",

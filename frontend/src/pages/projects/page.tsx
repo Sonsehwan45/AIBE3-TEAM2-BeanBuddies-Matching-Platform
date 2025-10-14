@@ -34,7 +34,7 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
   const [totalElements, setTotalElements] = useState(0);
 
   const keywordTypeOptions = [
-    { value: "", label: "검색 필터" },
+    { value: "all", label: "검색 필터" },
     { value: "title", label: "제목" },
     { value: "summary", label: "요약" },
     { value: "description", label: "설명" },
@@ -317,7 +317,7 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
               <p className="text-gray-600">
                 총{" "}
                 <span className="font-semibold text-indigo-600">
-                  {filteredProjects.length}
+                  {totalElements}
                 </span>{" "}
                 개의 프로젝트
                 {keyword && (

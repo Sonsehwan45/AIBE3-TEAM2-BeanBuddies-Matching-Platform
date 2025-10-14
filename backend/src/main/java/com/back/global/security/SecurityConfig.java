@@ -41,6 +41,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/members/me").authenticated() // 내 프로필 조회
                         .requestMatchers("/api/v1/members/me/profile").authenticated() // 내 프로필 수정
 
+                        //평가 생성 및 수정은 인증된 사용자만 가능
+                        .requestMatchers(HttpMethod.POST, "/api/v1/evaluations").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/evaluations").authenticated()
 
                         //프리랜서만 접근 가능
                         .requestMatchers("/api/*/test/auth/freelancer").hasRole("FREELANCER")

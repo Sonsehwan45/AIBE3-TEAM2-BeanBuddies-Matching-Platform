@@ -23,7 +23,7 @@ public class ProfileResponseDto {
     private LocalDateTime createdAt;
     private String profileImgUrl;
 
-    private float ratingAvg;
+    private double ratingAvg;
 
     // Freelancer fields
     private String job;

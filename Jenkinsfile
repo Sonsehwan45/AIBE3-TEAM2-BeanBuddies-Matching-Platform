@@ -11,40 +11,63 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // GitHub 저장소에서 코드를 가져옵니다.
-                git branch: 'main', url: 'https://github.com/prgrms-aibe-devcourse/AIBE3-TEAM2-BeanBuddies-MatchingPlatform'
+                // 체크아웃
+                checkout scm
             }
         }
 
-        stage('Build') {
+        stage('Build Frontend') {
             steps {
-                // Gradle 실행 권한을 부여하고, clean build를 통해 빌드 및 테스트를 수행합니다.
+                dir('frontend') {
+                    sh 'npm install'
+                    sh 'npm run build'
+                }
+            }
+        }
+
+        stage('Copy Frontend to Backend') {
+            steps {
+                sh 'mkdir -p backend/src/main/resources/static'
+                sh 'cp -r frontend/out/* backend/src/main/resources/static/'
+            }
+        }
+
+        stage('Build & Test') {
+            steps {
                 dir('backend') {
                     sh 'chmod +x gradlew'
-                    sh './gradlew clean'
-                    sh './gradlew build -x test'
+                    // main 브랜치가 아닐 경우 테스트를 포함하여 빌드하고, main 브랜치일 경우 테스트를 제외하고 빌드합니다.
+                    script {
+                        if (env.BRANCH_NAME != 'main') {
+                            sh './gradlew clean build'
+                        } else {
+                            sh './gradlew clean build -x test'
+                        }
+                    }
                 }
             }
         }
 
         stage('Build & Push Docker Image') {
+            // main 브랜치에 푸시될 때만 실행
+            when {
+                branch 'main'
+            }
             steps {
                 script {
-                    // Dockerfile을 사용하여 이미지를 빌드합니다. (Dockerfile은 backend 폴더 내에 위치해야 함)
                     def appImage = docker.build("${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER}", './backend')
-
-                    // Jenkins Credentials에 등록한 Docker Hub 인증 정보를 사용하여 로그인합니다.
                     docker.withRegistry('https://registry.hub.docker.com', 'yhcho-dockerhub') {
-                        // 빌드한 이미지를 Docker Hub에 Push 합니다.
                         appImage.push()
                     }
                 }
             }
         }
 
-        // Jenkinsfile (Deploy stage 수정)
-
         stage('Deploy') {
+            // main 브랜치에 푸시될 때만 실행
+            when {
+                branch 'main'
+            }
             steps {
                 withCredentials([
                     string(credentialsId: 'your-db-host', variable: 'DB_URL_SECRET'),
@@ -59,8 +82,7 @@ pipeline {
                     string(credentialsId: 'mail-password', variable: 'MAIL_PASSWORD_SECRET')
                 ]) {
                     sshagent(['yhcho-ssh']) {
-                        // Here Document(<<EOF) 대신 모든 명령어를 && 로 연결하여 하나의 명령어로 실행
-                        sh """
+                        sh '''
                             ssh -o StrictHostKeyChecking=no yhcho@192.168.50.35 " \
                                 docker stop ${APP_NAME} || true && docker rm ${APP_NAME} || true && \
                                 docker pull ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER} && \
@@ -84,7 +106,7 @@ pipeline {
                                     -e SPRING_MAIL_PASSWORD=${MAIL_PASSWORD_SECRET} \
                                     ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER}
                             "
-                        """
+                        '''
                     }
                 }
             }
