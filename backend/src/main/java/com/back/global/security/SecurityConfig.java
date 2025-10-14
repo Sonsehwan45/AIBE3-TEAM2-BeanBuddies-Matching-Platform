@@ -24,6 +24,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 //요청에 대한 권한 설정
                 .authorizeHttpRequests(auth -> auth
                         //누구나 접근 가능
