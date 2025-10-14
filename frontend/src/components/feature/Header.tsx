@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Button from '../base/Button';
+import { useAuth } from '@/context/AuthContext';
 
 interface HeaderProps {
   userType?: 'client' | 'freelancer' | null;
@@ -11,6 +12,7 @@ interface HeaderProps {
 export default function Header({ userType, onUserTypeChange }: HeaderProps) {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, token, setUser, setToken } = useAuth(); // 로그인 상태 확인
 
   const navigation = [
     { name: '홈', href: '/' },
@@ -18,6 +20,14 @@ export default function Header({ userType, onUserTypeChange }: HeaderProps) {
     { name: '프리랜서 찾기', href: '/freelancers' },
     { name: '맞춤 추천', href: '/recommendations' }
   ];
+
+  //서버 로그아웃이랑 연동해야함
+  const handleLogout = () => {
+    setToken(null);
+    setUser(null);
+  };
+
+  const role = user?.role.toLowerCase() as 'client' | 'freelancer' | undefined;
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200">
@@ -47,46 +57,62 @@ export default function Header({ userType, onUserTypeChange }: HeaderProps) {
             ))}
           </nav>
 
-          {/* 사용자 타입 토글 및 로그인 */}
+         {/* 사용자 정보 / 로그인 상태 */}
           <div className="flex items-center space-x-4">
-            {onUserTypeChange && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">역할:</span>
-                <div className="flex bg-gray-100 rounded-full p-1">
-                  <button
-                    onClick={() => onUserTypeChange('client')}
-                    className={`px-3 py-1 rounded-full text-xs whitespace-nowrap cursor-pointer transition-colors ${
-                      userType === 'client'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    클라이언트
-                  </button>
-                  <button
-                    onClick={() => onUserTypeChange('freelancer')}
-                    className={`px-3 py-1 rounded-full text-xs whitespace-nowrap cursor-pointer transition-colors ${
-                      userType === 'freelancer'
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    프리랜서
-                  </button>
-                </div>
-              </div>
+            {/* 로그인 되어 있으면 */}
+            {token && user ? (
+              <>
+                {onUserTypeChange && role && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">역할:</span>
+                    <div className="flex bg-gray-100 rounded-full p-1">
+                      <button
+                        onClick={() => onUserTypeChange('client')}
+                        className={`px-3 py-1 rounded-full text-xs whitespace-nowrap cursor-pointer transition-colors ${
+                          role === 'client'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        클라이언트
+                      </button>
+                      <button
+                        onClick={() => onUserTypeChange('freelancer')}
+                        className={`px-3 py-1 rounded-full text-xs whitespace-nowrap cursor-pointer transition-colors ${
+                          role === 'freelancer'
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-600 hover:text-gray-900'
+                        }`}
+                      >
+                        프리랜서
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <span className="text-sm text-gray-700">
+                  환영합니다, {user.name}님 ({role})
+                </span>
+
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  로그아웃
+                </Button>
+
+                <Link to="/mypage">
+                  <Button variant="secondary" size="sm">
+                    마이페이지
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="outline" size="sm">로그인</Button>
+                </Link>
+                <Link to="/signup">
+                  <Button size="sm">회원가입</Button>
+                </Link>
+              </>
             )}
-            
-            <Link to="/mypage">
-              <Button variant="secondary" size="sm">마이페이지</Button>
-            </Link>
-            
-            <Link to="/login">
-              <Button variant="outline" size="sm">로그인</Button>
-            </Link>
-            <Link to="/signup">
-              <Button size="sm">회원가입</Button>
-            </Link>
 
             {/* 모바일 메뉴 버튼 */}
             <button
