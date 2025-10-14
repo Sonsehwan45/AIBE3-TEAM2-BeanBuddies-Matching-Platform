@@ -2,11 +2,14 @@ import createClient from "openapi-fetch/dist/index.cjs";
 
 import type { paths } from "./apiV1/schema";
 
-// const NEXT_PUBLIC_API_BASE_URL = "http://localhost:8080"; // 이 줄이 문제의 원인이었습니다.
+// Vite의 내장 환경 변수를 사용하여 개발/프로덕션 모드를 감지합니다.
+// 개발 모드(npm run dev)에서는 `import.meta.env.DEV`가 true가 됩니다.
+const baseUrl = import.meta.env.DEV
+  ? 'http://localhost:8080' // 개발 환경일 때 사용할 백엔드 주소
+  : 'https://beanbuddies.yhcho.com'; // 빌드하여 배포할 때 사용할 백엔드 주소
 
 export const client = createClient<paths>({
-  // .env 파일에 설정된 NEXT_PUBLIC_API_BASE_URL 값을 사용하도록 변경합니다.
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
+  baseUrl: baseUrl,
   credentials: "include",
 });
 
