@@ -8,6 +8,10 @@ pipeline {
         APP_NAME = 'beanbuddies-matching-platform'
     }
 
+    tools {
+        nodejs 'NodeJS-24'
+    }
+
     stages {
         stage('Checkout') {
             steps {
