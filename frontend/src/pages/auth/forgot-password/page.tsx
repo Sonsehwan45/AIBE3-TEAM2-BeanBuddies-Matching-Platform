@@ -52,7 +52,6 @@ export default function ForgotPassword() {
         setFormErrors(Array.isArray(msg) ? msg : [msg]);
       }
     } catch (err) {
-      console.error(err);
       toast.error("서버 오류가 발생했습니다.");
     }
   };
@@ -81,7 +80,6 @@ export default function ForgotPassword() {
         setFormErrors(Array.isArray(msg) ? msg : [msg]);
       }
     } catch (err) {
-      console.error(err);
       toast.error("서버 오류가 발생했습니다.");
     }
   };

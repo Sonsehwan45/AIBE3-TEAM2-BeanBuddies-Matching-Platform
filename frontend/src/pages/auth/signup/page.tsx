@@ -92,7 +92,6 @@ export default function Signup() {
         setEmailErrors(messages.filter(Boolean));
       }
     } catch (err) {
-      console.error(err);
       toast.error("서버 오류가 발생했습니다.");
     }
   };
@@ -325,7 +324,7 @@ export default function Signup() {
               type="password"
               value={formData.password}
               onChange={(e) => handleInputChange("password", e.target.value)}
-              placeholder="4자 이상의 비밀번호"
+              placeholder="4자 이상의 비밀번호를 입력하세요"
               required
             />
 
