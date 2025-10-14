@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../../components/base/Button";
@@ -5,11 +6,8 @@ import Input from "../../components/base/Input";
 import Select from "../../components/base/Select";
 import client from "../../global/backend/client";
 
-interface ProjectsProps {
-  userType?: "client" | "freelancer";
-}
-
-export default function Projects({ userType = "freelancer" }: ProjectsProps) {
+export default function Projects() {
+  const { user, isLoggedIn } = useAuth();
   const [keyword, setKeyword] = useState("");
   const [keywordType, setKeywordType] = useState("");
   const [sortBy, setSortBy] = useState("latest");
@@ -151,10 +149,10 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
         <button
           onClick={() => fetchProjects(currentPage - 1)}
           disabled={currentPage === 0}
-          className={`px-4 py-2 rounded-lg ${
+          className={`px-4 py-2 rounded-lg shadow-md ${
             currentPage === 0
               ? "bg-gray-100 text-gray-400"
-              : "bg-white text-gray-700 hover:bg-gray-50"
+              : "bg-white text-gray-700 hover:bg-gray-50 hover:shadow-lg transition-shadow"
           }`}
         >
           <i className="ri-arrow-left-s-line"></i>
@@ -164,7 +162,7 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
           <button
             key={page}
             onClick={() => fetchProjects(page)}
-            className={`px-4 py-2 rounded-lg ${
+            className={`px-4 py-2 rounded-lg shadow-md hover:shadow-lg transition-shadow ${
               currentPage === page
                 ? "bg-indigo-600 text-white"
                 : "bg-white text-gray-700 hover:bg-gray-50"
@@ -177,10 +175,10 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
         <button
           onClick={() => fetchProjects(currentPage + 1)}
           disabled={currentPage === totalPages - 1}
-          className={`px-4 py-2 rounded-lg ${
+          className={`px-4 py-2 rounded-lg shadow-md ${
             currentPage === totalPages - 1
               ? "bg-gray-100 text-gray-400"
-              : "bg-white text-gray-700 hover:bg-gray-50"
+              : "bg-white text-gray-700 hover:bg-gray-50 hover:shadow-lg transition-shadow"
           }`}
         >
           <i className="ri-arrow-right-s-line"></i>
@@ -493,14 +491,17 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
             )}
           </>
         )}
-        <div className="pt-6 flex justify-end">
-          <Link
-            to="/projects/create"
-            className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition"
-          >
-            프로젝트 등록
-          </Link>
-        </div>
+
+        {isLoggedIn && user?.role === "CLIENT" && (
+          <div className="pt-6 flex justify-end">
+            <Link
+              to="/projects/create"
+              className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition"
+            >
+              프로젝트 등록
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

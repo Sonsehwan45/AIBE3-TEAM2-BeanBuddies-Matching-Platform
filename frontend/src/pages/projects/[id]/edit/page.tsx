@@ -165,7 +165,7 @@ export default function ProjectsEditPage() {
       // PATCH 요청으로 변경
       const response = await client.PATCH(`/api/v1/projects/${id}`, {
         headers: {
-          Authorization: `Bearer ${token}`, // ✅ 토큰 포함
+          Authorization: `Bearer ${token}`,
         },
         body,
       });
