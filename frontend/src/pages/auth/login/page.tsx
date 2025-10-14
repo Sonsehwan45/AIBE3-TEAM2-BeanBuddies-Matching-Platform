@@ -1,28 +1,48 @@
-
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import Button from '../../../components/base/Button';
-import Input from '../../../components/base/Input';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import Button from "../../../components/base/Button";
+import Input from "../../../components/base/Input";
+import { client } from "../../../lib/backend/client";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Login() {
+  const navigate = useNavigate();
+  const { setToken, setUser } = useAuth();
+
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    username: "",
+    password: "",
   });
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('로그인 데이터:', formData);
-    alert('로그인 되었습니다!');
-  };
 
-  const handleSocialLogin = (provider: string) => {
-    console.log(`${provider} 소셜 로그인`);
-    alert(`${provider} 로그인이 시작됩니다.`);
+    const res = await client.POST("/api/v1/auth/login", {
+      body: {
+        username: formData.username,
+        password: formData.password,
+      },
+      throwHttpErrors: false,
+    });
+
+    console.log("로그인 응답:", res);
+
+    const token = res.response.headers.get("Authorization");
+    const userData = res.data?.data;
+
+    if (token && userData) {
+      setToken(token.replace("Bearer ", ""));
+      setUser(userData);
+
+      alert(res.data?.msg);
+      navigate("/", { replace: true });
+    } else {
+      alert(res.data?.msg);
+    }
   };
 
   return (
@@ -38,30 +58,40 @@ export default function Login() {
         <div className="bg-white py-8 px-4 shadow-lg sm:rounded-lg sm:px-10">
           <form onSubmit={handleSubmit} className="space-y-6">
             <Input
-              label="이메일"
-              type="email"
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              placeholder="example@email.com"
+              name="username"
+              label="아이디"
+              type="text"
+              placeholder="아이디를 입력하세요"
+              value={formData.username}
+              onChange={(e) => handleInputChange("username", e.target.value)}
               required
             />
 
             <Input
+              name="password"
               label="비밀번호"
               type="password"
-              value={formData.password}
-              onChange={(e) => handleInputChange('password', e.target.value)}
               placeholder="비밀번호를 입력하세요"
+              value={formData.password}
+              onChange={(e) => handleInputChange("password", e.target.value)}
               required
             />
 
             <div className="flex items-center justify-between">
               <label className="flex items-center cursor-pointer">
-                <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                <span className="ml-2 text-sm text-gray-600">로그인 상태 유지</span>
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-600">
+                  로그인 상태 유지
+                </span>
               </label>
-              
-              <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-500 cursor-pointer">
+
+              <Link
+                to="/forgot-password"
+                className="text-sm text-blue-600 hover:text-blue-500 cursor-pointer"
+              >
                 비밀번호 찾기
               </Link>
             </div>
@@ -82,24 +112,27 @@ export default function Login() {
             </div>
 
             <div className="mt-6 grid grid-cols-3 gap-3">
-              <button 
-                onClick={() => handleSocialLogin('Google')}
+              <button
+                type="button"
+                onClick={() => handleSocialLogin("Google")}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-google-fill text-red-500 text-lg"></i>
                 <span className="ml-2">Google</span>
               </button>
-              
-              <button 
-                onClick={() => handleSocialLogin('Kakao')}
+
+              <button
+                type="button"
+                onClick={() => handleSocialLogin("Kakao")}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-kakao-talk-fill text-yellow-500 text-lg"></i>
                 <span className="ml-2">Kakao</span>
               </button>
 
-              <button 
-                onClick={() => handleSocialLogin('Naver')}
+              <button
+                type="button"
+                onClick={() => handleSocialLogin("Naver")}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
               >
                 <i className="ri-naver-fill text-green-500 text-lg"></i>
@@ -110,8 +143,11 @@ export default function Login() {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              계정이 없으신가요?{' '}
-              <Link to="/signup" className="text-blue-600 hover:text-blue-500 cursor-pointer">
+              계정이 없으신가요?{" "}
+              <Link
+                to="/signup"
+                className="text-blue-600 hover:text-blue-500 cursor-pointer"
+              >
                 회원가입하기
               </Link>
             </p>
