@@ -15,6 +15,8 @@ import ProjectDetail from "../pages/projects/[id]/page";
 import ProjectCreate from "../pages/projects/create/page";
 import Projects from "../pages/projects/page";
 import Recommendations from "../pages/recommendations/page";
+//테스트 용 페이지
+import MyInfo from "../pages/test/page";
 
 interface RouteProps {
   userType?: "client" | "freelancer";
@@ -87,6 +89,11 @@ const routes: RouteObject[] = [
   {
     path: "/projects/create",
     element: <ProjectCreate />,
+  },
+  //테스트 용 페이지
+  {
+    path: "/test/my-info",
+    element: <MyInfo />, // 로그인 토큰 테스트 페이지
   },
   {
     path: "*",
