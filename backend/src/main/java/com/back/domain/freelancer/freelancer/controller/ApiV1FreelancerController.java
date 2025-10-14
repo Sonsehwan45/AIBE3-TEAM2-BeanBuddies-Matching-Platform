@@ -9,8 +9,6 @@ import com.back.domain.freelancer.freelancer.service.FreelancerService;
 import com.back.global.response.ApiResponse;
 import com.back.standard.converter.FreelancerSearchConditionConverter;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
-import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequiredArgsConstructor
-@Tag(name="ApiV1FreelancerController", description = "API 프리랜서 컨트롤러")
+@Tag(name = "ApiV1FreelancerController", description = "API 프리랜서 컨트롤러")
 @RequestMapping("/api/v1/freelancers")
 public class ApiV1FreelancerController {
 

@@ -9,6 +9,7 @@ import com.back.domain.proposal.proposal.service.ProposalService;
 import com.back.global.response.ApiResponse;
 import com.back.global.security.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -50,6 +51,7 @@ public class ApiV1ProposalController {
 
     @PostMapping
     @Operation(summary = "프로젝트에 제안서 등록")
+    @SecurityRequirement(name = "bearerAuth")
     public ApiResponse<ProposalDto> create(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable Long projectId,
@@ -68,6 +70,7 @@ public class ApiV1ProposalController {
 
     @GetMapping("/{proposalId}")
     @Operation(summary = "프로젝트에 해당하는 특정 ID 제안서를 조회")
+    @SecurityRequirement(name = "bearerAuth")
     public ApiResponse<ProposalDto> getProposal(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable Long projectId,
@@ -85,6 +88,7 @@ public class ApiV1ProposalController {
 
     @PatchMapping("/{proposalId}")
     @Operation(summary = "프로젝트에 해당하는 특정 ID 제안서의 상태 변경")
+    @SecurityRequirement(name = "bearerAuth")
     public ApiResponse<ProposalDto> updateState(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable Long projectId,
@@ -104,6 +108,7 @@ public class ApiV1ProposalController {
 
     @DeleteMapping("/{proposalId}")
     @Operation(summary = "프로젝트에 해당하는 특정 ID 제안서 삭제")
+    @SecurityRequirement(name = "bearerAuth")
     public ApiResponse<Void> delete(
             @AuthenticationPrincipal CustomUserDetails user,
             @PathVariable Long projectId,
