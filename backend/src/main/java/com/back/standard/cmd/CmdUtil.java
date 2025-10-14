@@ -1,11 +1,13 @@
 package com.back.standard.cmd;
 
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 
+@Slf4j
 public class CmdUtil {
     public static class cmd {
         @SneakyThrows
@@ -31,7 +33,7 @@ public class CmdUtil {
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    System.out.println(line); // 결과 한 줄씩 출력
+                    log.trace(line); // 결과 한 줄씩 출력
                 }
             }
 
