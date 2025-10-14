@@ -17,8 +17,21 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
   const [filteredProjects, setFilteredProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [favorites, setFavorites] = useState<number[]>([]);
+
+  // 필터 관련 상태
+  const [skills, setSkills] = useState<any[]>([]);
+  const [interests, setInterests] = useState<any[]>([]);
+  const [selectedSkills, setSelectedSkills] = useState<number[]>([]);
+  const [selectedInterests, setSelectedInterests] = useState<number[]>([]);
+  const [status, setStatus] = useState<
+    "OPEN" | "IN_PROGRESS" | "COMPLETED" | "CLOSED" | ""
+  >("");
+
+  // 페이징 관련 상태
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
 
   const keywordTypeOptions = [
     { value: "", label: "검색 필터" },
@@ -31,29 +44,72 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
     { value: "latest", label: "최신순" },
     { value: "deadline", label: "마감일순" },
     { value: "budget", label: "예산순" },
-    { value: "popularity", label: "인기순" },
+  ];
+
+  const statusOptions = [
+    { value: "", label: "전체" },
+    { value: "OPEN", label: "모집중" },
+    { value: "IN_PROGRESS", label: "진행중" },
+    { value: "COMPLETED", label: "완료" },
   ];
 
   // -------------------------------------
+
+  // 필터 데이터 불러오기 (skills, interests)
+  useEffect(() => {
+    client
+      .GET("/api/v1/skills")
+      .then(({ data }) => setSkills(data?.data ?? []));
+    client
+      .GET("/api/v1/interests")
+      .then(({ data }) => setInterests(data?.data ?? []));
+  }, []);
+
   // 프로젝트 목록 가져오기
-  // -------------------------------------
-  const fetchProjects = async () => {
+  const fetchProjects = async (page = currentPage) => {
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error } = await client.GET("/api/v1/projects", {
-        params: {
-          query: {
-            keyword: keyword || "",
-            keywordType: keywordType || "",
-            sortBy: sortBy || undefined,
-          },
-        },
-      });
+      // URL 쿼리 파라미터로 변환
+      const searchParams = new URLSearchParams();
+
+      // 검색 조건
+      if (keyword) searchParams.append("keyword", keyword);
+      if (keywordType) searchParams.append("keywordType", keywordType);
+      if (status) searchParams.append("status", status);
+
+      // 필터 조건
+      selectedSkills.forEach((id) =>
+        searchParams.append("skillIds", id.toString())
+      );
+      selectedInterests.forEach((id) =>
+        searchParams.append("interestIds", id.toString())
+      );
+
+      // 페이징 & 정렬
+      searchParams.append("page", page.toString());
+      searchParams.append("size", "10");
+      searchParams.append(
+        "sort",
+        sortBy === "latest"
+          ? "createDate,DESC"
+          : sortBy === "deadline"
+          ? "deadline,ASC"
+          : sortBy === "budget"
+          ? "price,DESC"
+          : "createDate,DESC"
+      );
+
+      const { data, error } = await client.GET(
+        `/api/v1/projects?${searchParams.toString()}`
+      );
 
       if (error) throw error;
       setFilteredProjects(data?.data?.content ?? []);
+      setTotalPages(data?.data?.totalPages ?? 0);
+      setTotalElements(data?.data?.totalElements ?? 0);
+      setCurrentPage(data?.data?.number ?? 0);
     } catch (err: any) {
       console.error("프로젝트 조회 실패:", err);
       setError("프로젝트 목록을 불러오는 중 오류가 발생했습니다.");
@@ -62,8 +118,21 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
     }
   };
 
+  // 필터 체크박스 핸들러
+  const handleSkillChange = (id: number) => {
+    setSelectedSkills((prev) =>
+      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
+    );
+  };
+  const handleInterestChange = (id: number) => {
+    setSelectedInterests((prev) =>
+      prev.includes(id) ? prev.filter((v) => v !== id) : [...prev, id]
+    );
+  };
+
   const handleSearch = () => {
-    fetchProjects();
+    setCurrentPage(0); // 검색 시 첫 페이지로 리셋
+    fetchProjects(0);
   };
 
   const toggleFavorite = (projectId: number) => {
@@ -74,8 +143,54 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
     );
   };
 
+  const Pagination = () => {
+    const pages = Array.from({ length: totalPages }, (_, i) => i);
+
+    return (
+      <div className="flex justify-center items-center space-x-2 mt-8">
+        <button
+          onClick={() => fetchProjects(currentPage - 1)}
+          disabled={currentPage === 0}
+          className={`px-4 py-2 rounded-lg ${
+            currentPage === 0
+              ? "bg-gray-100 text-gray-400"
+              : "bg-white text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          <i className="ri-arrow-left-s-line"></i>
+        </button>
+
+        {pages.map((page) => (
+          <button
+            key={page}
+            onClick={() => fetchProjects(page)}
+            className={`px-4 py-2 rounded-lg ${
+              currentPage === page
+                ? "bg-indigo-600 text-white"
+                : "bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            {page + 1}
+          </button>
+        ))}
+
+        <button
+          onClick={() => fetchProjects(currentPage + 1)}
+          disabled={currentPage === totalPages - 1}
+          className={`px-4 py-2 rounded-lg ${
+            currentPage === totalPages - 1
+              ? "bg-gray-100 text-gray-400"
+              : "bg-white text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          <i className="ri-arrow-right-s-line"></i>
+        </button>
+      </div>
+    );
+  };
+
   useEffect(() => {
-    fetchProjects(); // 페이지 진입 시 기본 목록 로드
+    fetchProjects(0); // 페이지 진입 시 첫 페이지 로드
   }, []);
 
   // -------------------------------------
@@ -136,6 +251,59 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
               </Button>
             </div>
           </div>
+          {/* 필터 영역 */}
+          {showFilters && (
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* 스킬 */}
+              <div>
+                <div className="font-semibold mb-2">기술 스택</div>
+                <div className="flex flex-wrap gap-2">
+                  {skills.map((skill) => (
+                    <label
+                      key={skill.id}
+                      className="flex items-center space-x-1"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedSkills.includes(skill.id)}
+                        onChange={() => handleSkillChange(skill.id)}
+                      />
+                      <span>{skill.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {/* 관심 분야 */}
+              <div>
+                <div className="font-semibold mb-2">관심 분야</div>
+                <div className="flex flex-wrap gap-2">
+                  {interests.map((interest) => (
+                    <label
+                      key={interest.id}
+                      className="flex items-center space-x-1"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedInterests.includes(interest.id)}
+                        onChange={() => handleInterestChange(interest.id)}
+                      />
+                      <span>{interest.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              {/* 상태 */}
+              <div>
+                <div className="font-semibold mb-2">상태</div>
+                <Select
+                  options={statusOptions}
+                  value={status}
+                  onChange={(value) => setStatus(value as typeof status)}
+                  className="min-w-[120px]"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 로딩 / 에러 / 결과 */}
@@ -231,7 +399,7 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
 
                       {project.skills?.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-4">
-                          {project.skills.map((skill) => (
+                          {project.skills.map((skill: any) => (
                             <span
                               key={skill.id}
                               className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium border border-indigo-100"
@@ -304,6 +472,8 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
                 </div>
               ))}
             </div>
+
+            {filteredProjects.length > 0 && <Pagination />}
 
             {filteredProjects.length === 0 && (
               <div className="text-center py-16">
