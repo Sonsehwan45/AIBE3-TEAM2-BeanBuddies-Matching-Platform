@@ -325,7 +325,7 @@ export default function Signup() {
               type="password"
               value={formData.password}
               onChange={(e) => handleInputChange("password", e.target.value)}
-              placeholder="8자 이상의 비밀번호"
+              placeholder="4자 이상의 비밀번호"
               required
             />
 

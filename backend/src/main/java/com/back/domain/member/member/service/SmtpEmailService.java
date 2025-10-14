@@ -59,7 +59,6 @@ public class SmtpEmailService implements EmailService {
 
         //인증 코드 삭제
         redisTemplate.delete(CODE_PREFIX + purpose + ":" + email);
-
     }
 
     public boolean isVerified(String purpose, String email) {

@@ -110,7 +110,7 @@ export default function Login() {
                 to="/forgot-password"
                 className="text-sm text-blue-600 hover:text-blue-500 cursor-pointer"
               >
-                비밀번호 찾기
+                비밀번호를 잊으셨나요?
               </Link>
             </div>
 

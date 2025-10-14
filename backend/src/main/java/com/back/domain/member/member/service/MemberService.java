@@ -142,14 +142,14 @@ public class MemberService {
         }
 
         if(!newPassword.equals(newPasswordConfirm)) {
-            throw new ServiceException("400-6", "새 비밀번호 확인이 일치하지 않습니다.");
+            throw new ServiceException("400-4", "새 비밀번호와 비밀번호 확인이 일치하지 않습니다.");
         }
 
         member.updatePassword(passwordEncoder.encode(newPassword));
         memberRepository.save(member);
     }
 
-    public void sendTempPasswordCode(String username, String email) {
+    public void sendPasswordResetCode(String username, String email) {
         Member member = memberRepository.findByUsername(username)
                 .orElseThrow(() -> new ServiceException("404-1", "해당 회원을 찾을 수 없습니다."));
 
@@ -157,7 +157,38 @@ public class MemberService {
             throw new ServiceException("400-5", "이메일이 회원 정보와 일치하지 않습니다.");
         }
 
-        emailService.sendEmailCode("TEMPPW", email);
+        emailService.sendEmailCode("PWRESET", email);
+    }
+
+    public void verifyPasswordResetCode(String username, String email, String code) {
+        Member member = memberRepository.findByUsername(username)
+                .orElseThrow(() -> new ServiceException("404-1", "해당 회원이 존재하지 않습니다."));
+
+        if(!member.getEmail().equals(email)) {
+            throw new ServiceException("400-2", "이메일이 회원 정보와 일치하지 않습니다.");
+        }
+
+        // 코드 확인
+        emailService.verifyEmailCode("PWRESET", email, code);
+    }
+
+    public void resetPassword(String username, String email, String password, String passwordConfirm) {
+        //username 확인
+        Member member = findByUsername(username).orElseThrow(() -> new ServiceException("404-1", "해당 회원이 존재하지 않습니다."));
+
+        //email 인증이 되었는지 확인
+        if (!emailService.isVerified("PWRESET", email)) {
+            throw new ServiceException("400-3", "이메일 인증이 완료되지 않았습니다.");
+        }
+
+        //비밀번호 확인
+        if (!password.equals(passwordConfirm)) {
+            throw new ServiceException("400-4", "비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+        }
+
+        //DB에 저장
+        member.updatePassword(passwordEncoder.encode(password));
+        memberRepository.save(member);
     }
 
     public void issueTempPassword(String username, String email, String code) {
