@@ -212,7 +212,7 @@ export default function ProjectDetail({ userType = 'freelancer' }: ProjectDetail
                   </div>
                   <div className="text-center">
                     <div className="w-16 h-16 bg-gradient-to-r from-red-400 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-                      <i className="ri-calendar-deadline-line text-white text-2xl"></i>
+                      <i className="ri-calendar-line text-white text-2xl"></i>
                     </div>
                     <p className="text-sm text-gray-600 font-medium mb-1">지원 마감일</p>
                     <p className="text-2xl font-bold text-red-600">{formatDate(project.deadline)}</p>
