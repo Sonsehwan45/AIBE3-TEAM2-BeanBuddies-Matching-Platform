@@ -1,33 +1,14 @@
-# =========================================
-# 1. 빌드(Build) 스테이지
-# =========================================
-FROM eclipse-temurin:21-jdk AS builder
-
-WORKDIR /workspace
-
-COPY gradlew ./
-COPY gradle/ ./gradle/
-COPY build.gradle.kts ./
-COPY settings.gradle.kts ./
-
-RUN ./gradlew dependencies
-
-COPY src ./src
-
-RUN ./gradlew clean build -x test
-
-# =========================================
-# 2. 최종 실행(Final) 스테이지
-# =========================================
+# 최종 실행(Final) 스테이지
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
+# 보안을 위한 사용자 설정
 RUN groupadd -r spring && useradd -r -g spring spring
 USER spring:spring
 
-# ✅ '-SNAPSHOT.jar'로 끝나는 파일만 복사하도록 수정
-COPY --from=builder /workspace/build/libs/*-SNAPSHOT.jar app.jar
+# 젠킨스가 빌드한 JAR 파일을 컨텍스트에서 바로 복사
+COPY build/libs/*-SNAPSHOT.jar app.jar
 
 EXPOSE 8080
 
