@@ -23,7 +23,7 @@ public class ProfileResponseDto {
     private LocalDateTime createdAt;
     private String profileImgUrl;
 
-    private double ratingAvg;
+    private float ratingAvg;
 
     // Freelancer fields
     private String job;
@@ -54,7 +54,7 @@ public class ProfileResponseDto {
                     .career(member.getFreelancer().getCareer())
                     .freelancerEmail(member.getFreelancer().getFreelancerEmail())
                     .comment(member.getFreelancer().getComment())
-                    .ratingAvg(member.getFreelancer().getRatingAvg());
+                    .ratingAvg((float) member.getFreelancer().getRatingAvg());
                     //.skills(member.getFreelancer().getFreelancerSkills().stream()
                     //        .map(fs -> fs.getSkill().getSkillName())
                     //        .collect(Collectors.toList()))
@@ -68,7 +68,7 @@ public class ProfileResponseDto {
                     .businessNo(member.getClient().getBusinessNo())
                     .companyPhone(member.getClient().getCompanyPhone())
                     .companyEmail(member.getClient().getCompanyEmail())
-                    .ratingAvg(member.getClient().getRatingAvg());
+                    .ratingAvg((float) member.getClient().getRatingAvg());
         }
 
         return builder.build();
