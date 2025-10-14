@@ -82,39 +82,39 @@ public class SecurityConfig {
 
                 //인증/인가 예외 처리
                 .exceptionHandling(
-                exceptionHandling -> exceptionHandling
-                        //인증 실패
-                        .authenticationEntryPoint(
-                                (request, response, authException) -> {
-                                    response.setContentType("application/json;charset=UTF-8");
+                        exceptionHandling -> exceptionHandling
+                                //인증 실패
+                                .authenticationEntryPoint(
+                                        (request, response, authException) -> {
+                                            response.setContentType("application/json;charset=UTF-8");
 
-                                    response.setStatus(401);
-                                    response.getWriter().write(
-                                            JsonUtil.toString(
-                                                    new ApiResponse<Void>(
-                                                            "401-1",
-                                                            "로그인 후 이용해주세요."
+                                            response.setStatus(401);
+                                            response.getWriter().write(
+                                                    JsonUtil.toString(
+                                                            new ApiResponse<Void>(
+                                                                    "401-1",
+                                                                    "로그인 후 이용해주세요."
+                                                            )
                                                     )
-                                            )
-                                    );
-                                }
-                        )
-                        //권한 부족
-                        .accessDeniedHandler(
-                                (request, response, accessDeniedException) -> {
-                                    response.setContentType("application/json;charset=UTF-8");
+                                            );
+                                        }
+                                )
+                                //권한 부족
+                                .accessDeniedHandler(
+                                        (request, response, accessDeniedException) -> {
+                                            response.setContentType("application/json;charset=UTF-8");
 
-                                    response.setStatus(403);
-                                    response.getWriter().write(
-                                            JsonUtil.toString(
-                                                    new ApiResponse<Void>(
-                                                            "403-1",
-                                                            "권한이 없습니다."
+                                            response.setStatus(403);
+                                            response.getWriter().write(
+                                                    JsonUtil.toString(
+                                                            new ApiResponse<Void>(
+                                                                    "403-1",
+                                                                    "권한이 없습니다."
+                                                            )
                                                     )
-                                            )
-                                    );
-                                }
-                        )
+                                            );
+                                        }
+                                )
                 );
 
         return http.build();
