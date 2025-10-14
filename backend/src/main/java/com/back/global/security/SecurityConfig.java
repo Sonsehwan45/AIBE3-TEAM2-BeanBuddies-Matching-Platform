@@ -27,6 +27,8 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 //요청에 대한 권한 설정
                 .authorizeHttpRequests(auth -> auth
+                        // Preflight-Request(OPTIONS) 허용
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         //누구나 접근 가능
                         .requestMatchers("/api/*/test/public").permitAll()
                         .requestMatchers("/api/*/members/join/**").permitAll()
@@ -127,7 +129,7 @@ public class SecurityConfig {
 
         //cors 설정
         configuration.setAllowedOrigins(List.of("http://localhost:3000", "https://beanbuddies.yhcho.com", "https://api.yhcho.com", "http://localhost:8080")); // 허용할 출처(origin)
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE")); // 허용할 메서드
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")); // 허용할 메서드
         configuration.setAllowCredentials(true); //인증 정보를 포함한 요청(쿠키, 헤더) 허용 여부
         configuration.addExposedHeader("Authorization"); // 프론트에서 Header 읽기 설정
         configuration.setAllowedHeaders(List.of("*")); //허용할 헤더 (* → 모든 헤더 허용)
