@@ -128,7 +128,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         //cors 설정
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "https://beanbuddies.yhcho.com", "https://api.yhcho.com", "http://localhost:8080")); // 허용할 출처(origin)
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:*", "https://*.yhcho.com")); // 허용할 출처(origin) 패턴
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")); // 허용할 메서드
         configuration.setAllowCredentials(true); //인증 정보를 포함한 요청(쿠키, 헤더) 허용 여부
         configuration.addExposedHeader("Authorization"); // 프론트에서 Header 읽기 설정
