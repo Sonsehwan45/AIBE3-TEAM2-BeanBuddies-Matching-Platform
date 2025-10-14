@@ -6,7 +6,7 @@ import type { paths } from "./apiV1/schema";
 // 개발 모드(npm run dev)에서는 `import.meta.env.DEV`가 true가 됩니다.
 const baseUrl = import.meta.env.DEV
   ? 'http://localhost:8080' // 개발 환경일 때 사용할 백엔드 주소
-  : 'https://beanbuddies.yhcho.com'; // 빌드하여 배포할 때 사용할 백엔드 주소
+  : 'https://api.yhcho.com'; // 빌드하여 배포할 때 사용할 실제 백엔드 API 주소
 
 export const client = createClient<paths>({
   baseUrl: baseUrl,
