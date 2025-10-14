@@ -1,6 +1,7 @@
 package com.back.domain.member.member.controller;
 
 import com.back.domain.application.application.dto.ApplicationDto;
+import com.back.domain.application.application.dto.ApplicationSummaryDto;
 import com.back.domain.application.application.entity.Application;
 import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.common.interest.service.InterestService;
@@ -151,7 +152,7 @@ public class MemberController {
     }
 
     @GetMapping("/me/applications")
-    public ApiResponse<List<ApplicationDto>> getMyApplications(@AuthenticationPrincipal CustomUserDetails user) {
+    public ApiResponse<List<ApplicationSummaryDto>> getMyApplications(@AuthenticationPrincipal CustomUserDetails user) {
         Member member = memberService.findById(user.getId());
 
         if (member.getRole() != Role.FREELANCER) {
@@ -161,10 +162,10 @@ public class MemberController {
         Freelancer freelancer = member.getFreelancer();
         List<Application> applications = applicationService.findAllByFreeLancer(freelancer);
 
-        List<ApplicationDto> applicationDtos = applications.stream()
-                .map(ApplicationDto::new)
+        List<ApplicationSummaryDto> applicationSummaries = applications.stream()
+                .map(ApplicationSummaryDto::new)
                 .collect(Collectors.toList());
 
-        return new ApiResponse<>("200-10", "내가 지원한 프로젝트 목록 조회 성공", applicationDtos);
+        return new ApiResponse<>("200-10", "내가 지원한 프로젝트 목록 조회 성공", applicationSummaries);
     }
 }

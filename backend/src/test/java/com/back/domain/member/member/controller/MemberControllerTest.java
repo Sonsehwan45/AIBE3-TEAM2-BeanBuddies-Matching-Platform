@@ -500,6 +500,7 @@ public class MemberControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("200-10"))
                 .andExpect(jsonPath("$.msg").value("내가 지원한 프로젝트 목록 조회 성공"))
                 .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data[*].projectTitle", Matchers.hasItem(project.getTitle())));
+                .andExpect(jsonPath("$.data[?(@.projectTitle == '%s')]".formatted(project.getTitle())).exists())
+                .andExpect(jsonPath("$.data[?(@.freelancerName == '%s')]".formatted(freelancer.getMember().getName())).exists());
     }
 }
