@@ -200,4 +200,9 @@ public class ProjectService {
     public boolean isAuthor(Member member, Project project) {
         return project.getClient().getMember().getId().equals(member.getId());
     }
+
+    @Transactional(readOnly = true)
+    public List<Project> findAllByMemberId(Long memberId) {
+        return projectRepository.findAllByClientMemberIdOrderByIdDesc(memberId);
+    }
 }
