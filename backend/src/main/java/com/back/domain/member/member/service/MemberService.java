@@ -176,6 +176,11 @@ public class MemberService {
         //username 확인
         Member member = findByUsername(username).orElseThrow(() -> new ServiceException("404-1", "해당 회원이 존재하지 않습니다."));
 
+        //이메일 확인
+        if(!member.getEmail().equals(email)) {
+            throw new ServiceException("400-5", "이메일이 회원 정보와 일치하지 않습니다.");
+        }
+        
         //email 인증이 되었는지 확인
         if (!emailService.isVerified("PWRESET", email)) {
             throw new ServiceException("400-3", "이메일 인증이 완료되지 않았습니다.");
