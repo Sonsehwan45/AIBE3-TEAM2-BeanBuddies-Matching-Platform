@@ -49,7 +49,7 @@ public class Freelancer {
 
     @Column(name = "rating_avg")
     //읽기전용?
-    private float ratingAvg;
+    private double ratingAvg;
 
     @OneToMany(mappedBy = "freelancer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FreelancerSkill> skills = new ArrayList<>();
@@ -81,5 +81,10 @@ public class Freelancer {
             return;
         }
         this.careerTotalYears = career.values().stream().mapToInt(Integer::intValue).sum() / 12;
+    }
+
+    //이미 계산된 평가 평균을 소수점 첫째 자리까지 반올림하기 위한 메서드
+    public void updateRatingAvg(double ratingAvg) {
+        this.ratingAvg = Math.round(ratingAvg * 10.0) / 10.0;
     }
 }
