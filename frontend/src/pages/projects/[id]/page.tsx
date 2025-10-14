@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import Button from '../../../components/base/Button';
 import client from '../../../global/backend/client';
 
@@ -34,9 +34,27 @@ interface Project {
 
 export default function ProjectDetail({ userType = 'freelancer' }: ProjectDetailProps) {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    if (!project || !window.confirm('정말로 이 프로젝트를 삭제하시겠습니까?')) return;
+    
+    try {
+      const response = await client.DELETE("/api/v1/projects/{id}", {
+        params: { path: { id: project.id } }
+      });
+      if (response.error) throw response.error;
+      
+      alert('프로젝트가 삭제되었습니다.');
+      navigate('/projects');
+    } catch (err) {
+      console.error('프로젝트 삭제 실패:', err);
+      alert('프로젝트 삭제에 실패했습니다.');
+    }
+  };
   const [activeTab, setActiveTab] = useState<'info' | 'applicants' | 'proposed' | 'myApplication'>('info');
 
   // 프로젝트 정보 가져오기
@@ -51,15 +69,11 @@ export default function ProjectDetail({ userType = 'freelancer' }: ProjectDetail
           return;
         }
 
-        const response = await client.GET(`/api/v1/projects/${id}`);
+        const response = await client.GET("/api/v1/projects/{id}", {
+          params: { path: { id: parseInt(id) } }
+        });
         
-        // API 응답 로그 확인
-        console.log('API Response:', response);
-        
-        if (response.error) throw response.error;
-        
-        // response.data에서 바로 프로젝트 데이터를 가져옴
-        if (!response.data) {
+        if (!response || !response.data) {
           throw new Error('프로젝트 데이터가 없습니다.');
         }
 
@@ -294,6 +308,26 @@ export default function ProjectDetail({ userType = 'freelancer' }: ProjectDetail
                 </div>
               </div>
             )}
+
+            {/* 수정/삭제 버튼 */}
+            <div className="flex justify-end space-x-4 mt-8">
+              <Link to={`/projects/${project.id}/edit`}>
+                <button
+                  className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center"
+                >
+                  <i className="ri-edit-line mr-2"></i>
+                  수정하기
+                </button>
+              </Link>
+              <button
+                onClick={handleDelete}
+                className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center"
+              >
+                <i className="ri-delete-bin-line mr-2"></i>
+                삭제하기
+              </button>
+            </div>
+
           </div>
         </div>
       </div>
