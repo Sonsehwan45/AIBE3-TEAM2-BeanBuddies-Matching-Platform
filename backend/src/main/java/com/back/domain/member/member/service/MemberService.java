@@ -1,7 +1,7 @@
 package com.back.domain.member.member.service;
 
 import com.back.domain.application.application.entity.Application;
-import com.back.domain.application.application.repository.ApplicationRepository;
+import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.member.member.constant.ProfileScope;
@@ -28,7 +28,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
-    private final ApplicationRepository applicationRepository;
+    private final ApplicationService applicationService;
 
     private boolean initFlag = false;
 
@@ -214,7 +214,7 @@ public class MemberService {
 
             Member requestMember = findById(user.getId());
             if (requestMember.isClient()) {
-                List<Application> applications = applicationRepository.findAllByFreelancer(member.getFreelancer());
+                List<Application> applications = applicationService.findAllByFreeLancer(member.getFreelancer());
                 boolean hasApplied = applications.stream()
                         .anyMatch(app -> app.getProject().getClient().getMember().getId().equals(requestMember.getId()));
 
