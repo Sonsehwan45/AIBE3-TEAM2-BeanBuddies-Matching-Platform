@@ -4,65 +4,32 @@ package com.back.domain.evaluation.entity;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.project.project.entity.Project;
-import jakarta.persistence.*;
+import com.back.global.jpa.entity.BaseEvaluationEntity;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor
-public class ClientEvaluation {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class ClientEvaluation extends BaseEvaluationEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id")
-    private Project project;
+    @JoinColumn(name = "client_id", nullable = false)
+    private Client client;//평가받는 사람
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "client_id")
-    private Client client;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "freelancer_id")
-    private Freelancer freelancer;
-
-    @Lob
-    private String comment;
-
-    private Integer ratingSatisfaction;//평가 평균
-    private Integer ratingProfessionalism;//전문성
-    private Integer ratingScheduleAdherence;//일정 준수
-    private Integer ratingCommunication;//의사소통
-    private Integer ratingProactiveness;//적극성
-
-    private LocalDateTime createdAt;
+    @JoinColumn(name = "freelancer_id", nullable = false)
+    private Freelancer freelancer;//평가하는 사람
 
     public ClientEvaluation(Project project, Client client, Freelancer freelancer, String comment,
                             int satisfaction, int professionalism, int scheduleAdherence,
                             int communication, int proactiveness) {
-        this.project = project;
+        super(project, comment, satisfaction, professionalism, scheduleAdherence, communication, proactiveness);
         this.client = client;
         this.freelancer = freelancer;
-        this.comment = comment;
-        this.ratingSatisfaction = satisfaction;
-        this.ratingProfessionalism = professionalism;
-        this.ratingScheduleAdherence = scheduleAdherence;
-        this.ratingCommunication = communication;
-        this.ratingProactiveness = proactiveness;
-        this.createdAt = LocalDateTime.now();
-    }
-
-    public void modify(String comment, int satisfaction, int professionalism, int scheduleAdherence, int communication, int proactiveness) {
-        this.comment = comment;
-        this.ratingSatisfaction = satisfaction;
-        this.ratingProfessionalism = professionalism;
-        this.ratingScheduleAdherence = scheduleAdherence;
-        this.ratingCommunication = communication;
-        this.ratingProactiveness = proactiveness;
     }
 }

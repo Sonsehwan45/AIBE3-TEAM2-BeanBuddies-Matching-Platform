@@ -3,66 +3,32 @@ package com.back.domain.evaluation.entity;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.project.project.entity.Project;
-import jakarta.persistence.*;
+import com.back.global.jpa.entity.BaseEvaluationEntity;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @NoArgsConstructor
-public class FreelancerEvaluation {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id")
-    private Project project;
+public class FreelancerEvaluation extends BaseEvaluationEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id")
-    private Client client;
+    private Client client;//평가하는 사람
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "freelancer_id")
-    private Freelancer freelancer;
-
-    @Lob // TEXT 타입 매핑
-    private String comment;
-
-    private Integer ratingSatisfaction;
-    private Integer ratingProfessionalism;
-    private Integer ratingScheduleAdherence;
-    private Integer ratingCommunication;
-    private Integer ratingProactiveness;
-
-    private LocalDateTime createdAt;
+    private Freelancer freelancer;//평가받는 사람
 
     public FreelancerEvaluation(Project project, Client client, Freelancer freelancer, String comment,
                                 int satisfaction, int professionalism, int scheduleAdherence,
                                 int communication, int proactiveness) {
-        this.project = project;
+        super(project, comment, satisfaction, professionalism, scheduleAdherence, communication, proactiveness);
         this.client = client;
         this.freelancer = freelancer;
-        this.comment = comment;
-        this.ratingSatisfaction = satisfaction;
-        this.ratingProfessionalism = professionalism;
-        this.ratingScheduleAdherence = scheduleAdherence;
-        this.ratingCommunication = communication;
-        this.ratingProactiveness = proactiveness;
-        this.createdAt = LocalDateTime.now();
-    }
-
-    public void modify(
-            String comment, int satisfaction, int professionalism, int scheduleAdherence, int communication, int proactiveness) {
-        this.comment = comment;
-        this.ratingSatisfaction = satisfaction;
-        this.ratingProfessionalism = professionalism;
-        this.ratingScheduleAdherence = scheduleAdherence;
-        this.ratingCommunication = communication;
-        this.ratingProactiveness = proactiveness;
     }
 }
