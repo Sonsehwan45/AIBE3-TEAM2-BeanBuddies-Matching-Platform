@@ -35,6 +35,16 @@ public class EvaluationService {
     private final ClientEvaluationRepository clientEvaluationRepository;
     private final FreelancerEvaluationRepository freelancerEvaluationRepository;
 
+    private Freelancer findByFreelancerId(Long id) {
+        return freelancerRepository.findById(id)
+                .orElseThrow(() -> new ServiceException("404", "프리랜서 정보를 찾을 수 없습니다."));
+    }
+
+    private Client findByClientId(Long id) {
+        return clientRepository.findById(id)
+                .orElseThrow(() -> new ServiceException("404", "클라이언트 정보를 찾을 수 없습니다."));
+    }
+
     @Transactional
     public EvaluationResponse createEvaluation(Long evaluatorId, EvaluationCreateReq request) {
         Member evaluatorMember = memberRepository.findById(evaluatorId)
@@ -50,10 +60,10 @@ public class EvaluationService {
 
 
         if (evaluatorMember.getRole() == Role.CLIENT) {
-            Client clientEvaluator = clientRepository.findById(evaluatorId)
-                    .orElseThrow(() -> new ServiceException("404", "클라이언트 정보를 찾을 수 없습니다."));
-            Freelancer freelancerEvaluatee = freelancerRepository.findById(request.evaluateeId())
-                    .orElseThrow(() -> new ServiceException("404", "프리랜서 정보를 찾을 수 없습니다."));
+
+            Client clientEvaluator = findByClientId(evaluatorId);
+
+            Freelancer freelancerEvaluatee = findByFreelancerId(request.evaluateeId());
 
             FreelancerEvaluation review = new FreelancerEvaluation(project, clientEvaluator, freelancerEvaluatee, request.comment(),
                     satisfactionScore, ratings.professionalism(), ratings.scheduleAdherence(),
@@ -65,10 +75,9 @@ public class EvaluationService {
             return EvaluationResponse.from(savedReview);
 
         } else if (evaluatorMember.getRole() == Role.FREELANCER) {
-            Freelancer freelancerEvaluator = freelancerRepository.findById(evaluatorId)
-                    .orElseThrow(() -> new ServiceException("404", "프리랜서 정보를 찾을 수 없습니다."));
-            Client clientEvaluatee = clientRepository.findById(request.evaluateeId())
-                    .orElseThrow(() -> new ServiceException("404", "클라이언트 정보를 찾을 수 없습니다."));
+            Freelancer freelancerEvaluator = findByFreelancerId(evaluatorId);
+
+            Client clientEvaluatee = findByClientId(request.evaluateeId());
 
             ClientEvaluation review = new ClientEvaluation(project, clientEvaluatee, freelancerEvaluator, request.comment(),
                     satisfactionScore, ratings.professionalism(), ratings.scheduleAdherence(),
