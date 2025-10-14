@@ -3,6 +3,7 @@ package com.back.domain.evaluation.controller;
 import com.back.domain.evaluation.dto.EvaluationCreateReq;
 import com.back.domain.evaluation.dto.EvaluationResponse;
 import com.back.domain.evaluation.dto.EvaluationUpdateReq;
+import com.back.domain.evaluation.dto.EvaluationsWithCountResponse;
 import com.back.domain.evaluation.service.EvaluationService;
 import com.back.global.response.ApiResponse;
 import com.back.global.security.CustomUserDetails;
@@ -44,5 +45,16 @@ public class EvaluationController {
         EvaluationResponse responseData = evaluationService.updateEvaluation(currentUserId, request);
 
         return new ApiResponse<>("200", "평가가 성공적으로 수정되었습니다.",  responseData);
+    }
+
+    // 내가 받은 평가 목록 조회 (역할에 따라 분기)
+    @GetMapping("/me")
+    public ApiResponse<EvaluationsWithCountResponse> getEvaluations(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long currentUserId = userDetails.getId();
+        EvaluationsWithCountResponse responseData = evaluationService.getEvaluations(currentUserId);
+
+        return new ApiResponse<>("200", "받은 평가 목록을 성공적으로 조회했습니다.", responseData);
     }
 }
