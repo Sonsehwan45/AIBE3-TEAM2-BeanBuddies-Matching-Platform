@@ -87,30 +87,30 @@ pipeline {
                 ]) {
                     sshagent(['yhcho-ssh']) {
                         sh """
-                            ssh -o StrictHostKeyChecking=no yhcho@192.168.50.35 /bin/bash << EOF "
+                            ssh -o StrictHostKeyChecking=no yhcho@192.168.50.35 /bin/bash << EOF
 
                                 echo "Deploying build number: ${env.BUILD_NUMBER}"
 
                                 docker stop ${APP_NAME} || true && docker rm ${APP_NAME} || true
                                 docker pull ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER}
-                                docker run -d --name ${APP_NAME} -p 8080:8080 \\
-                                    -e SPRING_PROFILES_ACTIVE=prod \\
-                                    -e SPRING_DATASOURCE_URL=${DB_URL_SECRET} \\
-                                    -e SPRING_DATASOURCE_USERNAME=${DB_USERNAME_SECRET} \\
-                                    -e SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_SECRET} \\
-                                    -e CUSTOM_JWT_ACCESSTOKEN_SECRETKEY=${JWT_ACCESS_KEY_SECRET} \\
-                                    -e CUSTOM_JWT_ACCESSTOKEN_EXPIRESECONDS=3600 \\
-                                    -e CUSTOM_JWT_REFRESHTOKEN_SECRETKEY=${JWT_REFRESH_KEY_SECRET} \\
-                                    -e CUSTOM_JWT_REFRESHTOKEN_EXPIRESECONDS=604800 \\
-                                    -e SPRING_DATA_REDIS_HOST=${REDIS_HOST_SECRET} \\
-                                    -e SPRING_DATA_REDIS_PORT=${REDIS_PORT_SECRET} \\
-                                    -e SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD_SECRET} \\
-                                    -e SPRING_MAIL_HOST=smtp.gmail.com \\
-                                    -e SPRING_MAIL_PORT=587 \\
-                                    -e SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true \\
-                                    -e SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true \\
-                                    -e SPRING_MAIL_USERNAME=${MAIL_USERNAME_SECRET} \\
-                                    -e SPRING_MAIL_PASSWORD=${MAIL_PASSWORD_SECRET} \\
+                                docker run -d --name ${APP_NAME} -p 8080:8080 \
+                                    -e SPRING_PROFILES_ACTIVE=prod \
+                                    -e SPRING_DATASOURCE_URL='${DB_URL_SECRET}' \
+                                    -e SPRING_DATASOURCE_USERNAME='${DB_USERNAME_SECRET}' \
+                                    -e SPRING_DATASOURCE_PASSWORD='${DB_PASSWORD_SECRET}' \
+                                    -e CUSTOM_JWT_ACCESSTOKEN_SECRETKEY='${JWT_ACCESS_KEY_SECRET}' \
+                                    -e CUSTOM_JWT_ACCESSTOKEN_EXPIRESECONDS=3600 \
+                                    -e CUSTOM_JWT_REFRESHTOKEN_SECRETKEY='${JWT_REFRESH_KEY_SECRET}' \
+                                    -e CUSTOM_JWT_REFRESHTOKEN_EXPIRESECONDS=604800 \
+                                    -e SPRING_DATA_REDIS_HOST='${REDIS_HOST_SECRET}' \
+                                    -e SPRING_DATA_REDIS_PORT='${REDIS_PORT_SECRET}' \
+                                    -e SPRING_DATA_REDIS_PASSWORD='${REDIS_PASSWORD_SECRET}' \
+                                    -e SPRING_MAIL_HOST=smtp.gmail.com \
+                                    -e SPRING_MAIL_PORT=587 \
+                                    -e SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true \
+                                    -e SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true \
+                                    -e SPRING_MAIL_USERNAME='${MAIL_USERNAME_SECRET}' \
+                                    -e SPRING_MAIL_PASSWORD='${MAIL_PASSWORD_SECRET}' \
                                     ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER}
                                 echo "Deploy complete"
                             EOF
