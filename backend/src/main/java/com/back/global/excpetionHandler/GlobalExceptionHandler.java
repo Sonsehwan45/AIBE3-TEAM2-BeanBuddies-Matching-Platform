@@ -4,13 +4,13 @@ import com.back.global.exception.ServiceException;
 import com.back.global.response.ApiResponse;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.NoSuchElementException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Comparator;
@@ -55,12 +55,19 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ServiceException.class)
-    public ApiResponse<Void> handle(ServiceException e, HttpServletResponse response) {
+    @ResponseStatus(BAD_REQUEST)
+    public ResponseEntity<ApiResponse<Void>> handle(ServiceException e, HttpServletResponse response) {
         ApiResponse<Void>  apiResponse = e.getApiResponse();
 
         response.setStatus(apiResponse.statusCode());
 
-        return apiResponse;
+        return new ResponseEntity<>(
+                apiResponse,
+                ResponseEntity
+                    .status(apiResponse.statusCode())
+                    .build()
+                    .getStatusCode()
+        );
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
