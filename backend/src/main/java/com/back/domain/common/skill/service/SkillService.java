@@ -34,4 +34,8 @@ public class SkillService {
     public List<Skill> findAllById(List<Long> skillsId) {
         return skillRepository.findAllById(skillsId);
     }
+
+    public List<Skill> findAll() {
+        return skillRepository.findAll();
+    }
 }
