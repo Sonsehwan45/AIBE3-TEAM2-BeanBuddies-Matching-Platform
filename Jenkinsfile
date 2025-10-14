@@ -113,7 +113,7 @@ pipeline {
                                     -e SPRING_MAIL_PASSWORD='${MAIL_PASSWORD_SECRET}' \
                                     ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER}
                                 echo "Deploy complete"
-                            EOF
+EOF
                         """
                     }
                 }
