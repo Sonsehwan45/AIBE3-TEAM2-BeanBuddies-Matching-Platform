@@ -112,10 +112,53 @@ public class BaseInitData {
         Member clientMember3 = memberService.findByUsername("client3").get();
         Client client3 = clientService.findById(clientMember3.getId());
 
-        for (int i = 1; i <= 25; i++) {
-            Client client = (i % 2 == 1) ? client1 : client3;
+        // 테스트에서 검증하는 1~3번 프로젝트는 조합을 명확히 지정
+        projectService.create(
+                client1,
+                "테스트 프로젝트 1",
+                "테스트 요약 1",
+                BigDecimal.valueOf(1_000_000L),
+                "우대 조건 1",
+                "급여 조건 1",
+                "업무 조건 1",
+                "1개월",
+                "상세 설명 1",
+                LocalDateTime.now().plusMonths(1),
+                List.of(1L, 2L, 3L), // skill
+                List.of(1L, 2L, 3L)  // interest
+        );
+        projectService.create(
+                client3,
+                "테스트 프로젝트 2",
+                "테스트 요약 2",
+                BigDecimal.valueOf(2_000_000L),
+                "우대 조건 2",
+                "급여 조건 2",
+                "업무 조건 2",
+                "2개월",
+                "상세 설명 2",
+                LocalDateTime.now().plusMonths(2),
+                List.of(2L, 3L),     // skill
+                List.of(2L, 3L)      // interest
+        );
+        projectService.create(
+                client1,
+                "테스트 프로젝트 3",
+                "테스트 요약 3",
+                BigDecimal.valueOf(3_000_000L),
+                "우대 조건 3",
+                "급여 조건 3",
+                "업무 조건 3",
+                "3개월",
+                "상세 설명 3",
+                LocalDateTime.now().plusMonths(3),
+                List.of(2L, 3L),     // skill
+                List.of(3L)          // interest
+        );
 
-            // skill, interest 조합을 다양하게 생성
+        // 4~25번은 기존 방식대로 다양하게 생성
+        for (int i = 4; i <= 25; i++) {
+            Client client = (i % 2 == 1) ? client1 : client3;
             List<Long> skillIds = allSkillIds.subList(0, (i % 3) + 1); // 1~3개
             List<Long> interestIds = allInterestIds.subList(0, ((i + 1) % 3) + 1); // 1~3개
 
