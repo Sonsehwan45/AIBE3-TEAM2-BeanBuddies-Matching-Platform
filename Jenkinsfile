@@ -32,7 +32,7 @@ pipeline {
         stage('Copy Frontend to Backend') {
             steps {
                 sh 'mkdir -p backend/src/main/resources/static'
-                sh 'cp -r frontend/out/* backend/src/main/resources/static/'
+                sh 'cp -r frontend/dist/* backend/src/main/resources/static/'
             }
         }
 
@@ -113,7 +113,7 @@ pipeline {
                                     -e SPRING_MAIL_PASSWORD='${MAIL_PASSWORD_SECRET}' \
                                     ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER}
                                 echo "Deploy complete"
-EOF
+                            EOF
                         """
                     }
                 }
