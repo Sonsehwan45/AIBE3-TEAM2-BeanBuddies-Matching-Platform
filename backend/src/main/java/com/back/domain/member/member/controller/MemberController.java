@@ -1,10 +1,21 @@
 package com.back.domain.member.member.controller;
 
+import com.back.domain.application.application.dto.ApplicationDto;
+import com.back.domain.application.application.dto.ApplicationSummaryDto;
+import com.back.domain.application.application.entity.Application;
+import com.back.domain.application.application.service.ApplicationService;
+import com.back.domain.common.interest.service.InterestService;
+import com.back.domain.common.skill.service.SkillService;
+import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.member.member.constant.Role;
 import com.back.domain.member.member.dto.*;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.EmailService;
 import com.back.domain.member.member.service.MemberService;
+import com.back.domain.project.project.dto.ProjectSummaryDto;
+import com.back.domain.project.project.entity.Project;
+import com.back.domain.project.project.service.ProjectService;
+import com.back.global.exception.ServiceException;
 import com.back.global.response.ApiResponse;
 import com.back.global.security.CustomUserDetails;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,7 +25,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -24,6 +37,10 @@ public class MemberController {
     private final MemberService memberService;
     private final EmailService emailService;
     private final ObjectMapper objectMapper;
+    private final ProjectService projectService;
+    private final SkillService skillService;
+    private final InterestService interestService;
+    private final ApplicationService applicationService;
 
     @Transactional
     @PostMapping
@@ -120,5 +137,35 @@ public class MemberController {
         return new ApiResponse<>("200-6", "임시 비밀번호가 이메일로 발송되었습니다.");
     }
 
+    @GetMapping("/me/projects")
+    public ApiResponse<List<ProjectSummaryDto>> getMyProjects(@AuthenticationPrincipal CustomUserDetails user) {
+        List<Project> projects = projectService.findAllByMemberId(user.getId());
+        List<ProjectSummaryDto> projectSummaries = projects.stream()
+                .map(project -> new ProjectSummaryDto(
+                        project,
+                        skillService.findByProjectId(project.getId()),
+                        interestService.findByProjectId(project.getId())
+                ))
+                .collect(Collectors.toList());
 
+        return new ApiResponse<>("200-9", "내가 등록한 프로젝트 목록 조회 성공", projectSummaries);
+    }
+
+    @GetMapping("/me/applications")
+    public ApiResponse<List<ApplicationSummaryDto>> getMyApplications(@AuthenticationPrincipal CustomUserDetails user) {
+        Member member = memberService.findById(user.getId());
+
+        if (member.getRole() != Role.FREELANCER) {
+            throw new ServiceException("403-1", "프리랜서만 접근할 수 있는 기능입니다.");
+        }
+
+        Freelancer freelancer = member.getFreelancer();
+        List<Application> applications = applicationService.findAllByFreeLancer(freelancer);
+
+        List<ApplicationSummaryDto> applicationSummaries = applications.stream()
+                .map(ApplicationSummaryDto::new)
+                .collect(Collectors.toList());
+
+        return new ApiResponse<>("200-10", "내가 지원한 프로젝트 목록 조회 성공", applicationSummaries);
+    }
 }
