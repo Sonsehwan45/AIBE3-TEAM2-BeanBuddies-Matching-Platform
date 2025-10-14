@@ -1,8 +1,10 @@
 
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Button from '../base/Button';
 import { useAuth } from '@/context/AuthContext';
+import { client } from "@/lib/backend/client";
+import toast from "react-hot-toast";
 
 interface HeaderProps {
   userType?: 'client' | 'freelancer' | null;
@@ -10,6 +12,7 @@ interface HeaderProps {
 }
 
 export default function Header({ userType, onUserTypeChange }: HeaderProps) {
+  const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, token, setUser, setToken } = useAuth(); // 로그인 상태 확인
@@ -22,9 +25,30 @@ export default function Header({ userType, onUserTypeChange }: HeaderProps) {
   ];
 
   //서버 로그아웃이랑 연동해야함
-  const handleLogout = () => {
-    setToken(null);
-    setUser(null);
+  const handleLogout = async () => {
+    try {
+      const res = await client.POST("/api/v1/auth/logout", {
+        throwHttpErrors: false,
+      });
+
+      if (res.response.ok) {
+        setToken(null);
+        setUser(null);
+        toast.success(res.data?.msg || "로그아웃 완료");
+        navigate("/", { replace: true });
+      } else {
+        setToken(null);
+        setUser(null);
+        // 브라우저 쿠키 삭제
+        document.cookie = "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        toast.error( res.error?.msg + "/n" + "서버에서 refreshToken을 삭제하는데 실패해 프론트에서 삭제하였습니다.");
+      }
+    } catch (err) {
+      console.error(err);
+      setToken(null);
+      setUser(null);
+      toast.error("서버 오류가 발생했습니다.");
+    }
   };
 
   const role = user?.role.toLowerCase() as 'client' | 'freelancer' | undefined;
