@@ -6,9 +6,13 @@ import com.back.domain.freelancer.freelancer.dto.FreelancerUpdateForm;
 import com.back.domain.freelancer.freelancer.dto.FreelancerUpdateResponse;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.freelancer.freelancer.service.FreelancerService;
+import com.back.domain.member.member.entity.Member;
+import com.back.domain.member.member.service.MemberService;
 import com.back.global.response.ApiResponse;
+import com.back.global.security.CustomUserDetails;
 import com.back.standard.converter.FreelancerSearchConditionConverter;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +20,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -36,8 +41,20 @@ public class ApiV1FreelancerController {
 
     @PutMapping("/{id}")
     @Operation(summary = "프리랜서 개인정보 수정")
-    public ApiResponse<FreelancerUpdateResponse> updateFreelancer(@PathVariable Long id,
-                                                                  @RequestBody FreelancerUpdateForm form) {
+    @SecurityRequirement(name = "bearerAuth")
+    public ApiResponse<FreelancerUpdateResponse> updateFreelancer(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @PathVariable Long id,
+            @RequestBody FreelancerUpdateForm form
+    ) {
+        if (!id.equals(user.getId())) {
+            return new ApiResponse<>(
+                    "403",
+                    "본인의 정보만 수정할 수 있습니다.",
+                    null
+            );
+        }
+
         Freelancer freelancer = freelancerService.updateFreelancer(
                 id,
                 form.job(),
