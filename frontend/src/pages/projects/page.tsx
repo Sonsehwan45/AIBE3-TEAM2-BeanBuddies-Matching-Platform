@@ -317,7 +317,7 @@ export default function Projects({ userType = "freelancer" }: ProjectsProps) {
               <p className="text-gray-600">
                 총{" "}
                 <span className="font-semibold text-indigo-600">
-                  {filteredProjects.length}
+                  {totalElements}
                 </span>{" "}
                 개의 프로젝트
                 {keyword && (
