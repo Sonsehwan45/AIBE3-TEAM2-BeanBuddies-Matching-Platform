@@ -5,4 +5,5 @@ public interface EmailService {
     void sendEmailCode(String purpose, String email);
     void verifyEmailCode(String purpose, String email, String code);
     boolean isVerified(String purpose, String email);
+    void clearVerification(String join, String email);
 }

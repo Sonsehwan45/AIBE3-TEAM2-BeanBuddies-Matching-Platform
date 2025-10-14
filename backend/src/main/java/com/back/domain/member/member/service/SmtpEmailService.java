@@ -66,4 +66,8 @@ public class SmtpEmailService implements EmailService {
         // 인증 성공 여부 확인
         return redisTemplate.hasKey(VERIFIED_PREFIX + purpose + ":" + email);
     }
+
+    public void clearVerification(String purpose, String email) {
+        redisTemplate.delete(VERIFIED_PREFIX + purpose + ":" + email);
+    }
 }

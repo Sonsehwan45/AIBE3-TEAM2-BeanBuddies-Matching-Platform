@@ -73,6 +73,9 @@ public class MemberService {
             member.registerClient(client);
         }
 
+        //Redis에서 인증 정보 삭제
+        emailService.clearVerification("JOIN", email);
+
         //DB 반영 후 반환
         return memberRepository.save(member);
     }
