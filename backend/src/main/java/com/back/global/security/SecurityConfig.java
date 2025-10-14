@@ -41,6 +41,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/members/me").authenticated() // 내 프로필 조회
                         .requestMatchers("/api/v1/members/me/profile").authenticated() // 내 프로필 수정
 
+                        //평가 생성 및 수정은 인증된 사용자만 가능
+                        .requestMatchers(HttpMethod.POST, "/api/v1/evaluations").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/evaluations").authenticated()
 
                         //프리랜서만 접근 가능
                         .requestMatchers("/api/*/test/auth/freelancer").hasRole("FREELANCER")
@@ -125,6 +128,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of("http://localhost:3000")); // 허용할 출처(origin)
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE")); // 허용할 메서드
         configuration.setAllowCredentials(true); //인증 정보를 포함한 요청(쿠키, 헤더) 허용 여부
+        configuration.addExposedHeader("Authorization"); // 프론트에서 Header 읽기 설정
         configuration.setAllowedHeaders(List.of("*")); //허용할 헤더 (* → 모든 헤더 허용)
 
         //설정을 특정 경로 패턴에 적용

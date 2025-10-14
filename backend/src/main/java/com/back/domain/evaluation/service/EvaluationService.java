@@ -3,6 +3,8 @@ package com.back.domain.evaluation.service;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.client.client.repository.ClientRepository;
 import com.back.domain.evaluation.dto.EvaluationCreateReq;
+import com.back.domain.evaluation.dto.EvaluationResponse;
+import com.back.domain.evaluation.dto.EvaluationUpdateReq;
 import com.back.domain.evaluation.entity.ClientEvaluation;
 import com.back.domain.evaluation.entity.FreelancerEvaluation;
 import com.back.domain.evaluation.repository.ClientEvaluationRepository;
@@ -14,58 +16,159 @@ import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.repository.MemberRepository;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.repository.ProjectRepository;
+import com.back.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class EvaluationService {
-    private final FreelancerEvaluationRepository freelancerEvaluationRepository;
-    private final ClientEvaluationRepository clientEvaluationRepository;
+
     private final MemberRepository memberRepository;
-    private final FreelancerRepository freelancerRepository;
     private final ClientRepository clientRepository;
+    private final FreelancerRepository freelancerRepository;
     private final ProjectRepository projectRepository;
+    private final ClientEvaluationRepository clientEvaluationRepository;
+    private final FreelancerEvaluationRepository freelancerEvaluationRepository;
+
+    private Freelancer findByFreelancerId(Long id) {
+        return freelancerRepository.findById(id)
+                .orElseThrow(() -> new ServiceException("404", "프리랜서 정보를 찾을 수 없습니다."));
+    }
+
+    private Client findByClientId(Long id) {
+        return clientRepository.findById(id)
+                .orElseThrow(() -> new ServiceException("404", "클라이언트 정보를 찾을 수 없습니다."));
+    }
 
     @Transactional
-    public void createEvaluation(Long evaluatorId, EvaluationCreateReq evaluationCreateReq){
+    public EvaluationResponse createEvaluation(Long evaluatorId, EvaluationCreateReq request) {
         Member evaluatorMember = memberRepository.findById(evaluatorId)
-                .orElseThrow(()-> new IllegalArgumentException("평가자를 찾을 수 없습니다."));
+                .orElseThrow(() -> new ServiceException("404", "평가자를 찾을 수 없습니다."));
 
-        Project project = projectRepository.findById(evaluationCreateReq.projectId())
-                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+        Project project = projectRepository.findById(request.projectId())
+                .orElseThrow(() -> new ServiceException("404", "프로젝트를 찾을 수 없습니다."));
 
-        //평가 평균 계산
-        EvaluationCreateReq.Ratings ratings = evaluationCreateReq.ratings();
-        double average = (ratings.professionalism() + ratings.scheduleAdherence() + ratings.communication() + ratings.proactiveness())/4.0;
-
+        EvaluationCreateReq.Ratings ratings = request.ratings();
+        double average = (ratings.professionalism() + ratings.scheduleAdherence() +
+                ratings.communication() + ratings.proactiveness()) / 4.0;
         int satisfactionScore = (int) Math.round(average);
 
-        //평가자가 클라이언트
+
         if (evaluatorMember.getRole() == Role.CLIENT) {
-            Client clientEvaluator = clientRepository.findById(evaluatorId)
-                    .orElseThrow(() -> new IllegalArgumentException("클라이언트 정보를 찾을 수 없습니다."));
-            Freelancer freelancerEvaluatee = freelancerRepository.findById(evaluationCreateReq.evaluateeId())
-                    .orElseThrow(() -> new IllegalArgumentException("프리랜서 정보를 찾을 수 없습니다."));
 
-            FreelancerEvaluation review = new FreelancerEvaluation(project, clientEvaluator, freelancerEvaluatee, evaluationCreateReq.comment(),
+            Client clientEvaluator = findByClientId(evaluatorId);
+
+            Freelancer freelancerEvaluatee = findByFreelancerId(request.evaluateeId());
+
+            FreelancerEvaluation review = new FreelancerEvaluation(project, clientEvaluator, freelancerEvaluatee, request.comment(),
                     satisfactionScore, ratings.professionalism(), ratings.scheduleAdherence(),
                     ratings.communication(), ratings.proactiveness());
-            freelancerEvaluationRepository.save(review);
 
-        //평가자가 프리랜서
+            FreelancerEvaluation savedReview = freelancerEvaluationRepository.save(review);
+            updateFreelancerRatingAvg(freelancerEvaluatee.getId());
+
+            return EvaluationResponse.from(savedReview);
+
         } else if (evaluatorMember.getRole() == Role.FREELANCER) {
-            Freelancer freelancerEvaluator = freelancerRepository.findById(evaluatorId)
-                    .orElseThrow(() -> new IllegalArgumentException("프리랜서 정보를 찾을 수 없습니다."));
-            Client clientEvaluatee = clientRepository.findById(evaluationCreateReq.evaluateeId())
-                    .orElseThrow(() -> new IllegalArgumentException("클라이언트 정보를 찾을 수 없습니다."));
+            Freelancer freelancerEvaluator = findByFreelancerId(evaluatorId);
 
-            ClientEvaluation review = new ClientEvaluation(project, clientEvaluatee, freelancerEvaluator, evaluationCreateReq.comment(),
+            Client clientEvaluatee = findByClientId(request.evaluateeId());
+
+            ClientEvaluation review = new ClientEvaluation(project, clientEvaluatee, freelancerEvaluator, request.comment(),
                     satisfactionScore, ratings.professionalism(), ratings.scheduleAdherence(),
                     ratings.communication(), ratings.proactiveness());
-            clientEvaluationRepository.save(review);
+
+            ClientEvaluation savedReview = clientEvaluationRepository.save(review);
+            updateClientRatingAvg(clientEvaluatee.getId());
+
+            return EvaluationResponse.from(savedReview);
         }
+
+        throw new ServiceException("403", "평가를 등록할 권한이 없는 사용자입니다.");
+    }
+
+    @Transactional
+    public EvaluationResponse updateEvaluation(Long evaluatorId, EvaluationUpdateReq request){
+        Member member = memberRepository.findById(evaluatorId)
+                .orElseThrow(() -> new ServiceException("404", "평가자를 찾을 수 없습니다."));
+
+        EvaluationUpdateReq.Ratings  ratings = request.ratings();
+        double average = (ratings.professionalism() + ratings.scheduleAdherence() +
+                ratings.communication() + ratings.proactiveness()) / 4.0;
+        int satisfactionScore = (int)Math.round(average);
+
+        if(member.getRole() == Role.CLIENT) {
+            //클라이언트가 프리랜서에 대한 평가 수정
+            FreelancerEvaluation evaluation = freelancerEvaluationRepository.findById(request.evaluationId())
+                    .orElseThrow(() -> new ServiceException("404", "해당 프리랜서 평가를 찾을 수 없습니다."));
+
+            //현재 사용자가 이 평가를 등록한 클라이언트인지 확인
+            if(!evaluation.getClient().getMember().getId().equals(evaluatorId)){
+                throw new ServiceException("403", "해당 평가를 수정할 권한이 없습니다.");
+            }
+
+            evaluation.modify(
+                    request.comment(), satisfactionScore, ratings.professionalism(),
+                    ratings.scheduleAdherence(), ratings.communication(), ratings.proactiveness()
+            );
+
+            // 평점 재계산 (수정 후에도 평균을 다시 계산해야 함)
+            updateFreelancerRatingAvg(evaluation.getFreelancer().getId());
+
+            return EvaluationResponse.from(evaluation);
+        }else if (member.getRole() == Role.FREELANCER) {
+            // 프리랜서가 클라이언트에 대한 평가 수정
+            ClientEvaluation evaluation = clientEvaluationRepository.findById(request.evaluationId())
+                    .orElseThrow(() -> new ServiceException("404", "해당 클라이언트 평가를 찾을 수 없습니다."));
+
+            // 현재 사용자가 이 평가를 등록한 프리랜서인지 확인
+            if (!evaluation.getFreelancer().getMember().getId().equals(evaluatorId)) {
+                throw new ServiceException("403", "해당 평가를 수정할 권한이 없습니다.");
+            }
+
+            evaluation.modify(
+                    request.comment(), satisfactionScore, ratings.professionalism(),
+                    ratings.scheduleAdherence(), ratings.communication(), ratings.proactiveness()
+            );
+
+            // 평점 재계산
+            updateClientRatingAvg(evaluation.getClient().getId());
+
+            return EvaluationResponse.from(evaluation);
+        }
+        throw new ServiceException("403", "평가를 수정할 권한이 없는 사용자입니다.");
+    }
+
+    private void updateFreelancerRatingAvg(Long freelancerId) {
+        List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerId(freelancerId);
+
+        double average = evaluations.stream()
+                .mapToInt(FreelancerEvaluation::getRatingSatisfaction)
+                .average()
+                .orElse(0.0);
+
+        Freelancer freelancer = freelancerRepository.findById(freelancerId)
+                .orElseThrow(() -> new ServiceException("404", "평점 업데이트 중 프리랜서를 찾을 수 없습니다."));
+
+        freelancer.updateRatingAvg(average);
+    }
+
+    private void updateClientRatingAvg(Long clientId) {
+        List<ClientEvaluation> evaluations = clientEvaluationRepository.findByClientId(clientId);
+
+        double average = evaluations.stream()
+                .mapToInt(ClientEvaluation::getRatingSatisfaction)
+                .average()
+                .orElse(0.0);
+
+        Client client = clientRepository.findById(clientId)
+                .orElseThrow(() -> new ServiceException("404", "평점 업데이트 중 클라이언트를 찾을 수 없습니다."));
+
+        client.updateRatingAvg(average);
     }
 }

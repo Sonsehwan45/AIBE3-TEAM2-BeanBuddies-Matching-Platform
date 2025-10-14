@@ -32,7 +32,7 @@ public class Client {
 
     @Column(name = "rating_avg")
     //읽기전용?
-    private float ratingAvg;
+    private double ratingAvg;
 
     public Client(Member member) {
         this.member = member;
@@ -53,5 +53,10 @@ public class Client {
         this.businessNo = businessNo;
         this.companyPhone = companyPhone;
         this.companyEmail = companyEmail;
+    }
+
+    //이미 계산된 평가 평균을 소수점 첫째 자리까지 반올림하기 위한 메서드
+    public void updateRatingAvg(double ratingAvg) {
+        this.ratingAvg = Math.round(ratingAvg * 10.0) / 10.0;
     }
 }

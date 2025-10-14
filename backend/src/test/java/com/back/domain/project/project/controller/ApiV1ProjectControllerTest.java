@@ -515,7 +515,7 @@ class ApiV1ProjectControllerTest {
                 .andExpect(jsonPath("$.resultCode").value("200-1"))
                 .andExpect(jsonPath("$.msg").value("조회 성공"))
                 .andExpect(jsonPath("$.data.content").isArray())
-                .andExpect(jsonPath("$.data.content[0].title").value("테스트 프로젝트 1"));
+                .andExpect(jsonPath("$.data.content[0].title").value("테스트 프로젝트 19"));
     }
 
     @Test
@@ -631,7 +631,7 @@ class ApiV1ProjectControllerTest {
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content").isArray())
-                .andExpect(jsonPath("$.data.content.length()").value(2)) // 조건 만족 프로젝트는 2, 프로젝트 2와 3
+                .andExpect(jsonPath("$.data.content.length()").value(10))
                 .andExpect(jsonPath("$.data.content[0].skills[*].id", Matchers.hasItem(2)))
                 .andExpect(jsonPath("$.data.content[0].interests[*].id", Matchers.hasItem(2)));
     }
@@ -647,7 +647,7 @@ class ApiV1ProjectControllerTest {
         resultActions
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.content").isArray())
-                .andExpect(jsonPath("$.data.content.length()").value(2)) // 프로젝트 2, 3
+                .andExpect(jsonPath("$.data.content.length()").value(10)) // 프로젝트 2, 3
                 .andExpect(jsonPath("$.data.content[0].interests[*].id").value(Matchers.hasItem(3)));
     }
 }

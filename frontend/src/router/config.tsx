@@ -1,24 +1,27 @@
-
 import type { RouteObject } from "react-router-dom";
 import NotFound from "../pages/NotFound";
-import Home from "../pages/home/page";
-import Signup from "../pages/auth/signup/page";
-import Login from "../pages/auth/login/page";
-import ForgotPassword from "../pages/auth/forgot-password/page";
 import DeleteAccount from "../pages/auth/delete-account/page";
-import Projects from "../pages/projects/page";
-import ProjectDetail from "../pages/projects/[id]/page";
-import ProjectApply from "../pages/projects/[id]/apply/page";
-import Freelancers from "../pages/freelancers/page";
+import ForgotPassword from "../pages/auth/forgot-password/page";
+import Login from "../pages/auth/login/page";
+import Signup from "../pages/auth/signup/page";
+import Evaluation from "../pages/evaluation/page";
 import FreelancerDetail from "../pages/freelancers/[id]/page";
 import FreelancerPropose from "../pages/freelancers/[id]/propose/page";
-import Recommendations from "../pages/recommendations/page";
+import Freelancers from "../pages/freelancers/page";
+import Home from "../pages/home/page";
 import MyPage from "../pages/mypage/page";
-import Evaluation from "../pages/evaluation/page";
+import ProjectApply from "../pages/projects/[id]/apply/page";
+import ProjectsEditPage from "../pages/projects/[id]/edit/page";
+import ProjectDetail from "../pages/projects/[id]/page";
+import ProjectCreate from "../pages/projects/create/page";
+import Projects from "../pages/projects/page";
+import Recommendations from "../pages/recommendations/page";
+//테스트 용 페이지
+import MyInfo from "../pages/test/page";
 
 interface RouteProps {
-  userType?: 'client' | 'freelancer';
-  setUserType?: (type: 'client' | 'freelancer') => void;
+  userType?: "client" | "freelancer";
+  setUserType?: (type: "client" | "freelancer") => void;
 }
 
 const routes: RouteObject[] = [
@@ -48,7 +51,9 @@ const routes: RouteObject[] = [
   },
   {
     path: "/projects/:id",
-    element: ({ userType }: RouteProps) => <ProjectDetail userType={userType} />,
+    element: ({ userType }: RouteProps) => (
+      <ProjectDetail userType={userType} />
+    ),
   },
   {
     path: "/projects/:id/apply",
@@ -60,7 +65,9 @@ const routes: RouteObject[] = [
   },
   {
     path: "/freelancers/:id",
-    element: ({ userType }: RouteProps) => <FreelancerDetail userType={userType} />,
+    element: ({ userType }: RouteProps) => (
+      <FreelancerDetail userType={userType} />
+    ),
   },
   {
     path: "/freelancers/:id/propose",
@@ -68,7 +75,9 @@ const routes: RouteObject[] = [
   },
   {
     path: "/recommendations",
-    element: ({ userType }: RouteProps) => <Recommendations userType={userType} />,
+    element: ({ userType }: RouteProps) => (
+      <Recommendations userType={userType} />
+    ),
   },
   {
     path: "/mypage",
@@ -77,6 +86,19 @@ const routes: RouteObject[] = [
   {
     path: "/evaluation/:type/:projectId",
     element: <Evaluation />,
+  },
+  {
+    path: "/projects/create",
+    element: <ProjectCreate />,
+  },
+  //테스트 용 페이지
+  {
+    path: "/test/my-info",
+    element: <MyInfo />, // 로그인 토큰 테스트 페이지
+  },
+  {
+    path: "/projects/:id/edit",
+    element: <ProjectsEditPage />,
   },
   {
     path: "*",
