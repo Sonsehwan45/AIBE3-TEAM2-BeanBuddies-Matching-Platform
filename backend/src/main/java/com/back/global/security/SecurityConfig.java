@@ -24,15 +24,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 //요청에 대한 권한 설정
                 .authorizeHttpRequests(auth -> auth
+                        // Preflight-Request(OPTIONS) 허용
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         //누구나 접근 가능
                         .requestMatchers("/api/*/test/public").permitAll()
                         .requestMatchers("/api/*/members/join/**").permitAll()
                         .requestMatchers("/api/*/members/temp-password/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서 단건/다건 조회
                         .requestMatchers(HttpMethod.GET, "/api/v1/members/*/profile").permitAll() // 다른 사용자 프로필 조회
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서/제안서 단건/다건 조회
+                        .requestMatchers("/api/*/auth/login").permitAll() // 로그인 경로는 누구나 접근 가능해야 함
+                        .requestMatchers("/api/*/members/join/**").permitAll()
 
                         //인증된 사용자만 접근 가능
                         .requestMatchers("/api/*/test/auth").authenticated()
@@ -67,7 +71,7 @@ public class SecurityConfig {
 
 
                         //그 외 요청은 인증 필요없음
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
 
                 // REST API용 Security 기본 기능 비활성화
@@ -125,8 +129,8 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         //cors 설정
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "https://beanbuddies.yhcho.com", "https://api.yhcho.com", "http://localhost:8080")); // 허용할 출처(origin)
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE")); // 허용할 메서드
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "https://beanbuddies.yhcho.com")); // 허용할 출처(origin)
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")); // 허용할 메서드
         configuration.setAllowCredentials(true); //인증 정보를 포함한 요청(쿠키, 헤더) 허용 여부
         configuration.addExposedHeader("Authorization"); // 프론트에서 Header 읽기 설정
         configuration.setAllowedHeaders(List.of("*")); //허용할 헤더 (* → 모든 헤더 허용)

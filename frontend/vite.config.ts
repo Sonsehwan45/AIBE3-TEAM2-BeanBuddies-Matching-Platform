@@ -78,5 +78,12 @@ export default defineConfig({
   server: {
     port: 3000,
     host: '0.0.0.0',
+    proxy: {
+      // /api로 시작하는 요청을 백엔드 서버로 전달합니다.
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true, // 다른 origin으로 요청을 보낼 때 헤더의 origin을 바꿔줍니다.
+      },
+    },
   }
 })
