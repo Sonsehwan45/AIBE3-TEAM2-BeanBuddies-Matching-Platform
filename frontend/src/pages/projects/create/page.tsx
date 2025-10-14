@@ -35,14 +35,19 @@ export default function ProjectsCreatePage() {
 
   // skills, interests 불러오기
   useEffect(() => {
-    fetch("/api/v1/skills")
-      .then((res) => res.json())
-      .then((data) => setSkills(data.result || []))
+    // client 인스턴스 사용
+    client
+      .GET("/api/v1/skills")
+      .then(({ data }) => {
+        setSkills(data?.data ?? []);
+      })
       .catch((err) => console.error("skills fetch error:", err));
 
-    fetch("/api/v1/interests")
-      .then((res) => res.json())
-      .then((data) => setInterests(data.result || []))
+    client
+      .GET("/api/v1/interests")
+      .then(({ data }) => {
+        setInterests(data?.data ?? []);
+      })
       .catch((err) => console.error("interests fetch error:", err));
   }, []);
 
