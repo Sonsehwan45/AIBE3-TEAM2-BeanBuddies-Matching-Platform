@@ -1,19 +1,25 @@
 package com.back.domain.member.member.service;
 
+import com.back.domain.application.application.entity.Application;
+import com.back.domain.application.application.repository.ApplicationRepository;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
+import com.back.domain.member.member.constant.ProfileScope;
 import com.back.domain.member.member.constant.Role;
 import com.back.domain.member.member.dto.ClientUpdateDto;
 import com.back.domain.member.member.dto.FreelancerUpdateDto;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.repository.MemberRepository;
 import com.back.global.exception.ServiceException;
+import com.back.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -22,6 +28,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final ApplicationRepository applicationRepository;
 
     private boolean initFlag = false;
 
@@ -78,6 +85,7 @@ public class MemberService {
         // Update common fields
         if (dto.getName() != null) member.updateName(dto.getName());
         if (dto.getProfileImgUrl() != null) member.updateProfileImgUrl(dto.getProfileImgUrl());
+        if (dto.getProfileScope() != null) member.updateProfileScope(dto.getProfileScope());
 
         Freelancer freelancer = member.getFreelancer();
         freelancer.updateInfo(dto.getJob(), dto.getFreelancerEmail(), dto.getComment(), dto.getCareer());
@@ -94,6 +102,7 @@ public class MemberService {
         // Update common fields
         if (dto.getName() != null) member.updateName(dto.getName());
         if (dto.getProfileImgUrl() != null) member.updateProfileImgUrl(dto.getProfileImgUrl());
+        if (dto.getProfileScope() != null) member.updateProfileScope(dto.getProfileScope());
 
         Client client = member.getClient();
         client.update(dto.getCompanySize(), dto.getCompanyDescription(), dto.getRepresentative(), dto.getBusinessNo(), dto.getCompanyPhone(), dto.getCompanyEmail());
@@ -183,5 +192,38 @@ public class MemberService {
         }
 
         return tempPassword.toString();
+    }
+
+    public Member getProfile(Long userId, CustomUserDetails user) {
+        Member member = findById(userId);
+
+        if (member.getProfileScope() == ProfileScope.PUBLIC) {
+            return member;
+        }
+
+        // 자신의 프로필은 항상 접근 가능
+        if (user != null && Objects.equals(user.getId(), member.getId())) {
+            return member;
+        }
+
+        // 프리랜서의 비공개 프로필 접근 제어
+        if (member.isFreelancer()) {
+            if (user == null) {
+                throw new ServiceException("401-1", "로그인이 필요합니다.");
+            }
+
+            Member requestMember = findById(user.getId());
+            if (requestMember.isClient()) {
+                List<Application> applications = applicationRepository.findAllByFreelancer(member.getFreelancer());
+                boolean hasApplied = applications.stream()
+                        .anyMatch(app -> app.getProject().getClient().getMember().getId().equals(requestMember.getId()));
+
+                if (hasApplied) {
+                    return member;
+                }
+            }
+        }
+
+        throw new ServiceException("403-3", "프로필을 조회할 권한이 없습니다.");
     }
 }

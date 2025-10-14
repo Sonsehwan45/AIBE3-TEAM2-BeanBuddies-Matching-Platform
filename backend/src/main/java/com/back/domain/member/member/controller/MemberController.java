@@ -80,8 +80,11 @@ public class MemberController {
     }
 
     @GetMapping("/{userId}/profile")
-    public ApiResponse<ProfileResponseDto> getProfile(@PathVariable Long userId) {
-        Member member = memberService.findById(userId);
+    public ApiResponse<ProfileResponseDto> getProfile(
+            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        Member member = memberService.getProfile(userId, user);
         return new ApiResponse<>("200-7", "프로필 조회 성공", ProfileResponseDto.of(member));
     }
 
