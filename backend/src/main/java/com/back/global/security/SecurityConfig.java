@@ -47,6 +47,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects/*/applications").hasRole("FREELANCER") // 지원서 등록
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/projects/*/applications/**").hasRole("FREELANCER") // 지원서 삭제
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/proposals/*").hasRole("FREELANCER") // 제안서 상태 변경(수락, 거절)
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/freelancers/*").hasRole("FREELANCER") // 프리랜서 개인정보 변경
 
                         //클라이언트만 접근 가능
                         .requestMatchers("/api/*/test/auth/client").hasRole("CLIENT")
