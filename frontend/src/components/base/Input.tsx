@@ -1,4 +1,5 @@
 interface InputProps {
+  name?: string;
   label?: string;
   type?: string;
   placeholder?: string;
@@ -11,6 +12,7 @@ interface InputProps {
 }
 
 export default function Input({
+  name,
   label,
   type = 'text',
   placeholder,
@@ -30,6 +32,7 @@ export default function Input({
         </label>
       )}
       <input
+        name={name}
         type={type}
         placeholder={placeholder}
         value={value}
