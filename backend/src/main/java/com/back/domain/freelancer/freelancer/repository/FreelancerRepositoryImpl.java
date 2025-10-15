@@ -7,8 +7,13 @@ import com.back.domain.common.skill.dto.SkillDto;
 import com.back.domain.freelancer.freelancer.constant.CareerLevel;
 import com.back.domain.freelancer.freelancer.dto.FreelancerSearchCondition;
 import com.back.domain.freelancer.freelancer.dto.FreelancerSummary;
+import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Order;
+import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.EntityPathBase;
+import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import java.util.Collections;
 import java.util.List;
@@ -25,7 +30,6 @@ public class FreelancerRepositoryImpl implements FreelancerRepositoryCustom {
     private final JPAQueryFactory queryFactory;
 
     // 검색조건 : 경력, 평점, 스킬
-    // TODO : 정렬조건 추가
     public Page<FreelancerSummary> findAll(FreelancerSearchCondition condition, Pageable pageable) {
         long offset = pageable.getOffset();
         int limit = pageable.getPageSize();
@@ -44,9 +48,9 @@ public class FreelancerRepositoryImpl implements FreelancerRepositoryCustom {
                 )
                 .from(freelancer)
                 .leftJoin(freelancer.skills, freelancerSkill)
+                .orderBy(getSort(pageable))
                 .offset(offset)
                 .limit(limit)
-                .orderBy()
                 .fetch();
 
         List<Long> freelancerIds = freelancers.stream()
@@ -96,6 +100,26 @@ public class FreelancerRepositoryImpl implements FreelancerRepositoryCustom {
                 .fetchOne();
 
         return new PageImpl<>(results, pageable, total);
+    }
+
+    private OrderSpecifier<?>[] getSort(Pageable pageable) {
+        if (!pageable.getSort().isSorted()) {
+            return new OrderSpecifier[]{new OrderSpecifier<>(Order.DESC, freelancer.id)};
+        }
+
+        return pageable.getSort().stream()
+                .map(order -> {
+                    Order direction = order.isAscending() ? Order.ASC : Order.DESC;
+
+                    return switch (order.getProperty()) {
+                        case "ratingAvg" -> new OrderSpecifier<>(direction, freelancer.ratingAvg);
+                        case "careerTotalYears" -> new OrderSpecifier<>(direction, freelancer.careerTotalYears);
+                        case "name" -> new OrderSpecifier<>(direction, freelancer.member.name);
+                        case "id" -> new OrderSpecifier<>(direction, freelancer.id);
+                        default -> new OrderSpecifier<>(Order.DESC, freelancer.id);
+                    };
+                })
+                .toArray(OrderSpecifier[]::new);
     }
 
     private BooleanExpression ratingAvgGoe(Float ratingAvg) {
