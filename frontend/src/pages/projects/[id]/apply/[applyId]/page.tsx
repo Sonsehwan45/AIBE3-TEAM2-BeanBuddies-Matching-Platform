@@ -27,7 +27,7 @@ export default function ApplicationDetail() {
   const [application, setApplication] = useState<ApplicationDetailData | null>(
     null
   );
-  const [hasAccess, setHasAccess] = useState<boolean | null>(null); // 권한 체크 상태
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
   // 데이터 로딩
   useEffect(() => {
@@ -39,14 +39,12 @@ export default function ApplicationDetail() {
         const appData = res.data.data;
         setApplication(appData);
 
-        // 로그인 여부 확인
         if (!isLoggedIn) {
           alert("로그인이 필요합니다.");
           navigate("/login");
           return;
         }
 
-        // 권한 체크: 프로젝트 클라이언트 or 지원서 작성자
         const isClientOfProject = appData.clientId === user?.id;
         const isFreelancerOfApplication = appData.freelancerId === user?.id;
 
@@ -56,13 +54,62 @@ export default function ApplicationDetail() {
           return;
         }
 
-        setHasAccess(true); // 접근 가능
+        setHasAccess(true);
       } catch (err) {
         console.error(err);
       }
     };
     fetchApplication();
   }, [id, applyId, isLoggedIn, user, navigate]);
+
+  // 상태 변경 핸들러
+  const handleStatusChange = useCallback(
+    async (newStatus: "WAIT" | "ACCEPT" | "DENIED") => {
+      if (!application) return;
+
+      const statusText =
+        newStatus === "ACCEPT"
+          ? "승인"
+          : newStatus === "DENIED"
+          ? "거절"
+          : "대기";
+
+      if (!window.confirm(`이 지원서를 ${statusText}하시겠습니까?`)) return;
+
+      try {
+        const response = await client.PATCH(
+          "/api/v1/projects/{projectId}/applications/{id}",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            params: {
+              path: {
+                projectId: application.projectId,
+                id: application.id,
+              },
+            },
+            body: {
+              status: newStatus,
+            },
+          }
+        );
+
+        if (response.error) throw response.error;
+
+        alert(`지원서가 ${statusText}되었습니다.`);
+
+        // 상태 업데이트
+        setApplication((prev) =>
+          prev ? { ...prev, status: newStatus } : null
+        );
+      } catch (err) {
+        console.error("상태 변경 실패:", err);
+        alert("상태 변경에 실패했습니다.");
+      }
+    },
+    [application, token]
+  );
 
   const handleDelete = useCallback(async () => {
     if (!application) return;
@@ -99,7 +146,6 @@ export default function ApplicationDetail() {
     return <div className="p-6 text-gray-500">로딩 중...</div>;
   }
 
-  // ✅ 간단한 포맷 함수
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("ko-KR", {
@@ -115,9 +161,9 @@ export default function ApplicationDetail() {
     switch (status) {
       case "WAIT":
         return "대기 중";
-      case "APPROVED":
+      case "ACCEPT":
         return "승인됨";
-      case "REJECTED":
+      case "DENIED":
         return "거절됨";
       default:
         return "알 수 없음";
@@ -128,14 +174,19 @@ export default function ApplicationDetail() {
     switch (status) {
       case "WAIT":
         return "bg-yellow-100 text-yellow-800";
-      case "APPROVED":
+      case "ACCEPT":
         return "bg-green-100 text-green-800";
-      case "REJECTED":
+      case "DENIED":
         return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  // 클라이언트 여부 확인
+  const isClient = user?.role === "CLIENT" && user?.id === application.clientId;
+  const isFreelancer =
+    user?.role === "FREELANCER" && user?.id === application.freelancerId;
 
   return (
     <div className="max-w-5xl mx-auto p-8">
@@ -247,17 +298,40 @@ export default function ApplicationDetail() {
 
       {/* 버튼 영역 */}
       <div className="flex justify-end gap-4 mt-10">
-        {isLoggedIn &&
-          user?.role === "FREELANCER" &&
-          user?.id === application.freelancerId && (
-            <button
-              onClick={handleDelete}
-              className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center"
-            >
-              <i className="ri-delete-bin-line mr-2"></i>
-              삭제하기
-            </button>
-          )}
+        {/* 클라이언트: 상태 변경 버튼 */}
+        {isClient && (
+          <>
+            {application.status !== "ACCEPT" && (
+              <button
+                onClick={() => handleStatusChange("ACCEPT")}
+                className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center"
+              >
+                <i className="ri-check-line mr-2"></i>
+                승인하기
+              </button>
+            )}
+            {application.status !== "DENIED" && (
+              <button
+                onClick={() => handleStatusChange("DENIED")}
+                className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center"
+              >
+                <i className="ri-close-line mr-2"></i>
+                거절하기
+              </button>
+            )}
+          </>
+        )}
+
+        {/* 프리랜서: 삭제 버튼 */}
+        {isFreelancer && (
+          <button
+            onClick={handleDelete}
+            className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center"
+          >
+            <i className="ri-delete-bin-line mr-2"></i>
+            삭제하기
+          </button>
+        )}
       </div>
     </div>
   );
