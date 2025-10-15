@@ -7,10 +7,8 @@ import com.back.domain.evaluation.entity.FreelancerEvaluation;
 import com.back.domain.evaluation.repository.FreelancerEvaluationRepository;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.freelancer.freelancer.repository.FreelancerRepository;
-import com.back.domain.member.member.constant.Role;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.repository.MemberRepository;
-import com.back.domain.project.project.constant.ProjectStatus;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.repository.ProjectRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,11 +64,11 @@ class EvaluationControllerTest {
     @BeforeEach
     void setUp() {
 
-        clientMember = new Member("CLIENT", "password1234", "김클라", "01012345678", "client@test.com");
+        clientMember = new Member(null, "CLIENT", "password1234", "김클라", "01012345678", "client@test.com");
         memberRepository.save(clientMember);
         Client savedClient = clientRepository.save(new Client(clientMember));
 
-        freelancerMember = new Member("FREELANCER", "password1234", "박프리", "01087654321", "freelancer@test.com");
+        freelancerMember = new Member(null, "FREELANCER", "password1234", "박프리", "01087654321", "freelancer@test.com");
         memberRepository.save(freelancerMember);
         freelancerRepository.save(new Freelancer(freelancerMember));
 

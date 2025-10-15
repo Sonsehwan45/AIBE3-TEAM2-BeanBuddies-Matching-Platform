@@ -1,26 +1,20 @@
 package com.back.domain.freelancer.freelancer.entity;
 
+import com.back.domain.application.application.entity.Application;
 import com.back.domain.common.skill.entity.Skill;
 import com.back.domain.freelancer.join.entity.FreelancerInterest;
 import com.back.domain.freelancer.join.entity.FreelancerSkill;
 import com.back.domain.member.member.entity.Member;
+import com.back.domain.proposal.proposal.entity.Proposal;
 import com.back.standard.converter.JsonConverter;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
 
 @Entity
 @NoArgsConstructor
@@ -58,6 +52,13 @@ public class Freelancer {
     @OneToMany(mappedBy = "freelancer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<FreelancerInterest> interests = new ArrayList<>();
 
+    //프리랜서와 지원서, 제안서 연결
+    @OneToMany(mappedBy = "freelancer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Application> applications = new ArrayList<>();
+
+    @OneToMany(mappedBy = "freelancer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Proposal> proposals = new ArrayList<>();
+
     public Freelancer(Member member) {
         this.member = member;
     }
@@ -92,5 +93,22 @@ public class Freelancer {
     //이미 계산된 평가 평균을 소수점 첫째 자리까지 반올림하기 위한 메서드
     public void updateRatingAvg(double ratingAvg) {
         this.ratingAvg = Math.round(ratingAvg * 10.0) / 10.0;
+    }
+
+    //회원 탈퇴
+    public void deleteInfo() {
+        this.job = null;
+        this.freelancerEmail = null;
+        this.comment = null;
+        this.career = null;
+        this.careerTotalYears = null;
+
+        if(skills != null && !skills.isEmpty()) {
+            skills.clear();
+        }
+
+        if(interests != null && !interests.isEmpty()) {
+            interests.clear();
+        }
     }
 }

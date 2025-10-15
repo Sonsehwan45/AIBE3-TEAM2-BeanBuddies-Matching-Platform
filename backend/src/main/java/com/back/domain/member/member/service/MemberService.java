@@ -1,5 +1,6 @@
 package com.back.domain.member.member.service;
 
+import com.back.domain.application.application.constant.ApplicationStatus;
 import com.back.domain.application.application.entity.Application;
 import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.client.client.entity.Client;
@@ -10,6 +11,8 @@ import com.back.domain.member.member.dto.ClientUpdateDto;
 import com.back.domain.member.member.dto.FreelancerUpdateDto;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.repository.MemberRepository;
+import com.back.domain.project.project.constant.ProjectStatus;
+import com.back.domain.proposal.proposal.constant.ProposalStatus;
 import com.back.global.exception.ServiceException;
 import com.back.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -264,5 +267,71 @@ public class MemberService {
         }
 
         throw new ServiceException("403-3", "프로필을 조회할 권한이 없습니다.");
+    }
+
+    public void withdrawMember(Member member, String password) {
+        //비밀번호 확인
+        checkPassword(member, password);
+
+        //프리랜서 탈퇴 조건 확인
+        if(member.isFreelancer() && member.getFreelancer() != null) {
+            Freelancer freelancer = member.getFreelancer();
+
+            // 참여 중인 프로젝트 있는지 확인
+            boolean hasOngoingProjects = freelancer.getApplications().stream()
+                    .anyMatch(app -> app.getStatus() == ApplicationStatus.ACCEPT && //지원서가 수락 상태고
+                            (app.getProject().getStatus() == ProjectStatus.IN_PROGRESS //프로젝트가 진행
+                                    || app.getProject().getStatus() == ProjectStatus.COMPLETED)); //혹은 완료 상태면 참여 중이라고 판단
+
+            // 참여 중인 프로젝트가 있다면
+            if (hasOngoingProjects) {
+                throw new ServiceException("400-2", "참여 중인 프로젝트가 있어 탈퇴할 수 없습니다.");
+            }
+
+            // 지원서 WAIT 상태인 거 삭제, 제안서 WAIT 상태인 거 DENIED
+            freelancer.getApplications().removeIf(app -> app.getStatus() == ApplicationStatus.WAIT);
+            freelancer.getProposals().forEach(proposal -> {
+                if (proposal.getStatus() == ProposalStatus.WAIT) {
+                    proposal.updateStatus(ProposalStatus.DENIED);
+                }
+            });
+        }
+
+        //클라이언트 탈퇴 조건 확인
+        if(member.isClient() && member.getClient() != null) {
+            Client client = member.getClient();
+
+            //진행 중인 프로젝트 있는 지 확인
+            boolean hasOngoingProjects = client.getProjects().stream()
+                    .anyMatch(project -> project.getStatus() == ProjectStatus.IN_PROGRESS //프로젝트가 진행 중
+                            || project.getStatus() == ProjectStatus.COMPLETED); //혹은 완료 상태면 진행 중인 걸로 판단
+
+            if(hasOngoingProjects) {
+                throw new ServiceException("400-3", "진행 중인 프로젝트가 있어 탈퇴할 수 없습니다.");
+            }
+
+            // 오픈 중인 프로젝트 CLOSED 처리
+            client.getProjects().forEach(project -> {
+                if(project.getStatus() == ProjectStatus.OPEN) {
+                    project.updateStatus(ProjectStatus.CLOSED);
+                }
+            });
+
+            // 지원서 WAIT 상태인 거 DENIED, 제안서 WAIT 상태인 거 삭제
+            client.getProjects().forEach(project -> {
+                project.getApplications().forEach(app -> {
+                    if(app.getStatus() == ApplicationStatus.WAIT) {
+                        app.modifyStatus(ApplicationStatus.DENIED);
+                    }
+                });
+                project.getProposals().removeIf(proposal -> proposal.getStatus() == ProposalStatus.WAIT);
+            });
+        }
+
+        // 회원 비식별화
+        member.withdraw();
+
+        //DB 저장
+        memberRepository.save(member);
     }
 }
