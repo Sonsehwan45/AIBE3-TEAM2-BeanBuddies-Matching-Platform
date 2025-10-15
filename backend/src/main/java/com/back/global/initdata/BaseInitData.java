@@ -6,7 +6,11 @@ import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.client.client.service.ClientService;
 import com.back.domain.common.interest.service.InterestService;
+import com.back.domain.common.skill.entity.Skill;
 import com.back.domain.common.skill.service.SkillService;
+import com.back.domain.evaluation.dto.EvaluationCreateReq;
+import com.back.domain.evaluation.dto.EvaluationCreateReq.Ratings;
+import com.back.domain.evaluation.service.EvaluationService;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.freelancer.freelancer.service.FreelancerService;
 import com.back.domain.member.member.entity.Member;
@@ -43,6 +47,7 @@ public class BaseInitData {
     private final ApplicationService applicationService;
     private final FreelancerService freelancerService;
     private final ProposalService proposalService;
+    private final EvaluationService evaluationService;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {
@@ -74,6 +79,10 @@ public class BaseInitData {
         Member freelancer4 = memberService.join("FREELANCER", "프리랜서4", "freelancer4", "1234", "1234", "test@test.com");
         Member freelancer5 = memberService.join("FREELANCER", "프리랜서5", "freelancer5", "1234", "1234", "test@test.com");
         Member client3 = memberService.join("CLIENT", "클라이언트3", "client3", "1234", "1234", "test@test.com");
+
+        for (int i = 6; i <= 50; i++) {
+            memberService.join("FREELANCER", "프리랜서" + i, "freelancer" + i, "1234", "1234", "test@test.com");
+        }
 
         //클라이언트2, 프리랜서2는 활동 정지 상태로 변경
         memberService.changeStatus(client2, "INACTIVE");
@@ -265,6 +274,46 @@ public class BaseInitData {
 
         freelancerService.updateFreelancer(freelancerId5, "프론트엔드", "test@test.com", "안녕하세요",
                 null, List.of());
+
+        List<String> jobs = List.of("백엔드", "프론트엔드", "풀스택", "백엔드", "모바일");
+        List<String> comments = List.of("안녕하세요", "잘 부탁드립니다", "열심히 하겠습니다");
+        List<List<Long>> skills = List.of(
+                List.of(1L), List.of(2L), List.of(3L),
+                List.of(1L, 2L), List.of(1L, 3L), List.of(2L, 3L),
+                List.of(1L, 2L, 3L)
+        );
+        List<Integer> careerMonths = List.of(5, 12, 18, 24, 30, 36, 42, 48, 54);
+        List<String> evaluationComments = List.of("좋은 프리랜서입니다.", "다음에 또 함께 일하고 싶습니다.", "프로젝트를 성공적으로 완료했습니다.");
+        List<Long> projectIds = List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L);
+        List<Integer> ratingsList = List.of(5, 4, 3, 2, 1, 1, 2, 2, 3, 4, 4, 5, 2, 3, 1, 4, 5);
+        List<Long> evaluatorIds = List.of(2L, 3L);
+
+        for (int i = 6; i <= 50; i++) {
+            Long freelancerId = memberService.findByUsername("freelancer" + i).get().getFreelancer().getId();
+            freelancerService.updateFreelancer(
+                    freelancerId,
+                    jobs.get(i % jobs.size()),
+                    "test" + i + "@test.com",
+                    comments.get(i % comments.size()),
+                    Map.of("Java", careerMonths.get(i % careerMonths.size()), "Spring",
+                            careerMonths.get(i % careerMonths.size())),
+                    skills.get(i % skills.size()));
+
+            // 프리랜서 평가 데이터 추가
+            evaluationService.createEvaluation(
+                    evaluatorIds.get(i % evaluatorIds.size()),
+                    new EvaluationCreateReq(
+                            projectIds.get(i % projectIds.size()),
+                            freelancerId,
+                            new Ratings(
+                                    ratingsList.get(i % ratingsList.size()),
+                                    ratingsList.get((i + 1) % ratingsList.size()),
+                                    ratingsList.get((i + 2) % ratingsList.size()),
+                                    ratingsList.get((i + 3) % ratingsList.size())
+                            ),
+                    evaluationComments.get(i % evaluationComments.size()))
+            );
+        }
     }
 }
 
