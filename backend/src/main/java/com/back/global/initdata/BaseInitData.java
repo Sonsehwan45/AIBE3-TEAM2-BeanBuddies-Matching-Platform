@@ -14,6 +14,7 @@ import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
 import com.back.domain.proposal.proposal.service.ProposalService;
+import com.back.domain.recommendations.recommendations.service.SearchIndexService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -43,6 +44,7 @@ public class BaseInitData {
     private final ApplicationService applicationService;
     private final FreelancerService freelancerService;
     private final ProposalService proposalService;
+    private final SearchIndexService searchIndexService;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {
@@ -53,6 +55,7 @@ public class BaseInitData {
             self.addApplication();
             self.updateFreelancerInfo();
             self.addProposal();
+            self.synchronization();
         };
     }
 
@@ -75,6 +78,11 @@ public class BaseInitData {
         Member freelancer5 = memberService.join(null, "FREELANCER", "프리랜서5", "freelancer5", "1234", "1234", "test@test.com");
         Member client3 = memberService.join(null, "CLIENT", "클라이언트3", "client3", "1234", "1234", "test@test.com");
 
+        memberService.join("FREELANCER", "프리랜서6", "freelancer6", "1234", "1234", "test@test.com");
+        memberService.join("FREELANCER", "프리랜서7", "freelancer7", "1234", "1234", "test@test.com");
+        memberService.join("FREELANCER", "프리랜서8", "freelancer8", "1234", "1234", "test@test.com");
+        memberService.join("FREELANCER", "프리랜서9", "freelancer9", "1234", "1234", "test@test.com");
+
         //클라이언트2, 프리랜서2는 활동 정지 상태로 변경
         memberService.changeStatus(client2, "INACTIVE");
         memberService.changeStatus(freelancer2, "INACTIVE");
@@ -91,6 +99,11 @@ public class BaseInitData {
         skillService.create("Java");
         skillService.create("Spring boot");
         skillService.create("React");
+
+        skillService.create("JPA");
+        skillService.create("Next.js");
+        skillService.create("Python");
+        skillService.create("Docker");
 
         interestService.create("웹 개발");
         interestService.create("모바일 앱");
@@ -281,6 +294,10 @@ public class BaseInitData {
 
         freelancerService.updateFreelancer(freelancerId5, "프론트엔드", "test@test.com", "안녕하세요",
                 null, List.of());
+    }
+
+    public void synchronization() {
+        searchIndexService.rebuildAll();
     }
 }
 
