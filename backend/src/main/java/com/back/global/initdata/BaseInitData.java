@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.annotation.Order;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -52,6 +53,7 @@ public class BaseInitData {
     private final SearchIndexService searchIndexService;
 
     @Bean
+    @Order(1)
     ApplicationRunner baseInitDataApplicationRunner() {
         return args -> {
             self.addMember();
@@ -66,6 +68,7 @@ public class BaseInitData {
 
     @Bean
     @Profile("dev")
+    @Order(2)
     ApplicationRunner devBaseInitDataApplicationRunner() {
         return args -> {
             self.addDevMember();
