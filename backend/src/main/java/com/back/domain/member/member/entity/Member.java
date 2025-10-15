@@ -90,6 +90,10 @@ public class Member extends BaseEntity {
         this.name = name;
     }
 
+    public void updateEmail(String email) {
+        this.email = email;
+    }
+
     public void updateProfileScope(ProfileScope profileScope) {
         this.profileScope = profileScope;
     }

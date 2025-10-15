@@ -87,6 +87,7 @@ public class MemberService {
         }
         // Update common fields
         if (dto.getName() != null) member.updateName(dto.getName());
+        if (dto.getEmail() != null) member.updateEmail(dto.getEmail());
         if (dto.getProfileImgUrl() != null) member.updateProfileImgUrl(dto.getProfileImgUrl());
         if (dto.getProfileScope() != null) member.updateProfileScope(dto.getProfileScope());
 
@@ -104,6 +105,7 @@ public class MemberService {
         }
         // Update common fields
         if (dto.getName() != null) member.updateName(dto.getName());
+        if (dto.getEmail() != null) member.updateEmail(dto.getEmail());
         if (dto.getProfileImgUrl() != null) member.updateProfileImgUrl(dto.getProfileImgUrl());
         if (dto.getProfileScope() != null) member.updateProfileScope(dto.getProfileScope());
 

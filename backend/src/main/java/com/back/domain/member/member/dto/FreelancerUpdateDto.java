@@ -12,6 +12,7 @@ import java.util.Map;
 public class FreelancerUpdateDto {
     // Common Member fields
     private String name;
+    private String email;
     private String profileImgUrl;
     private ProfileScope profileScope;
 
