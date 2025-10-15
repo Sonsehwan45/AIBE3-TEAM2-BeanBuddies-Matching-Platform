@@ -5,6 +5,7 @@ import com.back.domain.client.client.repository.ClientRepository;
 import com.back.domain.evaluation.dto.EvaluationCreateReq;
 import com.back.domain.evaluation.dto.EvaluationResponse;
 import com.back.domain.evaluation.dto.EvaluationUpdateReq;
+import com.back.domain.evaluation.dto.EvaluationsWithCountResponse;
 import com.back.domain.evaluation.entity.ClientEvaluation;
 import com.back.domain.evaluation.entity.FreelancerEvaluation;
 import com.back.domain.evaluation.repository.ClientEvaluationRepository;
@@ -21,7 +22,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -144,6 +147,7 @@ public class EvaluationService {
         throw new ServiceException("403", "평가를 수정할 권한이 없는 사용자입니다.");
     }
 
+    //프리랜서 총 평점 계산
     private void updateFreelancerRatingAvg(Long freelancerId) {
         List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerId(freelancerId);
 
@@ -158,6 +162,7 @@ public class EvaluationService {
         freelancer.updateRatingAvg(average);
     }
 
+    //클라이언트 총 평점 계산
     private void updateClientRatingAvg(Long clientId) {
         List<ClientEvaluation> evaluations = clientEvaluationRepository.findByClientId(clientId);
 
@@ -170,5 +175,32 @@ public class EvaluationService {
                 .orElseThrow(() -> new ServiceException("404", "평점 업데이트 중 클라이언트를 찾을 수 없습니다."));
 
         client.updateRatingAvg(average);
+    }
+
+    //자신의 평가 리스트를 반환
+    @Transactional(readOnly = true)
+    public EvaluationsWithCountResponse getEvaluations(Long userId) {
+        Member member = memberRepository.findById(userId)
+                .orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
+
+        List<EvaluationResponse> evaluationResponses; // 결과를 담을 리스트
+
+        // 역할에 따라 분기하여 평가 목록을 가져옴
+        if (member.getRole() == Role.CLIENT) {
+            List<ClientEvaluation> evaluations = clientEvaluationRepository.findByClientId(userId);
+            evaluationResponses = evaluations.stream()
+                    .map(EvaluationResponse::from)
+                    .collect(Collectors.toList());
+        } else if (member.getRole() == Role.FREELANCER) {
+            List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerId(userId);
+            evaluationResponses = evaluations.stream()
+                    .map(EvaluationResponse::from)
+                    .collect(Collectors.toList());
+        } else {
+            evaluationResponses = Collections.emptyList();
+        }
+
+        // 최종적으로 개수(evaluationResponses.size())와 목록을 DTO에 담아 반환
+        return new EvaluationsWithCountResponse(evaluationResponses.size(), evaluationResponses);
     }
 }

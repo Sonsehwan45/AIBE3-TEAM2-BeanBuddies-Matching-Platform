@@ -1,6 +1,6 @@
 import createClient from "openapi-fetch";
 
-import type { paths } from "@/lib/backend/apiV1/schema";
+import type { paths } from "@/global/backend/apiV1/schema";
 
 const API_BASE_URL= import.meta.env.DEV
     ? 'http://localhost:8080' // 개발 환경일 때 사용할 백엔드 주소

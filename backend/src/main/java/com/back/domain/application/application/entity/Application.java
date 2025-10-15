@@ -6,10 +6,7 @@ import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.project.project.entity.Project;
 import com.back.global.jpa.entity.BaseEntity;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -25,6 +22,7 @@ public class Application extends BaseEntity {
     private String expectedDuration;
     private String workPlan;
     private String additionalRequest;
+    @Enumerated(EnumType.STRING)
     private ApplicationStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)

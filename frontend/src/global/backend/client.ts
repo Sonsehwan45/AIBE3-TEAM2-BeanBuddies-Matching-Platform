@@ -1,6 +1,6 @@
 import createClient from "openapi-fetch/dist/index.cjs";
 
-import type { paths } from "./apiV1/schema";
+import type { paths } from "@/global/backend/apiV1/schema";
 
 // Vite의 내장 환경 변수를 사용하여 개발/프로덕션 모드를 감지합니다.
 // 개발 모드(npm run dev)에서는 `import.meta.env.DEV`가 true가 됩니다.

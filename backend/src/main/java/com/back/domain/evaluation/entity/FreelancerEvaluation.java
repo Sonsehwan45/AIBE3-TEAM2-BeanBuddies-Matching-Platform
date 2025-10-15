@@ -17,11 +17,11 @@ import lombok.NoArgsConstructor;
 public class FreelancerEvaluation extends BaseEvaluationEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "client_id")
+    @JoinColumn(name = "client_id", nullable = false)
     private Client client;//평가하는 사람
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "freelancer_id")
+    @JoinColumn(name = "freelancer_id", nullable = false)
     private Freelancer freelancer;//평가받는 사람
 
     public FreelancerEvaluation(Project project, Client client, Freelancer freelancer, String comment,

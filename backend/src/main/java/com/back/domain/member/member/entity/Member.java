@@ -50,13 +50,14 @@ public class Member extends BaseEntity {
     @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private Client client;
 
-    public Member(String role, String name, String username, String password, String email) {
+    public Member(String profileImgUrl, String role, String name, String username, String password, String email) {
         this.role = Role.valueOf(role);
         this.name = name;
         this.username = username;
         this.password = password;
         this.email = email;
         this.status = MemberStatus.valueOf("ACTIVE");
+        this.profileImgUrl = profileImgUrl;
         this.profileScope = ProfileScope.PUBLIC;
     }
 
@@ -89,6 +90,10 @@ public class Member extends BaseEntity {
         this.name = name;
     }
 
+    public void updateEmail(String email) {
+        this.email = email;
+    }
+
     public void updateProfileScope(ProfileScope profileScope) {
         this.profileScope = profileScope;
     }
@@ -103,5 +108,24 @@ public class Member extends BaseEntity {
 
     public boolean isFreelancer() {
         return role == Role.FREELANCER;
+    }
+
+    //회원 탈퇴 처리
+    public void withdraw() {
+        this.username = null;
+        this.password = null;
+        this.email = null;
+        this.profileImgUrl = null;
+        this.name = "탈퇴한 회원입니다.";
+        this.deleteDate = LocalDateTime.now();
+        this.status = MemberStatus.WITHDRAWN;
+
+        if(freelancer != null) {
+            freelancer.deleteInfo();
+        }
+
+        if(client != null) {
+            client.deleteInfo();
+        }
     }
 }

@@ -19,6 +19,7 @@ public class ProfileResponseDto {
     // Common Member fields
     private String username;
     private String name;
+    private String email;
     private Role role;
     private LocalDateTime createdAt;
     private String profileImgUrl;
@@ -45,6 +46,7 @@ public class ProfileResponseDto {
         ProfileResponseDtoBuilder builder = ProfileResponseDto.builder()
                 .username(member.getUsername())
                 .name(member.getName())
+                .email(member.getEmail())
                 .role(member.getRole())
                 .createdAt(member.getCreateDate())
                 .profileImgUrl(member.getProfileImgUrl());

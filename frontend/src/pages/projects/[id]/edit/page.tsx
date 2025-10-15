@@ -60,7 +60,7 @@ export default function ProjectsEditPage() {
         const response = await client.GET(`/api/v1/projects/${id}`);
         if (response.error) throw response.error;
 
-        const projectData = response.data;
+        const projectData = response.data.data;
 
         if (!isLoggedIn) {
           alert("로그인이 필요합니다.");
@@ -162,7 +162,6 @@ export default function ProjectsEditPage() {
     };
 
     try {
-      // PATCH 요청으로 변경
       const response = await client.PATCH(`/api/v1/projects/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,

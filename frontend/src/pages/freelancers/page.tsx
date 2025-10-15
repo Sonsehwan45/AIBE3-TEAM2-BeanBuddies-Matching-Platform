@@ -1,9 +1,22 @@
 
-import { useState } from 'react';
+import { client } from '@/lib/backend/client';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { mockFreelancers } from '../../mocks/users';
 import Button from '../../components/base/Button';
 import Select from '../../components/base/Select';
+
+interface FreelancersProps {
+  userType?: 'client' | 'freelancer';
+}
+
+// API 응답 타입 정의
+type FreelancerSummary = {
+  id?: number;
+  name?: string;
+  careerLevel?: "NEWBIE" | "JUNIOR" | "MID" | "SENIOR" | "UNDEFINED";
+  ratingAvg?: number;
+  skills?: Array<{ id?: number; name?: string; }>;
+};
 
 interface FreelancersProps {
   userType?: 'client' | 'freelancer';
@@ -13,27 +26,142 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedExperience, setSelectedExperience] = useState('');
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [selectedSkills, setSelectedSkills] = useState<Array<{ id: number; name: string }>>([]);
   const [selectedRating, setSelectedRating] = useState('');
   const [sortBy, setSortBy] = useState('latest');
   const [favorites, setFavorites] = useState<number[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
-  const categories = [
-    { value: '', label: '전체 분야' },
-    { value: '웹 개발', label: '웹 개발' },
-    { value: '모바일 앱', label: '모바일 앱' },
-    { value: '디자인', label: '디자인' },
-    { value: '데이터 분석', label: '데이터 분석' },
-    { value: '마케팅', label: '마케팅' }
-  ];
+  // 프리랜서 목록 상태
+  const [freelancers, setFreelancers] = useState<FreelancerSummary[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
 
+  const ALL_OPTION = { value: '', label: '전체 분야' };
+
+  // 필터 데이터 불러오기 (skills, interests)
+  useEffect(() => {
+    client
+      .GET("/api/v1/skills")
+      .then(({ data }) => setSkills(data?.data ?? []));
+    client
+      .GET("/api/v1/interests")
+      .then(({ data }) => setInterests(data?.data ?? []));
+  }, []);
+
+  // 프리랜서 목록 불러오기
+  const fetchFreelancers = async () => {
+    setLoading(true);
+    try {
+      // URL을 직접 구성해서 호출
+      const params = new URLSearchParams();
+      params.append('page', currentPage.toString());
+      params.append('size', '20');
+
+      // 정렬 파라미터 설정
+      let sortParam = 'id,desc'; // 기본값
+      switch (sortBy) {
+        case 'ratingAvg':
+          sortParam = 'ratingAvg,desc';
+          break;
+        case 'careerTotalYears':
+          sortParam = 'careerTotalYears,desc';
+          break;
+        case 'latest':
+        default:
+          sortParam = 'id,desc';
+          break;
+      }
+      params.append('sort', sortParam);
+      console.log('정렬 파라미터:', sortBy, '→', sortParam);
+
+      if (selectedExperience) {
+        params.append('careerLevel', selectedExperience);
+      }
+      if (selectedRating) {
+        const ratingParam = parseFloat(selectedRating.replace('+', ''));
+        params.append('ratingAvg', ratingParam.toString());
+      }
+      if (selectedSkills.length > 0) {
+        const skillIds = selectedSkills.map(skill => skill.id).join(',');
+        params.append('skillIds', skillIds);
+        console.log('선택된 스킬 IDs:', skillIds);
+      }
+
+      const url = `http://localhost:8080/api/v1/freelancers?${params.toString()}`;
+      console.log('API 호출 URL:', url);
+
+      const response = await fetch(url, {
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('API 응답:', result);
+
+      if (result?.data) {
+        setFreelancers(result.data.content ?? []);
+        setTotalElements(result.data.totalElements ?? 0);
+        setTotalPages(result.data.totalPages ?? 0);
+        console.log('프리랜서 목록:', result.data.content);
+      } else {
+        console.error('API 응답 데이터가 없습니다:', result);
+      }
+    } catch (error) {
+      console.error('프리랜서 목록 조회 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 프리랜서 목록 초기 로드 및 필터 변경시 재로드
+  useEffect(() => {
+    fetchFreelancers();
+  }, [currentPage, selectedExperience, selectedRating, selectedSkills, sortBy]);
+
+  // 흥미 분야 불러오기
+  type InterestItem = {
+    id?: number;
+    name?: string;
+  };
+
+  const [interests, setInterests] = useState<InterestItem[]>([]);
+  const interestOptions = interests.map(item => ({
+    value: String(item.id),
+    label: item.name || ''
+  }));
+  const selectedInterests = [ALL_OPTION, ...interestOptions];
+
+  // 스킬 데이터 불러오기
+  type SkillItem = {
+    id?: number;
+    name?: string;
+  };
+
+  const [skills, setSkills] = useState<SkillItem[]>([]);
+
+  /**
+   * 하드코딩 -> 어떻게 백엔드 CareerLevel 스키마 받아올 수 있을지 잘 모르겠음
+    NEWBIE("신입", 0, 0),
+    JUNIOR("주니어", 1, 2),
+    MID("미들", 3, 6),
+    SENIOR("시니어", 7, Integer.MAX_VALUE),
+    UNDEFINED("미입력", -1, -1)
+   */
   const experienceOptions = [
     { value: '', label: '전체 경력' },
-    { value: '신입', label: '신입 (1년 미만)' },
-    { value: '주니어', label: '주니어 (1-3년)' },
-    { value: '미들', label: '미들 (3-7년)' },
-    { value: '시니어', label: '시니어 (7년 이상)' }
+    { value: 'NEWBIE', label: '신입 (1년 미만)' },
+    { value: 'JUNIOR', label: '주니어 (1-3년)' },
+    { value: 'MID', label: '미들 (3-7년)' },
+    { value: 'SENIOR', label: '시니어 (7년 이상)' }
   ];
 
   const ratingOptions = [
@@ -43,31 +171,28 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
     { value: '3.5+', label: '3.5점 이상' }
   ];
 
-  const availableSkills = ['React', 'Vue.js', 'Angular', 'Node.js', 'Python', 'Java', 'JavaScript', 'TypeScript', 'PHP', 'Laravel', 'Spring', 'Django', 'Flutter', 'Swift', 'Kotlin', 'Figma', 'Photoshop', 'Illustrator'];
-
   const sortOptions = [
     { value: 'latest', label: '최신순' },
-    { value: 'rating', label: '평점순' },
-    { value: 'experience', label: '경력순' },
-    { value: 'popularity', label: '인기순' }
+    { value: 'ratingAvg', label: '평점순' },
+    { value: 'careerTotalYears', label: '경력순' }
   ];
 
   const toggleFavorite = (freelancerId: number) => {
-    setFavorites(prev => 
-      prev.includes(freelancerId) 
+    setFavorites(prev =>
+      prev.includes(freelancerId)
         ? prev.filter(id => id !== freelancerId)
         : [...prev, freelancerId]
     );
   };
 
-  const addSkillFilter = (skill: string) => {
-    if (!selectedSkills.includes(skill)) {
-      setSelectedSkills(prev => [...prev, skill]);
+  const addSkillFilter = (skill: { id?: number; name?: string }) => {
+    if (skill.id && skill.name && !selectedSkills.some(s => s.id === skill.id)) {
+      setSelectedSkills(prev => [...prev, { id: skill.id!, name: skill.name! }]);
     }
   };
 
-  const removeSkillFilter = (skill: string) => {
-    setSelectedSkills(prev => prev.filter(s => s !== skill));
+  const removeSkillFilter = (skillToRemove: { id: number; name: string }) => {
+    setSelectedSkills(prev => prev.filter(s => s.id !== skillToRemove.id));
   };
 
   const clearAllFilters = () => {
@@ -76,21 +201,25 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
     setSelectedExperience('');
     setSelectedSkills([]);
     setSelectedRating('');
+    setCurrentPage(0);
   };
 
-  const filteredFreelancers = mockFreelancers.filter(freelancer => {
-    const matchesKeyword = freelancer.name.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-                          freelancer.introduction.toLowerCase().includes(searchKeyword.toLowerCase());
-    const matchesCategory = !selectedCategory || freelancer.interests?.includes(selectedCategory);
-    const matchesSkills = selectedSkills.length === 0 || selectedSkills.some(skill => freelancer.skills.includes(skill));
-    
-    return matchesKeyword && matchesCategory && matchesSkills;
-  });
+  // 키워드 검색 필터링 (클라이언트 사이드)
+  const filteredFreelancers = freelancers.filter(freelancer => {
+    // 키워드 검색 필터
+    if (searchKeyword) {
+      const nameMatch = freelancer.name?.toLowerCase().includes(searchKeyword.toLowerCase());
+      const skillMatch = freelancer.skills?.some(skill =>
+        skill.name?.toLowerCase().includes(searchKeyword.toLowerCase())
+      );
+      if (!nameMatch && !skillMatch) return false;
+    }
 
-  const activeFiltersCount = (selectedCategory ? 1 : 0) + 
-                           (selectedExperience ? 1 : 0) + 
-                           (selectedRating ? 1 : 0) + 
-                           selectedSkills.length;
+    return true;
+  }); const activeFiltersCount = (selectedCategory ? 1 : 0) +
+    (selectedExperience ? 1 : 0) +
+    (selectedRating ? 1 : 0) +
+    selectedSkills.length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -130,7 +259,7 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
                 onChange={setSortBy}
                 className="min-w-[120px]"
               />
-              <Button 
+              <Button
                 onClick={() => setShowFilters(!showFilters)}
                 variant={showFilters ? "primary" : "outline"}
                 className="rounded-xl px-6 relative"
@@ -152,18 +281,18 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Select
                   label="분야"
-                  options={categories}
+                  options={selectedInterests}
                   value={selectedCategory}
                   onChange={setSelectedCategory}
                 />
-                
+
                 <Select
                   label="경력"
                   options={experienceOptions}
                   value={selectedExperience}
                   onChange={setSelectedExperience}
                 />
-                
+
                 <Select
                   label="평점"
                   options={ratingOptions}
@@ -174,15 +303,22 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
 
               {/* 기술 스택 필터 */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">기술 스택</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  기술 스택
+                  {selectedSkills.length > 0 && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      (선택한 기술 중 하나라도 보유한 프리랜서 표시)
+                    </span>
+                  )}
+                </label>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {selectedSkills.map((skill) => (
-                    <span 
-                      key={skill} 
+                    <span
+                      key={skill.id}
                       className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm flex items-center"
                     >
-                      {skill}
-                      <button 
+                      {skill.name}
+                      <button
                         onClick={() => removeSkillFilter(skill)}
                         className="ml-2 text-indigo-500 hover:text-indigo-700 cursor-pointer"
                       >
@@ -192,15 +328,18 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
                   ))}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {availableSkills.filter(skill => !selectedSkills.includes(skill)).slice(0, 10).map((skill) => (
-                    <button
-                      key={skill}
-                      onClick={() => addSkillFilter(skill)}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-indigo-100 hover:text-indigo-700 transition-colors cursor-pointer"
-                    >
-                      + {skill}
-                    </button>
-                  ))}
+                  {skills
+                    .filter(skill => !selectedSkills.some(s => s.id === skill.id))
+                    .slice(0, 10)
+                    .map((skill) => (
+                      <button
+                        key={skill.id}
+                        onClick={() => addSkillFilter(skill)}
+                        className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-indigo-100 hover:text-indigo-700 transition-colors cursor-pointer"
+                      >
+                        + {skill.name}
+                      </button>
+                    ))}
                 </div>
               </div>
 
@@ -223,7 +362,7 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <p className="text-gray-600">
-              총 <span className="font-semibold text-indigo-600">{filteredFreelancers.length}</span>명의 프리랜서
+              총 <span className="font-semibold text-indigo-600">{totalElements}</span>명의 프리랜서
               {searchKeyword && (
                 <span> • '<span className="font-medium">{searchKeyword}</span>' 검색 결과</span>
               )}
@@ -239,55 +378,67 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
           </div>
         </div>
 
+        {/* 로딩 상태 */}
+        {loading && (
+          <div className="text-center py-16">
+            <div className="p-6 bg-white/50 rounded-2xl inline-block">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">프리랜서 목록을 불러오는 중...</p>
+            </div>
+          </div>
+        )}
+
         {/* 프리랜서 리스트 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredFreelancers.map((freelancer) => (
             <div key={freelancer.id} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 group">
               <div className="flex items-start space-x-4">
                 <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-                  {freelancer.name.charAt(0)}
+                  {freelancer.name?.charAt(0) || 'F'}
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                      <Link to={`/freelancers/${freelancer.id}`}>{freelancer.name}</Link>
+                      <Link to={`/freelancers/${freelancer.id}`}>{freelancer.name || '이름 없음'}</Link>
                     </h3>
                     <button
-                      onClick={() => toggleFavorite(freelancer.id)}
+                      onClick={() => toggleFavorite(freelancer.id || 0)}
                       className="p-2 rounded-lg hover:bg-gray-100/50 transition-colors cursor-pointer"
                     >
-                      <i className={`text-lg ${favorites.includes(freelancer.id) ? 'ri-heart-fill text-red-500' : 'ri-heart-line text-gray-400'}`}></i>
+                      <i className={`text-lg ${favorites.includes(freelancer.id || 0) ? 'ri-heart-fill text-red-500' : 'ri-heart-line text-gray-400'}`}></i>
                     </button>
                   </div>
-                  
-                  <p className="text-sm text-gray-600 mb-2 font-medium">{freelancer.experience}</p>
-                  
+
+                  <p className="text-sm text-gray-600 mb-2 font-medium">
+                    {freelancer.careerLevel === 'NEWBIE' && '신입'}
+                    {freelancer.careerLevel === 'JUNIOR' && '주니어'}
+                    {freelancer.careerLevel === 'MID' && '미드'}
+                    {freelancer.careerLevel === 'SENIOR' && '시니어'}
+                    {freelancer.careerLevel === 'UNDEFINED' && '경력 미입력'}
+                  </p>
+
                   <div className="flex items-center mb-3">
                     <div className="flex items-center bg-yellow-50 px-2 py-1 rounded-full mr-3">
                       <i className="ri-star-fill text-yellow-400 mr-1"></i>
-                      <span className="text-sm font-semibold text-yellow-700">{freelancer.averageRating}</span>
+                      <span className="text-sm font-semibold text-yellow-700">{freelancer.ratingAvg?.toFixed(1) || '0.0'}</span>
                     </div>
-                    <span className="text-sm text-gray-500">완료 프로젝트 {freelancer.completedProjects}개</span>
+                    <span className="text-sm text-gray-500">평점</span>
                   </div>
-                  
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
-                    {freelancer.introduction}
-                  </p>
-                  
+
                   <div className="flex flex-wrap gap-1 mb-4">
-                    {freelancer.skills.slice(0, 4).map((skill) => (
-                      <span key={skill} className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium border border-indigo-100">
-                        {skill}
+                    {freelancer.skills?.slice(0, 4).map((skill) => (
+                      <span key={skill.id} className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium border border-indigo-100">
+                        {skill.name}
                       </span>
                     ))}
-                    {freelancer.skills.length > 4 && (
+                    {(freelancer.skills?.length || 0) > 4 && (
                       <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs">
-                        +{freelancer.skills.length - 4}개
+                        +{(freelancer.skills?.length || 0) - 4}개
                       </span>
                     )}
                   </div>
-                  
+
                   <div className="flex justify-between items-center">
                     <div className="text-sm text-gray-500">
                       <span className="flex items-center">
@@ -295,7 +446,7 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
                         보통 1일 내 응답
                       </span>
                     </div>
-                    
+
                     <div className="flex space-x-2">
                       <Link to={`/freelancers/${freelancer.id}`}>
                         <Button variant="outline" size="sm" className="rounded-lg group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all">
@@ -319,7 +470,7 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
           ))}
         </div>
 
-        {filteredFreelancers.length === 0 && (
+        {!loading && filteredFreelancers.length === 0 && (
           <div className="text-center py-16">
             <div className="p-6 bg-white/50 rounded-2xl inline-block">
               <i className="ri-team-line text-4xl text-gray-400 mb-4"></i>
@@ -334,25 +485,36 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
         )}
 
         {/* 페이지네이션 */}
-        {filteredFreelancers.length > 0 && (
+        {!loading && filteredFreelancers.length > 0 && totalPages > 1 && (
           <div className="flex justify-center mt-12">
             <div className="flex space-x-2 bg-white/80 backdrop-blur-sm rounded-2xl p-2 shadow-lg">
-              <button className="px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer">
+              <button
+                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                disabled={currentPage === 0}
+                className="px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <i className="ri-arrow-left-line"></i>
               </button>
-              {[1, 2, 3, 4, 5].map((page) => (
-                <button
-                  key={page}
-                  className={`px-4 py-2 rounded-xl cursor-pointer transition-all ${
-                    page === 1 
-                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg' 
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNum = Math.max(0, Math.min(totalPages - 5, currentPage - 2)) + i;
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`px-4 py-2 rounded-xl cursor-pointer transition-all ${pageNum === currentPage
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
                       : 'border border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
-              <button className="px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer">
+                      }`}
+                  >
+                    {pageNum + 1}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                disabled={currentPage >= totalPages - 1}
+                className="px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
                 <i className="ri-arrow-right-line"></i>
               </button>
             </div>

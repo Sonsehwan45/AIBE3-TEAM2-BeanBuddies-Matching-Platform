@@ -1,10 +1,10 @@
 
-import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import Button from '../base/Button';
 import { useAuth } from '@/context/AuthContext';
 import { client } from "@/lib/backend/client";
+import { useState } from 'react';
 import toast from "react-hot-toast";
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import Button from '../base/Button';
 
 interface HeaderProps {
   userType?: 'client' | 'freelancer' | null;
@@ -63,7 +63,7 @@ export default function Header({ userType, onUserTypeChange }: HeaderProps) {
           {/* 로고 */}
           <Link to="/" className="flex items-center">
             <span className="text-2xl font-bold text-blue-600" style={{ fontFamily: 'Pacifico, serif' }}>
-              logo
+              WorkBuddy
             </span>
           </Link>
 

@@ -31,12 +31,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         //누구나 접근 가능
                         .requestMatchers("/api/*/test/public").permitAll()
+                        .requestMatchers("/api/*/members").permitAll()
                         .requestMatchers("/api/*/members/join/**").permitAll()
+                        .requestMatchers("/api/*/members/password-reset").permitAll()
+                        .requestMatchers("/api/*/members/password-reset/**").permitAll()
                         .requestMatchers("/api/*/members/temp-password/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/members/*/profile").permitAll() // 다른 사용자 프로필 조회
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서/제안서 단건/다건 조회
                         .requestMatchers("/api/*/auth/login").permitAll() // 로그인 경로는 누구나 접근 가능해야 함
-                        .requestMatchers("/api/*/members/join/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/*/auth/logout").permitAll()
+                        .requestMatchers("/api/*/skills").permitAll()
+                        .requestMatchers("/api/*/interests").permitAll()
 
                         //인증된 사용자만 접근 가능
                         .requestMatchers("/api/*/test/auth").authenticated()
@@ -45,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/members/me").authenticated() // 내 프로필 조회
                         .requestMatchers("/api/v1/members/me/profile").authenticated() // 내 프로필 수정
                         .requestMatchers("/api/v1/recommendations").authenticated()
+                        .requestMatchers("/api/v1/members/me/withdraw").authenticated() // 내 프로필 수정
 
                         //평가 생성 및 수정은 인증된 사용자만 가능
                         .requestMatchers(HttpMethod.POST, "/api/v1/evaluations").authenticated()
@@ -62,17 +68,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/*/projects").hasRole("CLIENT") // 프로젝트 등록
                         .requestMatchers(HttpMethod.DELETE, "/api/*/projects/**").hasRole("CLIENT") // 프로젝트 삭제
                         .requestMatchers(HttpMethod.PATCH, "/api/*/projects/**").hasRole("CLIENT") // 프로젝트 수정
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/applications/**").hasRole("CLIENT") // 지원서 수정 (클라이언트가 하는 기능!)
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/applications/**").hasRole("CLIENT") // 지원서 수정
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects/*/proposals/*").hasRole("CLIENT") // 제안서 등록
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/projects/*/proposals/*").hasRole("CLIENT") // 제안서 삭제
 
                         //관리자만 접근 가능
                         .requestMatchers("/api/*/test/auth/admin").hasRole("ADMIN")
 
-
-
-                        //그 외 요청은 인증 필요없음
-                        .anyRequest().authenticated()
+                        //그 외 요청은 모두 허용
+                        .anyRequest().permitAll()
                 )
 
                 // REST API용 Security 기본 기능 비활성화

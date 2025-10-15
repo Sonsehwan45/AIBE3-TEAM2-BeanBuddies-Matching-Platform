@@ -7,7 +7,7 @@ import lombok.Getter;
 public enum CareerLevel {
     NEWBIE("신입", 0, 0),
     JUNIOR("주니어", 1, 2),
-    MID("미드", 3, 6),
+    MID("미들", 3, 6),
     SENIOR("시니어", 7, Integer.MAX_VALUE),
     UNDEFINED("미입력", -1, -1)
     ;

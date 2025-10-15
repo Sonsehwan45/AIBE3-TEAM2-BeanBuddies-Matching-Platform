@@ -82,11 +82,11 @@ export default function ProjectDetail() {
           params: { path: { id: parseInt(id) } },
         });
 
-        if (!response || !response.data) {
+        if (!response || !response.data.data) {
           throw new Error("프로젝트 데이터가 없습니다.");
         }
 
-        setProject(response.data);
+        setProject(response.data.data);
       } catch (err: any) {
         console.error("프로젝트 조회 실패:", err);
         setError(
@@ -141,6 +141,11 @@ export default function ProjectDetail() {
 
     fetchApplications();
   }, [id, page]);
+
+  // 지원서 상세 페이지 이동
+  const handleRowClick = (applyId: number) => {
+    navigate(`/projects/${id}/apply/${applyId}`);
+  };
 
   // 삭제 핸들러를 useCallback으로 메모이제이션
   const handleDelete = useCallback(async () => {
@@ -510,7 +515,11 @@ export default function ProjectDetail() {
                             </thead>
                             <tbody className="divide-y divide-gray-200">
                               {applications.map((application) => (
-                                <tr key={application.id}>
+                                <tr
+                                  key={application.id}
+                                  onClick={() => handleRowClick(application.id)}
+                                  className="cursor-pointer hover:bg-gray-100 transition"
+                                >
                                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                     {application.freelancerName}
                                   </td>

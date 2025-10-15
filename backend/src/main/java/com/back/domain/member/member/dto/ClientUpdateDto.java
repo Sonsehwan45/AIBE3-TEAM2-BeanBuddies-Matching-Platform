@@ -9,6 +9,7 @@ import lombok.Setter;
 public class ClientUpdateDto {
     // Common Member fields
     private String name;
+    private String email;
     private String profileImgUrl;
     private ProfileScope profileScope;
 
