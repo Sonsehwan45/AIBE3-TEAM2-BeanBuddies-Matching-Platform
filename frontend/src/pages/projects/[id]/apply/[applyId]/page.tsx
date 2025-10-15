@@ -1,6 +1,6 @@
 import { useAuth } from "@/context/AuthContext";
 import client from "@/global/backend/client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 interface ApplicationDetailData {
@@ -21,7 +21,7 @@ interface ApplicationDetailData {
 }
 
 export default function ApplicationDetail() {
-  const { user, isLoggedIn } = useAuth();
+  const { user, token, isLoggedIn } = useAuth();
   const { id, applyId } = useParams<{ id: string; applyId: string }>();
   const navigate = useNavigate();
   const [application, setApplication] = useState<ApplicationDetailData | null>(
@@ -63,6 +63,37 @@ export default function ApplicationDetail() {
     };
     fetchApplication();
   }, [id, applyId, isLoggedIn, user, navigate]);
+
+  const handleDelete = useCallback(async () => {
+    if (!application) return;
+
+    if (!window.confirm("정말로 이 지원서를 삭제하시겠습니까?")) return;
+
+    try {
+      const response = await client.DELETE(
+        "/api/v1/projects/{projectId}/applications/{id}",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            path: {
+              projectId: application.projectId,
+              id: application.id,
+            },
+          },
+        }
+      );
+
+      if (response.error) throw response.error;
+
+      alert("지원서가 삭제되었습니다.");
+      navigate(`/projects/${application.projectId}`);
+    } catch (err) {
+      console.error("지원서 삭제 실패:", err);
+      alert("지원서 삭제에 실패했습니다.");
+    }
+  }, [application, token, navigate]);
 
   if (!application || hasAccess === null) {
     return <div className="p-6 text-gray-500">로딩 중...</div>;
@@ -220,7 +251,7 @@ export default function ApplicationDetail() {
           user?.role === "FREELANCER" &&
           user?.id === application.freelancerId && (
             <button
-              // onClick={handleDelete}
+              onClick={handleDelete}
               className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center"
             >
               <i className="ri-delete-bin-line mr-2"></i>
