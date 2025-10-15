@@ -48,7 +48,7 @@ public class AuthService {
         MemberStatus status = member.getStatus();
         String profileImgUrl = member.getProfileImgUrl();
 
-        Map<String, Object> claims = Map.of("id", id, "name", name, "role", role.name(), "status", status.name(), "profileImgUrl", profileImgUrl);
+        Map<String, Object> claims = Map.of("id", id, "name", name, "role", role.name(), "status", status.name(), "profileImgUrl", profileImgUrl != null ? profileImgUrl : "");
 
         return jwtProvider.genAccessToken(claims);
     }
