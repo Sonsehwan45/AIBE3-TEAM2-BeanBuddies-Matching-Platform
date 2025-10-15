@@ -24,10 +24,13 @@ export default function Header({ userType, onUserTypeChange }: HeaderProps) {
     { name: '맞춤 추천', href: '/recommendations' }
   ];
 
-  //서버 로그아웃이랑 연동해야함
   const handleLogout = async () => {
     try {
-      const res = await client.POST("/api/v1/auth/logout", {
+      const res = await client.POST("/api/v1/auth/logout", 
+        {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         throwHttpErrors: false,
       });
 
