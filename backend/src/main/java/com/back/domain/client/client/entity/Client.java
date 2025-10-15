@@ -1,14 +1,13 @@
 package com.back.domain.client.client.entity;
 
 import com.back.domain.member.member.entity.Member;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
+import com.back.domain.project.project.entity.Project;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @NoArgsConstructor
@@ -34,6 +33,10 @@ public class Client {
     //읽기전용?
     private double ratingAvg;
 
+    //클라이언트 - 프로젝트
+    @OneToMany(mappedBy = "client", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Project> projects = new ArrayList<>();
+
     public Client(Member member) {
         this.member = member;
     }
@@ -58,5 +61,15 @@ public class Client {
     //이미 계산된 평가 평균을 소수점 첫째 자리까지 반올림하기 위한 메서드
     public void updateRatingAvg(double ratingAvg) {
         this.ratingAvg = Math.round(ratingAvg * 10.0) / 10.0;
+    }
+
+    //회원 탈퇴 처리
+    public void deleteInfo() {
+        this.companySize = null;
+        this.companyDescription = null;
+        this.representative = null;
+        this.businessNo = null;
+        this.companyPhone = null;
+        this.companyEmail = null;
     }
 }

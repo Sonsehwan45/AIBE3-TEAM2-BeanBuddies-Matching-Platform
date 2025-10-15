@@ -105,4 +105,23 @@ public class Member extends BaseEntity {
     public boolean isFreelancer() {
         return role == Role.FREELANCER;
     }
+
+    //회원 탈퇴 처리
+    public void withdraw() {
+        this.username = null;
+        this.password = null;
+        this.email = null;
+        this.profileImgUrl = null;
+        this.name = "탈퇴한 회원입니다.";
+        this.deleteDate = LocalDateTime.now();
+        this.status = MemberStatus.WITHDRAWN;
+
+        if(freelancer != null) {
+            freelancer.deleteInfo();
+        }
+
+        if(client != null) {
+            client.deleteInfo();
+        }
+    }
 }
