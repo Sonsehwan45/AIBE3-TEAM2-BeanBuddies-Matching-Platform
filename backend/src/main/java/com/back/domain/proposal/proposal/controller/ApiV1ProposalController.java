@@ -26,14 +26,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/projects/{projectId}/proposals")
+@RequestMapping("/api/v1")
 @Tag(name="ApiV1ProposalController", description = "API 제안서(클라이언트 -> 프리랜서) 컨트롤러")
 public class ApiV1ProposalController {
 
     private final ProposalService proposalService;
     private final MemberService memberService;
 
-    @GetMapping
+    @GetMapping("/projects/{projectId}/proposals")
     @Operation(summary = "프로젝트에 해당하는 제안서 목록 조회")
     // NOTE : 권한 설정 및 DTO 데이터에 대한 변경 이후에 논의 필요함
     // 1. 프로젝트 작성자가 프로젝트에 해당하는 제안서를 모두 보려는 경우 -> 권한설정만 추가
@@ -49,7 +49,7 @@ public class ApiV1ProposalController {
         );
     }
 
-    @PostMapping
+    @PostMapping("/projects/{projectId}/proposals")
     @Operation(summary = "프로젝트에 제안서 등록")
     @SecurityRequirement(name = "bearerAuth")
     public ApiResponse<ProposalDto> create(
@@ -68,7 +68,7 @@ public class ApiV1ProposalController {
         );
     }
 
-    @GetMapping("/{proposalId}")
+    @GetMapping("/projects/{projectId}/proposals/{proposalId}")
     @Operation(summary = "프로젝트에 해당하는 특정 ID 제안서를 조회")
     @SecurityRequirement(name = "bearerAuth")
     public ApiResponse<ProposalDto> getProposal(
@@ -86,7 +86,7 @@ public class ApiV1ProposalController {
         );
     }
 
-    @PatchMapping("/{proposalId}")
+    @PatchMapping("/projects/{projectId}/proposals/{proposalId}")
     @Operation(summary = "프로젝트에 해당하는 특정 ID 제안서의 상태 변경")
     @SecurityRequirement(name = "bearerAuth")
     public ApiResponse<ProposalDto> updateState(
@@ -106,7 +106,7 @@ public class ApiV1ProposalController {
         );
     }
 
-    @DeleteMapping("/{proposalId}")
+    @DeleteMapping("/projects/{projectId}/proposals/{proposalId}")
     @Operation(summary = "프로젝트에 해당하는 특정 ID 제안서 삭제")
     @SecurityRequirement(name = "bearerAuth")
     public ApiResponse<Void> delete(
@@ -121,6 +121,23 @@ public class ApiV1ProposalController {
         return new ApiResponse<>(
                 "204",
                 "제안서 삭제 성공"
+        );
+    }
+
+    // 자신과 관련된 모든 제안서 조회 (클라이언트 - 프리랜서 모두 가능)
+    @GetMapping("/proposals")
+    @Operation(summary = "자신과 관련된 모든 제안서 조회")
+    @SecurityRequirement(name = "bearerAuth")
+    public ApiResponse<List<ProposalDto>> getMyProposals(
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        Member member = memberService.findById(user.getId());
+        List<ProposalDto> proposals = proposalService.findAllByMember(member);
+
+        return new ApiResponse<>(
+                "200",
+                "자신과 관련된 제안서 목록 조회 성공",
+                proposals
         );
     }
 }

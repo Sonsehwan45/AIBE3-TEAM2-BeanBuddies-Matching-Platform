@@ -50,6 +50,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/members/me").authenticated() // 내 프로필 조회
                         .requestMatchers("/api/v1/members/me/profile").authenticated() // 내 프로필 수정
                         .requestMatchers("/api/v1/members/me/withdraw").authenticated() // 내 프로필 수정
+                        .requestMatchers(HttpMethod.GET,"/api/v1/proposals").authenticated() // 나의 제안서 조회
 
                         //평가 생성 및 수정은 인증된 사용자만 가능
                         .requestMatchers(HttpMethod.POST, "/api/v1/evaluations").authenticated()
