@@ -116,128 +116,80 @@ public class BaseInitData {
             return;
         }
 
-        List<Long> skillIds1 = List.of(1L, 2L);
-        List<Long> interestIds1 = List.of(1L, 2L);
-
-        List<Long> skillIds2 = List.of(2L, 3L);
-        List<Long> interestIds2 = List.of(2L, 3L);
-
-        List<Long> skillIds3 = List.of(1L, 2L, 3L);
-        List<Long> interestIds3 = List.of(1L, 2L, 3L);
+        // skill, interest id 목록
+        List<Long> allSkillIds = List.of(1L, 2L, 3L);
+        List<Long> allInterestIds = List.of(1L, 2L, 3L);
 
         Member clientMember1 = memberService.findByUsername("client1").get();
         Client client1 = clientService.findById(clientMember1.getId());
-        Member clientMember2 = memberService.findByUsername("client2").get();
-        Client client2 = clientService.findById(clientMember2.getId());
+        Member clientMember3 = memberService.findByUsername("client3").get();
+        Client client3 = clientService.findById(clientMember3.getId());
 
+        // 테스트에서 검증하는 1~3번 프로젝트는 조합을 명확히 지정
         projectService.create(
                 client1,
                 "테스트 프로젝트 1",
                 "테스트 요약 1",
-                BigDecimal.valueOf(1_000_000),
+                BigDecimal.valueOf(1_000_000L),
                 "우대 조건 1",
                 "급여 조건 1",
                 "업무 조건 1",
                 "1개월",
                 "상세 설명 1",
                 LocalDateTime.now().plusMonths(1),
-                skillIds1,
-                interestIds1
+                List.of(1L, 2L, 3L), // skill
+                List.of(1L, 2L, 3L)  // interest
         );
-
         projectService.create(
-                client1,
+                client3,
                 "테스트 프로젝트 2",
                 "테스트 요약 2",
-                BigDecimal.valueOf(2_000_000),
+                BigDecimal.valueOf(2_000_000L),
                 "우대 조건 2",
                 "급여 조건 2",
                 "업무 조건 2",
                 "2개월",
                 "상세 설명 2",
                 LocalDateTime.now().plusMonths(2),
-                skillIds2,
-                interestIds2
+                List.of(2L, 3L),     // skill
+                List.of(2L, 3L)      // interest
         );
-
         projectService.create(
                 client1,
                 "테스트 프로젝트 3",
                 "테스트 요약 3",
-                BigDecimal.valueOf(3_000_000),
+                BigDecimal.valueOf(3_000_000L),
                 "우대 조건 3",
                 "급여 조건 3",
                 "업무 조건 3",
                 "3개월",
                 "상세 설명 3",
                 LocalDateTime.now().plusMonths(3),
-                skillIds3,
-                interestIds3
+                List.of(2L, 3L),     // skill
+                List.of(3L)          // interest
         );
 
-        // 4) 프론트엔드 React/Next.js 대개편 → f(7)이 1위가 되도록
-        projectService.create(
-                client1,
-                "프론트엔드 React Next.js 대개편",
-                "프론트 전면 개편",
-                BigDecimal.valueOf(4_000_000),
-                "React Next.js 경험 필수",       // preferred_condition
-                "협의",
-                "Next.js 기반, 최신 React 생태", // working_condition
-                "4개월",
-                "대규모 프론트 리뉴얼",
-                LocalDateTime.now().plusMonths(4),
-                List.of(3L, 5L),               // React(id≈3), Next.js(id≈5)
-                List.of(1L)
-        );
+        // 4~25번은 기존 방식대로 다양하게 생성
+        for (int i = 4; i <= 25; i++) {
+            Client client = (i % 2 == 1) ? client1 : client3;
+            List<Long> skillIds = allSkillIds.subList(0, (i % 3) + 1); // 1~3개
+            List<Long> interestIds = allInterestIds.subList(0, ((i + 1) % 3) + 1); // 1~3개
 
-        // 5) 백엔드 Spring/JPA 마이그레이션 → f(4)가 1위가 되도록
-        projectService.create(
-                client1,
-                "백엔드 Spring JPA 마이그레이션",
-                "도메인 리팩토링",
-                BigDecimal.valueOf(5_000_000),
-                "Spring JPA 경력 2년 이상",     // preferred_condition
-                "협의",
-                "Spring boot/JPA 중심",         // working_condition
-                "3개월",
-                "레거시 JPA 마이그레이션",
-                LocalDateTime.now().plusMonths(3),
-                List.of(2L, 4L),               // Spring boot(id≈2), JPA(id≈4)
-                List.of(1L)
-        );
-
-        // 6) 데이터 Python ETL (f(5)=INACTIVE로 필터 제외 확인용)
-        projectService.create(
-                client1,
-                "데이터 파이프라인 Python ETL",
-                "ETL 파이프라인 고도화",
-                BigDecimal.valueOf(3_000_000),
-                "Python ETL 경험자 우대",        // preferred_condition
-                "협의",
-                "Docker 기반 배포",              // working_condition
-                "2개월",
-                "데이터 적재/변환",
-                LocalDateTime.now().plusMonths(2),
-                List.of(6L, 7L),               // Python(id≈6), Docker(id≈7)
-                List.of(3L)
-        );
-
-        // 7) 풀스택 React+Spring 통합 → f(6)이 1위가 되도록
-        projectService.create(
-                client1,
-                "풀스택 React Spring 통합",
-                "FE/BE 통합 개발",
-                BigDecimal.valueOf(4_500_000),
-                "React Spring 모두 가능자",      // preferred_condition
-                "협의",
-                "React + Spring boot",          // working_condition
-                "3개월",
-                "양방향 개발",
-                LocalDateTime.now().plusMonths(3),
-                List.of(2L, 3L),               // Spring boot(id≈2), React(id≈3)
-                List.of(1L, 2L)
-        );
+            projectService.create(
+                    client,
+                    "테스트 프로젝트 " + i,
+                    "테스트 요약 " + i,
+                    BigDecimal.valueOf(1_000_000L * i),
+                    "우대 조건 " + i,
+                    "급여 조건 " + i,
+                    "업무 조건 " + i,
+                    i + "개월",
+                    "상세 설명 " + i,
+                    LocalDateTime.now().plusMonths(i),
+                    skillIds,
+                    interestIds
+            );
+        }
     }
 
     @Transactional
@@ -251,10 +203,14 @@ public class BaseInitData {
         Freelancer freelancer1 = freelancerService.findById(freelancerMember1.getId());
         Member freelancerMember2 = memberService.findByUsername("freelancer2").get();
         Freelancer freelancer2 = freelancerService.findById(freelancerMember2.getId());
+        Member freelancerMember3 = memberService.findByUsername("freelancer3").get();
+        Freelancer freelancer3 = freelancerService.findById(freelancerMember3.getId());
+
         // 프로젝트 조회
         Project project1 = projectService.findById(1);
         Project project2 = projectService.findById(2);
         Project project3 = projectService.findById(3);
+        Project project25 = projectService.findById(25);
 
         // 지원서 3개 생성
         Application application1 = applicationService.create(
@@ -289,6 +245,19 @@ public class BaseInitData {
                 freelancer1,
                 project3
         );
+
+        for (int i = 1; i <= 12; i++) {
+            applicationService.create(
+                    new ApplicationWriteReqBody(
+                            BigDecimal.valueOf(500_000 + (i * 100_000)),
+                            (i % 6 + 1) + "개월",
+                            (i % 2 == 0) ? "주 5일, 원격 근무" : "주 3일, 출근 근무",
+                            "추가 자료 없음"
+                    ),
+                    freelancer3,
+                    project25
+            );
+        }
     }
 
     @Transactional
@@ -305,66 +274,26 @@ public class BaseInitData {
 
     @Transactional
     public void updateFreelancerInfo() {
-        freelancerService.updateFreelancer(4L, "백엔드", "test@test.com", "안녕하세요",
+        Long freelancerId1 = memberService.findByUsername("freelancer1").get().getFreelancer().getId();
+        Long freelancerId2 = memberService.findByUsername("freelancer2").get().getFreelancer().getId();
+        Long freelancerId3 = memberService.findByUsername("freelancer3").get().getFreelancer().getId();
+        Long freelancerId4 = memberService.findByUsername("freelancer4").get().getFreelancer().getId();
+        Long freelancerId5 = memberService.findByUsername("freelancer5").get().getFreelancer().getId();
+
+        freelancerService.updateFreelancer(freelancerId1, "백엔드", "test@test.com", "안녕하세요",
                 Map.of("Spring", 24, "JPA", 30), List.of(1L, 2L));
 
-        freelancerService.updateFreelancer(5L, "백엔드", "test@test.com", "안녕하세요",
+        freelancerService.updateFreelancer(freelancerId2, "백엔드", "test@test.com", "안녕하세요",
                 Map.of("Python", 10), List.of(1L, 2L));
 
-        freelancerService.updateFreelancer(6L, "풀스택", "test@test.com", "안녕하세요",
+        freelancerService.updateFreelancer(freelancerId3, "풀스택", "test@test.com", "안녕하세요",
                 Map.of("스프링", 24, "리액트", 48), List.of(1L, 2L, 3L));
 
-        freelancerService.updateFreelancer(7L, "프론트엔드", "test@test.com", "안녕하세요",
+        freelancerService.updateFreelancer(freelancerId4, "프론트엔드", "test@test.com", "안녕하세요",
                 Map.of("React", 100, "Next.js", 30), List.of(3L));
 
-        freelancerService.updateFreelancer(8L, "프론트엔드", "test@test.com", "안녕하세요",
-                null, null);
-
-
-        // f6: 프론트(React/Next.js) → p4에서 1위
-        freelancerService.updateFreelancer(
-                10L,
-                "프론트엔드",
-                "test@test.com",
-                "안녕하세요",
-                Map.of(
-                        "React", 48,
-                        "Next.js", 24,
-                        "Spring", 16,
-                        "JPA", 12
-                ),
-                List.of(3L, 5L )
-        );
-
-        // f7: 백엔드(Spring/JPA) → p5에서 1위
-        freelancerService.updateFreelancer(
-                11L,
-                "백엔드",
-                "test@test.com",
-                "안녕하세요",
-                Map.of("Spring", 36, "JPA", 24),
-                List.of(1L, 2L, 4L)
-        );
-
-        // f8: 풀스택(React+Spring) → p7에서 1위
-        freelancerService.updateFreelancer(
-                12L,
-                "풀스택",
-                "test@test.com",
-                "안녕하세요",
-                Map.of("React", 36, "Spring", 24),
-                List.of(2L, 3L)
-        );
-
-        // f9: 소음/백업용(낮은 가중치)
-        freelancerService.updateFreelancer(
-                13L,
-                "프론트엔드",
-                "test@test.com",
-                "안녕하세요",
-                Map.of("HTML", 12),
-                List.of(3L)
-        );
+        freelancerService.updateFreelancer(freelancerId5, "프론트엔드", "test@test.com", "안녕하세요",
+                null, List.of());
     }
 
     public void synchronization() {

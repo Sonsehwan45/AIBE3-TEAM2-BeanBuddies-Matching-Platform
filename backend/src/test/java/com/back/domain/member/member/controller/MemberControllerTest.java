@@ -1,9 +1,13 @@
 package com.back.domain.member.member.controller;
 
+import com.back.domain.application.application.dto.ApplicationWriteReqBody;
+import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
+import com.back.domain.project.project.entity.Project;
+import com.back.domain.project.project.service.ProjectService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,10 +21,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -33,46 +39,37 @@ public class MemberControllerTest {
     private MockMvc mvc;
     @Autowired
     private MemberService memberService;
+    @Autowired
+    private ProjectService projectService;
+    @Autowired
+    private ApplicationService applicationService;
 
     @Test
     @DisplayName("회원가입 성공")
     void t1_join() throws Exception {
 
-        ResultActions resultActions = mvc
-                .perform(
-                        post("/api/v1/members")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("""
-                                        {
-                                                "role": "CLIENT",
-                                                "name" : "유저new",
-                                                "username" : "userNew",
-                                                "password" : "1234",
-                                                "passwordConfirm" : "1234",
-                                                "email" : "test@test.com"
-                                        }
-                                        """
-                                )
-                )
-                .andDo(print());
+        ResultActions resultActions = mvc.perform(post("/api/v1/members").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                        "role": "CLIENT",
+                        "name" : "유저new",
+                        "username" : "userNew",
+                        "password" : "1234",
+                        "passwordConfirm" : "1234",
+                        "email" : "test@test.com"
+                }
+                """)).andDo(print());
 
         Member member = memberService.findByUsername("userNew").get();
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("join"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("join"))
 
                 //상태 코드 확인
                 .andExpect(status().isCreated())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("201-1"))
-                .andExpect(jsonPath("$.msg").value("%s님 환영합니다. 회원가입이 완료되었습니다.".formatted(member.getName())))
-                .andExpect(jsonPath("$.data.id").value(member.getId()))
-                .andExpect(jsonPath("$.data.name").value(member.getName()))
-                .andExpect(jsonPath("$.data.role").value(member.getRole().name()))
-                .andExpect(jsonPath("$.data.status").value(member.getStatus().name()));
+                .andExpect(jsonPath("$.resultCode").value("201-1")).andExpect(jsonPath("$.msg").value("%s님 환영합니다. 회원가입이 완료되었습니다.".formatted(member.getName()))).andExpect(jsonPath("$.data.id").value(member.getId())).andExpect(jsonPath("$.data.name").value(member.getName())).andExpect(jsonPath("$.data.role").value(member.getRole().name())).andExpect(jsonPath("$.data.status").value(member.getStatus().name()));
 
     }
 
@@ -80,34 +77,26 @@ public class MemberControllerTest {
     @DisplayName("회원가입 실패 : 공백 항목 존재")
     void t2_join_exception() throws Exception {
 
-        ResultActions resultActions = mvc.perform(
-                post("/api/v1/members")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                        "role": "CLIENT",
-                                        "name" : "유저new",
-                                        "username" : "userNew",
-                                        "password" : "1234",
-                                        "passwordConfirm" : "12345",
-                                        "email" : " "
-                                }
-                                """
-                        )
-        ).andDo(print());
+        ResultActions resultActions = mvc.perform(post("/api/v1/members").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                        "role": "CLIENT",
+                        "name" : "유저new",
+                        "username" : "userNew",
+                        "password" : "1234",
+                        "passwordConfirm" : "12345",
+                        "email" : " "
+                }
+                """)).andDo(print());
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("join"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("join"))
 
                 //상태 코드 확인
                 .andExpect(status().isBadRequest())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("400-1"))
-                .andExpect(jsonPath("$.msg").value(Matchers.containsString("email-Email-must be a well-formed email address")))
-                .andExpect(jsonPath("$.msg").value(Matchers.containsString("email-NotBlank-must not be blank")));
+                .andExpect(jsonPath("$.resultCode").value("400-1")).andExpect(jsonPath("$.msg").value(Matchers.containsString("email-Email-must be a well-formed email address"))).andExpect(jsonPath("$.msg").value(Matchers.containsString("email-NotBlank-must not be blank")));
     }
 
     @Test
@@ -117,66 +106,52 @@ public class MemberControllerTest {
         memberService.join("CLIENT", "유저new", "userNew", "1234", "1234", "test@test.com");
 
         //이미 사용중인 아이디로 회원가입
-        ResultActions resultActions = mvc.perform(
-                post("/api/v1/members")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                        "role": "FREELANCER",
-                                        "name" : "유저new2",
-                                        "username" : "userNew",
-                                        "password" : "1234",
-                                        "passwordConfirm" : "1234",
-                                        "email" : "test@test.com"
-                                }
-                                """
-                        )
-        ).andDo(print());
+        ResultActions resultActions = mvc.perform(post("/api/v1/members").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                        "role": "FREELANCER",
+                        "name" : "유저new2",
+                        "username" : "userNew",
+                        "password" : "1234",
+                        "passwordConfirm" : "1234",
+                        "email" : "test@test.com"
+                }
+                """)).andDo(print());
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("join"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("join"))
 
                 //상태 코드 확인
                 .andExpect(status().isConflict())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("409-1"))
-                .andExpect(jsonPath("$.msg").value("이미 존재하는 회원입니다."));
+                .andExpect(jsonPath("$.resultCode").value("409-1")).andExpect(jsonPath("$.msg").value("이미 존재하는 회원입니다."));
     }
 
     @Test
     @DisplayName("회원가입 실패 : 비밀번호 확인 불일치")
     void t4_join_exception() throws Exception {
 
-        ResultActions resultActions = mvc.perform(
-                post("/api/v1/members")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                        "role": "CLIENT",
-                                        "name" : "유저new",
-                                        "username" : "userNew",
-                                        "password" : "1234",
-                                        "passwordConfirm" : "12345",
-                                        "email" : "test@test.com"
-                                }
-                                """
-                        )
-        ).andDo(print());
+        ResultActions resultActions = mvc.perform(post("/api/v1/members").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                        "role": "CLIENT",
+                        "name" : "유저new",
+                        "username" : "userNew",
+                        "password" : "1234",
+                        "passwordConfirm" : "12345",
+                        "email" : "test@test.com"
+                }
+                """)).andDo(print());
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("join"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("join"))
 
                 //상태 코드 확인
                 .andExpect(status().isBadRequest())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("400-4"))
-                .andExpect(jsonPath("$.msg").value("비밀번호와 비밀번호 확인이 일치하지 않습니다."));
+                .andExpect(jsonPath("$.resultCode").value("400-4")).andExpect(jsonPath("$.msg").value("비밀번호와 비밀번호 확인이 일치하지 않습니다."));
 
     }
 
@@ -184,177 +159,138 @@ public class MemberControllerTest {
     @DisplayName("비밀번호 수정 성공")
     @WithUserDetails("client1")
     public void t5_updatePassword() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                patch("/api/v1/members/password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "currentPassword": "1234",
-                                    "newPassword": "5678",
-                                    "newPasswordConfirm": "5678"
-                                }
-                                """
-                        )
-        ).andDo(print());
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/password").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                    "currentPassword": "1234",
+                    "newPassword": "5678",
+                    "newPasswordConfirm": "5678"
+                }
+                """)).andDo(print());
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("updatePassword"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("updatePassword"))
 
                 //상태코드 확인
                 .andExpect(status().isOk())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("200-5"))
-                .andExpect(jsonPath("$.msg").value("비밀번호 수정이 완료되었습니다."));
+                .andExpect(jsonPath("$.resultCode").value("200-5")).andExpect(jsonPath("$.msg").value("비밀번호 수정이 완료되었습니다."));
     }
 
     @Test
     @DisplayName("비밀번호 수정 실패 - 현재 비밀번호 불일치")
     @WithUserDetails("client1")
     public void t6_updatePassword_exception() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                patch("/api/v1/members/password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "currentPassword": "12345",
-                                    "newPassword": "5678",
-                                    "newPasswordConfirm": "5678"
-                                }
-                                """
-                        )
-        ).andDo(print());
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/password").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                    "currentPassword": "12345",
+                    "newPassword": "5678",
+                    "newPasswordConfirm": "5678"
+                }
+                """)).andDo(print());
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("updatePassword"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("updatePassword"))
 
                 //상태코드 확인
                 .andExpect(status().isUnauthorized())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("401-3"))
-                .andExpect(jsonPath("$.msg").value("현재 비밀번호가 일치하지 않습니다."));
+                .andExpect(jsonPath("$.resultCode").value("401-3")).andExpect(jsonPath("$.msg").value("현재 비밀번호가 일치하지 않습니다."));
     }
 
     @Test
     @DisplayName("비밀번호 수정 실패 - 새 비밀번호 확인 불일치")
     @WithUserDetails("client1")
     public void t7_updatePassword_exception() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                patch("/api/v1/members/password")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "currentPassword": "1234",
-                                    "newPassword": "5678",
-                                    "newPasswordConfirm": "9999"
-                                }
-                                """
-                        )
-        ).andDo(print());
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/password").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                    "currentPassword": "1234",
+                    "newPassword": "5678",
+                    "newPasswordConfirm": "9999"
+                }
+                """)).andDo(print());
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("updatePassword"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("updatePassword"))
 
                 //상태코드 확인
                 .andExpect(status().isBadRequest())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("400-6"))
-                .andExpect(jsonPath("$.msg").value("새 비밀번호 확인이 일치하지 않습니다."));
+                .andExpect(jsonPath("$.resultCode").value("400-4")).andExpect(jsonPath("$.msg").value("새 비밀번호와 비밀번호 확인이 일치하지 않습니다."));
     }
 
     @Test
-    @DisplayName("임시 비밀번호 발급 성공")
-    public void t8_issueTempPassword() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                post("/api/v1/members/password-reset")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "username": "client1",
-                                    "email":  "test@test.com",
-                                    "code": "blahblah"
-                                }
-                                """
-                        )
-        ).andDo(print());
+    @DisplayName("비밀번호 재설정 성공")
+    public void t8_resetPassword() throws Exception {
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/password-reset").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                    "username": "client1",
+                    "email":  "test@test.com",
+                    "newPassword": "12341234",
+                    "newPasswordConfirm": "12341234"
+                }
+                """)).andDo(print());
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("issueTempPassword"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("passwordReset"))
 
                 //상태코드 확인
                 .andExpect(status().isOk())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("200-6"))
-                .andExpect(jsonPath("$.msg").value("임시 비밀번호가 이메일로 발송되었습니다."));
+                .andExpect(jsonPath("$.resultCode").value("200-6")).andExpect(jsonPath("$.msg").value("비밀번호 재설정이 완료되었습니다."));
     }
 
     @Test
-    @DisplayName("임시 비밀번호 발급 실패 - 존재하지 않는 사용자")
-    public void t9_issueTempPassword() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                post("/api/v1/members/password-reset")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "username": "client12",
-                                    "email":  "test@test.com",
-                                    "code": "blahblah"
-                                }
-                                """
-                        )
-        ).andDo(print());
+    @DisplayName("비밀번호 재설정 실패 - username 오류")
+    public void t9_resetPassword() throws Exception {
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/password-reset").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                    "username": "client12",
+                    "email":  "test@test.com",
+                    "newPassword": "12341234",
+                    "newPasswordConfirm": "12341234"
+                }
+                """)).andDo(print());
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("issueTempPassword"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("passwordReset"))
 
                 //상태코드 확인
                 .andExpect(status().isNotFound())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("404-1"))
-                .andExpect(jsonPath("$.msg").value("해당 회원이 존재하지 않습니다."));
+                .andExpect(jsonPath("$.resultCode").value("404-1")).andExpect(jsonPath("$.msg").value("해당 회원이 존재하지 않습니다."));
     }
 
     @Test
-    @DisplayName("임시 비밀번호 발급 실패 - 이메일 불일치")
-    public void t10_issueTempPassword() throws Exception {
-        ResultActions resultActions = mvc.perform(
-                post("/api/v1/members/password-reset")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "username": "client1",
-                                    "email":  "testtest@test.com",
-                                    "code": "blahblah"
-                                }
-                                """
-                        )
-        ).andDo(print());
+    @DisplayName("비밀번호 재설정 실패 - 이메일 오류")
+    public void t10_resetPassword() throws Exception {
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/password-reset").contentType(MediaType.APPLICATION_JSON).content("""
+               {
+                    "username": "client1",
+                    "email":  "testtest@test.com",
+                    "newPassword": "12341234",
+                    "newPasswordConfirm": "12341234"
+                }
+                """)).andDo(print());
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("issueTempPassword"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("passwordReset"))
 
                 //상태코드 확인
                 .andExpect(status().isBadRequest())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("400-2"))
-                .andExpect(jsonPath("$.msg").value("이메일이 회원 정보와 일치하지 않습니다."));
+                .andExpect(jsonPath("$.resultCode").value("400-5")).andExpect(jsonPath("$.msg").value("이메일이 회원 정보와 일치하지 않습니다."));
     }
 
     @Test
@@ -365,28 +301,18 @@ public class MemberControllerTest {
         Member beforeMember = memberService.findByUsername("freelancer1").get();
 
         // WHEN
-        ResultActions resultActions = mvc.perform(
-                patch("/api/v1/members/me/profile")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "name": "프리랜서1_수정",
-                                    "profileImgUrl": "new_freelancer_url",
-                                    "job": "Backend Developer",
-                                    "freelancerEmail": "freelancer_new@test.com",
-                                    "comment": "한 줄 소개 수정"
-                                }
-                                """
-                        )
-        ).andDo(print());
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/me/profile").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                    "name": "프리랜서1_수정",
+                    "profileImgUrl": "new_freelancer_url",
+                    "job": "Backend Developer",
+                    "freelancerEmail": "freelancer_new@test.com",
+                    "comment": "한 줄 소개 수정"
+                }
+                """)).andDo(print());
 
         // THEN
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("updateMyProfile"))
-                .andExpect(jsonPath("$.resultCode").value("200-8"))
-                .andExpect(jsonPath("$.msg").value("프로필 수정 성공"));
+        resultActions.andExpect(status().isOk()).andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("updateMyProfile")).andExpect(jsonPath("$.resultCode").value("200-8")).andExpect(jsonPath("$.msg").value("프로필 수정 성공"));
 
         Member afterMember = memberService.findById(beforeMember.getId());
         Freelancer afterFreelancer = afterMember.getFreelancer();
@@ -406,28 +332,18 @@ public class MemberControllerTest {
         Member beforeMember = memberService.findByUsername("client1").get();
 
         // WHEN
-        ResultActions resultActions = mvc.perform(
-                patch("/api/v1/members/me/profile")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "name": "클라이언트1_수정",
-                                    "profileImgUrl": "new_client_url",
-                                    "companySize": "10-50",
-                                    "companyDescription": "회사 설명 수정",
-                                    "companyEmail": "client_new@test.com"
-                                }
-                                """
-                        )
-        ).andDo(print());
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/me/profile").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                    "name": "클라이언트1_수정",
+                    "profileImgUrl": "new_client_url",
+                    "companySize": "10-50",
+                    "companyDescription": "회사 설명 수정",
+                    "companyEmail": "client_new@test.com"
+                }
+                """)).andDo(print());
 
         // THEN
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("updateMyProfile"))
-                .andExpect(jsonPath("$.resultCode").value("200-8"))
-                .andExpect(jsonPath("$.msg").value("프로필 수정 성공"));
+        resultActions.andExpect(status().isOk()).andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("updateMyProfile")).andExpect(jsonPath("$.resultCode").value("200-8")).andExpect(jsonPath("$.msg").value("프로필 수정 성공"));
 
         Member afterMember = memberService.findById(beforeMember.getId());
         Client afterClient = afterMember.getClient();
@@ -444,18 +360,10 @@ public class MemberControllerTest {
     @WithUserDetails("freelancer1")
     void t13_getMyProfile_success() throws Exception {
         // WHEN
-        ResultActions resultActions = mvc.perform(
-                get("/api/v1/members/me")
-        ).andDo(print());
+        ResultActions resultActions = mvc.perform(get("/api/v1/members/me")).andDo(print());
 
         // THEN
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("getMyProfile"))
-                .andExpect(jsonPath("$.resultCode").value("200-7"))
-                .andExpect(jsonPath("$.msg").value("프로필 조회 성공"))
-                .andExpect(jsonPath("$.data.username").value("freelancer1"));
+        resultActions.andExpect(status().isOk()).andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("getMyProfile")).andExpect(jsonPath("$.resultCode").value("200-7")).andExpect(jsonPath("$.msg").value("프로필 조회 성공")).andExpect(jsonPath("$.data.username").value("freelancer1"));
     }
 
     @Test
@@ -465,18 +373,10 @@ public class MemberControllerTest {
         Member client = memberService.findByUsername("client1").get();
 
         // WHEN
-        ResultActions resultActions = mvc.perform(
-                get("/api/v1/members/{userId}/profile", client.getId())
-        ).andDo(print());
+        ResultActions resultActions = mvc.perform(get("/api/v1/members/{userId}/profile", client.getId())).andDo(print());
 
         // THEN
-        resultActions
-                .andExpect(status().isOk())
-                .andExpect(handler().handlerType(MemberController.class))
-                .andExpect(handler().methodName("getProfile"))
-                .andExpect(jsonPath("$.resultCode").value("200-7"))
-                .andExpect(jsonPath("$.msg").value("프로필 조회 성공"))
-                .andExpect(jsonPath("$.data.username").value("client1"));
+        resultActions.andExpect(status().isOk()).andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("getProfile")).andExpect(jsonPath("$.resultCode").value("200-7")).andExpect(jsonPath("$.msg").value("프로필 조회 성공")).andExpect(jsonPath("$.data.username").value("client1"));
     }
 
     @Test
@@ -488,17 +388,12 @@ public class MemberControllerTest {
         String originalComment = beforeMember.getFreelancer().getComment();
 
         // WHEN
-        ResultActions resultActions = mvc.perform(
-                patch("/api/v1/members/me/profile")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "comment": "프리랜서 한 줄 소개만 수정",
-                                    "companyDescription": "이 필드는 무시되어야 합니다."
-                                }
-                                """
-                        )
-        ).andDo(print());
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/me/profile").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                    "comment": "프리랜서 한 줄 소개만 수정",
+                    "companyDescription": "이 필드는 무시되어야 합니다."
+                }
+                """)).andDo(print());
 
         // THEN
         resultActions.andExpect(status().isOk());
@@ -519,17 +414,12 @@ public class MemberControllerTest {
         String originalCompanyDescription = beforeMember.getClient().getCompanyDescription();
 
         // WHEN
-        ResultActions resultActions = mvc.perform(
-                patch("/api/v1/members/me/profile")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                    "companyDescription": "클라이언트 회사 소개만 수정",
-                                    "comment": "이 필드는 무시되어야 합니다."
-                                }
-                                """
-                        )
-        ).andDo(print());
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/me/profile").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                    "companyDescription": "클라이언트 회사 소개만 수정",
+                    "comment": "이 필드는 무시되어야 합니다."
+                }
+                """)).andDo(print());
 
         // THEN
         resultActions.andExpect(status().isOk());
@@ -539,5 +429,79 @@ public class MemberControllerTest {
         // Verify that the original data of another member type is not affected.
         Member freelancerMember = memberService.findByUsername("freelancer1").get();
         assertThat(freelancerMember.getFreelancer().getComment()).isNotEqualTo("이 필드는 무시되어야 합니다.");
+    }
+
+    @Test
+    @DisplayName("내가 등록한 프로젝트 목록 조회 성공")
+    @WithUserDetails("client1")
+    void t17_getMyProjects_success() throws Exception {
+        // GIVEN
+        Member clientMember = memberService.findByUsername("client1").get();
+        Client client = clientMember.getClient();
+
+        // Create a test project for client1
+        projectService.create(
+                client,
+                "Test Project for Client1",
+                "Summary of Test Project",
+                new BigDecimal("1000000"),
+                "Preferred conditions",
+                "Pay conditions",
+                "Working conditions",
+                "Duration",
+                "Description",
+                LocalDateTime.now().plusDays(7),
+                List.of(), // No skills for simplicity
+                List.of()  // No interests for simplicity
+        );
+
+        // WHEN
+        ResultActions resultActions = mvc.perform(get("/api/v1/members/me/projects"))
+                .andDo(print());
+
+        // THEN
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(handler().handlerType(MemberController.class))
+                .andExpect(handler().methodName("getMyProjects"))
+                .andExpect(jsonPath("$.resultCode").value("200-9"))
+                .andExpect(jsonPath("$.msg").value("내가 등록한 프로젝트 목록 조회 성공"))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[0].title").value("Test Project for Client1"));
+    }
+
+    @Test
+    @DisplayName("내가 지원한 프로젝트 목록 조회 성공")
+    @WithUserDetails("freelancer1")
+    void t18_getMyApplications_success() throws Exception {
+        // GIVEN
+        Member freelancerMember = memberService.findByUsername("freelancer1").get();
+        Freelancer freelancer = freelancerMember.getFreelancer();
+
+        Member clientMember = memberService.findByUsername("client1").get();
+        Project project = projectService.findAllByMemberId(clientMember.getId()).get(0);
+
+        ApplicationWriteReqBody reqBody = new ApplicationWriteReqBody(
+                new BigDecimal("500000"),
+                "1 month",
+                "Work plan details",
+                "Additional request details"
+        );
+        applicationService.create(reqBody, freelancer, project);
+
+        // WHEN
+        ResultActions resultActions = mvc.perform(get("/api/v1/members/me/applications"))
+                .andDo(print());
+
+        // THEN
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(handler().handlerType(MemberController.class))
+                .andExpect(handler().methodName("getMyApplications"))
+                .andExpect(jsonPath("$.resultCode").value("200-10"))
+                .andExpect(jsonPath("$.msg").value("내가 지원한 프로젝트 목록 조회 성공"))
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data[?(@.projectTitle == '%s')]".formatted(project.getTitle())).exists())
+                .andExpect(jsonPath("$.data[?(@.freelancerName == '%s')]".formatted(freelancer.getMember().getName())).exists());
     }
 }

@@ -11,4 +11,13 @@ public interface FreelancerRepository extends JpaRepository<Freelancer, Long>, F
 
     @Query("SELECT f FROM Freelancer f JOIN FETCH f.member m WHERE f.id = :id")
     Optional<Freelancer> findByIdWithMember(Long id);
+
+    @Query("""
+            SELECT f FROM Freelancer f
+            JOIN f.member
+            LEFT JOIN FETCH f.skills fs
+            LEFT JOIN FETCH fs.skill s
+            WHERE f.id = :id
+            """)
+    Optional<Freelancer> findByIdWithSkills(Long id);
 }

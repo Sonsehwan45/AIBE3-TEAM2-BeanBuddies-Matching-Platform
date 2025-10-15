@@ -24,15 +24,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 //요청에 대한 권한 설정
                 .authorizeHttpRequests(auth -> auth
+                        // Preflight-Request(OPTIONS) 허용
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         //누구나 접근 가능
                         .requestMatchers("/api/*/test/public").permitAll()
                         .requestMatchers("/api/*/members/join/**").permitAll()
                         .requestMatchers("/api/*/members/temp-password/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서 단건/다건 조회
                         .requestMatchers(HttpMethod.GET, "/api/v1/members/*/profile").permitAll() // 다른 사용자 프로필 조회
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서/제안서 단건/다건 조회
+                        .requestMatchers("/api/*/auth/login").permitAll() // 로그인 경로는 누구나 접근 가능해야 함
+                        .requestMatchers("/api/*/members/join/**").permitAll()
 
                         //인증된 사용자만 접근 가능
                         .requestMatchers("/api/*/test/auth").authenticated()
@@ -41,12 +45,16 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/members/me").authenticated() // 내 프로필 조회
                         .requestMatchers("/api/v1/members/me/profile").authenticated() // 내 프로필 수정
 
+                        //평가 생성 및 수정은 인증된 사용자만 가능
+                        .requestMatchers(HttpMethod.POST, "/api/v1/evaluations").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/evaluations").authenticated()
 
                         //프리랜서만 접근 가능
                         .requestMatchers("/api/*/test/auth/freelancer").hasRole("FREELANCER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects/*/applications").hasRole("FREELANCER") // 지원서 등록
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/projects/*/applications/**").hasRole("FREELANCER") // 지원서 삭제
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/proposals/*").hasRole("FREELANCER") // 제안서 상태 변경(수락, 거절)
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/freelancers/*").hasRole("FREELANCER") // 프리랜서 개인정보 변경
 
                         //클라이언트만 접근 가능
                         .requestMatchers("/api/*/test/auth/client").hasRole("CLIENT")
@@ -63,7 +71,7 @@ public class SecurityConfig {
 
 
                         //그 외 요청은 인증 필요없음
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
 
                 // REST API용 Security 기본 기능 비활성화
@@ -121,9 +129,10 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         //cors 설정
-        configuration.setAllowedOrigins(List.of("http://localhost:3000")); // 허용할 출처(origin)
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE")); // 허용할 메서드
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "https://beanbuddies.yhcho.com")); // 허용할 출처(origin)
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")); // 허용할 메서드
         configuration.setAllowCredentials(true); //인증 정보를 포함한 요청(쿠키, 헤더) 허용 여부
+        configuration.addExposedHeader("Authorization"); // 프론트에서 Header 읽기 설정
         configuration.setAllowedHeaders(List.of("*")); //허용할 헤더 (* → 모든 헤더 허용)
 
         //설정을 특정 경로 패턴에 적용

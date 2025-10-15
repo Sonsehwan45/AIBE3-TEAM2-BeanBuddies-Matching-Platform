@@ -3,6 +3,7 @@ package com.back.domain.member.member.entity;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.member.member.constant.MemberStatus;
+import com.back.domain.member.member.constant.ProfileScope;
 import com.back.domain.member.member.constant.Role;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -37,6 +38,10 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     private MemberStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProfileScope profileScope;
+
     private LocalDateTime deleteDate;
 
     @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -52,6 +57,7 @@ public class Member extends BaseEntity {
         this.password = password;
         this.email = email;
         this.status = MemberStatus.valueOf("ACTIVE");
+        this.profileScope = ProfileScope.PUBLIC;
     }
 
     // Freelancer 등록 메서드 추가
@@ -82,7 +88,11 @@ public class Member extends BaseEntity {
     public void updateName(String name) {
         this.name = name;
     }
-  
+
+    public void updateProfileScope(ProfileScope profileScope) {
+        this.profileScope = profileScope;
+    }
+
     public boolean isActive() {
         return status == MemberStatus.ACTIVE;
     }

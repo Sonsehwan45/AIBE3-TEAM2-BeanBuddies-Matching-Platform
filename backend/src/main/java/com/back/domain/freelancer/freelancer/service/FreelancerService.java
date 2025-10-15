@@ -6,24 +6,22 @@ import com.back.domain.freelancer.freelancer.dto.FreelancerSearchCondition;
 import com.back.domain.freelancer.freelancer.dto.FreelancerSummary;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.freelancer.freelancer.repository.FreelancerRepository;
-import com.back.domain.freelancer.join.entity.FreelancerSkill;
-import com.back.domain.freelancer.join.repository.FreelancerSkillRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FreelancerService {
 
     private final FreelancerRepository freelancerRepository;
-    private final FreelancerSkillRepository freelancerSkillRepository;
     private final SkillRepository skillRepository;
 
     @Transactional(readOnly = true)
@@ -35,44 +33,31 @@ public class FreelancerService {
     @Transactional
     public Freelancer updateFreelancer(Long id, String job, String freelancerEmail, String comment,
                                        Map<String, Integer> career, List<Long> skillIds) {
-        Freelancer freelancer = findById(id);
+        Freelancer freelancer = freelancerRepository.findByIdWithSkills(id)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 프리랜서입니다."));
+
+        // 스킬 제외한 정보 업데이트
         freelancer.updateInfo(job, freelancerEmail, comment, career);
 
-        updateFreelancerSkills(freelancer, skillIds);
+        // 스킬 업데이트(dirty checking, cascade, orphanRemoval 이용)
+        updateFreelancerSkills(skillIds, freelancer);
 
         return freelancerRepository.save(freelancer);
+    }
+
+    private void updateFreelancerSkills(List<Long> skillIds, Freelancer freelancer) {
+        List<Skill> findSkills = skillRepository.findAllById(skillIds);
+
+        if (findSkills.size() != skillIds.size()) {
+            throw new EntityNotFoundException("존재하지 않는 스킬 ID가 포함되어 있습니다.");
+        }
+
+        freelancer.updateSkills(findSkills);
     }
 
     @Transactional(readOnly = true)
     public Page<FreelancerSummary> findAll(FreelancerSearchCondition condition, Pageable page) {
         return freelancerRepository.findAll(condition, page);
-    }
-
-    private void updateFreelancerSkills(Freelancer freelancer, List<Long> newSkillIds) {
-        if (freelancer.getSkills().equals(newSkillIds) || newSkillIds == null) {
-            return;
-        }
-
-        // 기존 스킬 모두 삭제
-        freelancerSkillRepository.deleteAllByFreelancerId(freelancer.getId());
-        freelancer.getSkills().clear();
-
-        List<Skill> findSkills = skillRepository.findAllById(newSkillIds);
-
-        // 요청한 스킬 기존에 저장되어 있었는지 확인
-        if (findSkills.size() != newSkillIds.size()) {
-            throw new EntityNotFoundException("존재하지 않는 스킬 ID가 포함되어 있습니다.");
-        }
-
-        // FreelancerSkill 엔티티 생성 및 저장
-        List<FreelancerSkill> newFreelancerSkills = findSkills.stream()
-                .map(skill -> new FreelancerSkill(freelancer, skill))
-                .toList();
-
-        freelancerSkillRepository.saveAll(newFreelancerSkills);
-
-        // 양방향 연관관계 동기화
-        freelancer.getSkills().addAll(newFreelancerSkills);
     }
 
     @Transactional(readOnly = true)

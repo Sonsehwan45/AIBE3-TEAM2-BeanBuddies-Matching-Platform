@@ -1,19 +1,25 @@
 package com.back.domain.member.member.service;
 
+import com.back.domain.application.application.entity.Application;
+import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
+import com.back.domain.member.member.constant.ProfileScope;
 import com.back.domain.member.member.constant.Role;
 import com.back.domain.member.member.dto.ClientUpdateDto;
 import com.back.domain.member.member.dto.FreelancerUpdateDto;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.repository.MemberRepository;
 import com.back.global.exception.ServiceException;
+import com.back.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -22,6 +28,7 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final ApplicationService applicationService;
 
     private boolean initFlag = false;
 
@@ -66,6 +73,9 @@ public class MemberService {
             member.registerClient(client);
         }
 
+        //Redis에서 인증 정보 삭제
+        emailService.clearVerification("JOIN", email);
+
         //DB 반영 후 반환
         return memberRepository.save(member);
     }
@@ -78,6 +88,7 @@ public class MemberService {
         // Update common fields
         if (dto.getName() != null) member.updateName(dto.getName());
         if (dto.getProfileImgUrl() != null) member.updateProfileImgUrl(dto.getProfileImgUrl());
+        if (dto.getProfileScope() != null) member.updateProfileScope(dto.getProfileScope());
 
         Freelancer freelancer = member.getFreelancer();
         freelancer.updateInfo(dto.getJob(), dto.getFreelancerEmail(), dto.getComment(), dto.getCareer());
@@ -94,6 +105,7 @@ public class MemberService {
         // Update common fields
         if (dto.getName() != null) member.updateName(dto.getName());
         if (dto.getProfileImgUrl() != null) member.updateProfileImgUrl(dto.getProfileImgUrl());
+        if (dto.getProfileScope() != null) member.updateProfileScope(dto.getProfileScope());
 
         Client client = member.getClient();
         client.update(dto.getCompanySize(), dto.getCompanyDescription(), dto.getRepresentative(), dto.getBusinessNo(), dto.getCompanyPhone(), dto.getCompanyEmail());
@@ -130,14 +142,14 @@ public class MemberService {
         }
 
         if(!newPassword.equals(newPasswordConfirm)) {
-            throw new ServiceException("400-6", "새 비밀번호 확인이 일치하지 않습니다.");
+            throw new ServiceException("400-4", "새 비밀번호와 비밀번호 확인이 일치하지 않습니다.");
         }
 
         member.updatePassword(passwordEncoder.encode(newPassword));
         memberRepository.save(member);
     }
 
-    public void sendTempPasswordCode(String username, String email) {
+    public void sendPasswordResetCode(String username, String email) {
         Member member = memberRepository.findByUsername(username)
                 .orElseThrow(() -> new ServiceException("404-1", "해당 회원을 찾을 수 없습니다."));
 
@@ -145,7 +157,43 @@ public class MemberService {
             throw new ServiceException("400-5", "이메일이 회원 정보와 일치하지 않습니다.");
         }
 
-        emailService.sendEmailCode("TEMPPW", email);
+        emailService.sendEmailCode("PWRESET", email);
+    }
+
+    public void verifyPasswordResetCode(String username, String email, String code) {
+        Member member = memberRepository.findByUsername(username)
+                .orElseThrow(() -> new ServiceException("404-1", "해당 회원이 존재하지 않습니다."));
+
+        if(!member.getEmail().equals(email)) {
+            throw new ServiceException("400-2", "이메일이 회원 정보와 일치하지 않습니다.");
+        }
+
+        // 코드 확인
+        emailService.verifyEmailCode("PWRESET", email, code);
+    }
+
+    public void resetPassword(String username, String email, String password, String passwordConfirm) {
+        //username 확인
+        Member member = findByUsername(username).orElseThrow(() -> new ServiceException("404-1", "해당 회원이 존재하지 않습니다."));
+
+        //이메일 확인
+        if(!member.getEmail().equals(email)) {
+            throw new ServiceException("400-5", "이메일이 회원 정보와 일치하지 않습니다.");
+        }
+        
+        //email 인증이 되었는지 확인
+        if (!emailService.isVerified("PWRESET", email)) {
+            throw new ServiceException("400-3", "이메일 인증이 완료되지 않았습니다.");
+        }
+
+        //비밀번호 확인
+        if (!password.equals(passwordConfirm)) {
+            throw new ServiceException("400-4", "비밀번호와 비밀번호 확인이 일치하지 않습니다.");
+        }
+
+        //DB에 저장
+        member.updatePassword(passwordEncoder.encode(password));
+        memberRepository.save(member);
     }
 
     public void issueTempPassword(String username, String email, String code) {
@@ -183,5 +231,38 @@ public class MemberService {
         }
 
         return tempPassword.toString();
+    }
+
+    public Member getProfile(Long userId, CustomUserDetails user) {
+        Member member = findById(userId);
+
+        if (member.getProfileScope() == ProfileScope.PUBLIC) {
+            return member;
+        }
+
+        // 자신의 프로필은 항상 접근 가능
+        if (user != null && Objects.equals(user.getId(), member.getId())) {
+            return member;
+        }
+
+        // 프리랜서의 비공개 프로필 접근 제어
+        if (member.isFreelancer()) {
+            if (user == null) {
+                throw new ServiceException("401-1", "로그인이 필요합니다.");
+            }
+
+            Member requestMember = findById(user.getId());
+            if (requestMember.isClient()) {
+                List<Application> applications = applicationService.findAllByFreeLancer(member.getFreelancer());
+                boolean hasApplied = applications.stream()
+                        .anyMatch(app -> app.getProject().getClient().getMember().getId().equals(requestMember.getId()));
+
+                if (hasApplied) {
+                    return member;
+                }
+            }
+        }
+
+        throw new ServiceException("403-3", "프로필을 조회할 권한이 없습니다.");
     }
 }
