@@ -1,20 +1,21 @@
 import { useState } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
-import { mockProjects, mockFreelancers } from "../../mocks/users";
+import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
+import { mockProjects } from "../../mocks/users";
 import Button from "../../components/base/Button";
-import Input from "../../components/base/Input";
+import { client } from "../../global/backend/client";
 
 export default function Evaluation() {
   const { type, projectId } = useParams(); // type: 'client' | 'freelancer'
   const location = useLocation();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    rating: 0,
+    professionalism: 0,
+    scheduleAdherence: 0,
     communication: 0,
-    technical: 0,
-    schedule: 0,
-    paymentCompliance: 0, // 클라이언트 평가 시에만 사용
-    feedback: "",
+    proactiveness: 0,
+    comment: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const project = mockProjects.find((p) => p.id === Number(projectId));
   const isEvaluatingClient = type === "client";
@@ -23,22 +24,70 @@ export default function Evaluation() {
     setFormData((prev) => ({ ...prev, [category]: rating }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.rating === 0) {
-      alert("전체 평점을 선택해주세요.");
+
+    // 유효성 검사
+    if (formData.professionalism === 0) {
+      alert("전문성 평점을 선택해주세요.");
       return;
     }
-    if (isEvaluatingClient && formData.paymentCompliance === 0) {
-      alert("급여 준수 평점을 선택해주세요.");
+    if (formData.scheduleAdherence === 0) {
+      alert("일정 준수 평점을 선택해주세요.");
       return;
     }
-    if (formData.feedback.length < 20) {
+    if (formData.communication === 0) {
+      alert("커뮤니케이션 평점을 선택해주세요.");
+      return;
+    }
+    if (formData.proactiveness === 0) {
+      alert("적극성 평점을 선택해주세요.");
+      return;
+    }
+    if (formData.comment.length < 20) {
       alert("피드백을 최소 20자 이상 작성해주세요.");
       return;
     }
-    console.log("평가 제출:", formData);
-    alert("평가가 성공적으로 제출되었습니다!");
+
+    setIsSubmitting(true);
+
+    try {
+      // URL에서 evaluateeId 가져오기 (location.state에서 전달받을 수도 있음)
+      const evaluateeId = location.state?.evaluateeId;
+
+      if (!evaluateeId) {
+        alert("평가 대상 정보를 찾을 수 없습니다.");
+        return;
+      }
+
+      const { error } = await client.POST("/api/v1/evaluations", {
+        body: {
+          projectId: Number(projectId),
+          evaluateeId: evaluateeId,
+          ratings: {
+            professionalism: formData.professionalism,
+            scheduleAdherence: formData.scheduleAdherence,
+            communication: formData.communication,
+            proactiveness: formData.proactiveness,
+          },
+          comment: formData.comment,
+        },
+      });
+
+      if (error) {
+        console.error("평가 제출 실패:", error);
+        alert("평가 제출에 실패했습니다. 다시 시도해주세요.");
+        return;
+      }
+
+      alert("평가가 성공적으로 제출되었습니다!");
+      navigate("/mypage");
+    } catch (error) {
+      console.error("평가 제출 중 오류:", error);
+      alert("평가 제출 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!project) {
@@ -201,98 +250,78 @@ export default function Evaluation() {
 
           <div className="p-8">
             <form onSubmit={handleSubmit} className="space-y-10">
-              {/* 전체 평점 */}
-              <div className="text-center pb-8 border-b border-gray-200">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">
-                  전체 평점
-                </h3>
-                <div className="flex justify-center">
-                  <div className="bg-gray-50 rounded-2xl p-8">
-                    <RatingStars
-                      rating={formData.rating}
-                      onRatingChange={(rating) =>
-                        handleRatingChange("rating", rating)
-                      }
-                      label="전반적인 만족도를 평가해주세요"
-                      required={true}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* 카테고리별 평점 */}
+              {/* 세부 평가 */}
               <div className="pb-8 border-b border-gray-200">
-                <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+                <h3 className="text-2xl font-bold text-gray-900 mb-4 text-center">
                   세부 평가
                 </h3>
+                <p className="text-center text-gray-600 mb-8">
+                  4개 항목의 평균으로 전체 만족도가 자동 계산됩니다
+                </p>
 
-                <div
-                  className={`grid grid-cols-1 ${
-                    isEvaluatingClient ? "md:grid-cols-4" : "md:grid-cols-3"
-                  } gap-8`}
-                >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="bg-blue-50 rounded-2xl p-6">
+                    <RatingStars
+                      rating={formData.professionalism}
+                      onRatingChange={(rating) =>
+                        handleRatingChange("professionalism", rating)
+                      }
+                      label={isEvaluatingClient ? "프로젝트 관리" : "전문성"}
+                      required={true}
+                    />
+                    <p className="text-xs text-gray-600 mt-2">
+                      {isEvaluatingClient
+                        ? "프로젝트 진행 관리 및 요구사항 전달"
+                        : "업무 처리 능력 및 기술적 역량"}
+                    </p>
+                  </div>
+
+                  <div className="bg-green-50 rounded-2xl p-6">
+                    <RatingStars
+                      rating={formData.scheduleAdherence}
+                      onRatingChange={(rating) =>
+                        handleRatingChange("scheduleAdherence", rating)
+                      }
+                      label={
+                        isEvaluatingClient ? "급여 일정 준수" : "일정 준수"
+                      }
+                      required={true}
+                    />
+                    <p className="text-xs text-gray-600 mt-2">
+                      {isEvaluatingClient
+                        ? "약속된 급여 지급 일정 준수"
+                        : "협의된 프로젝트 기한 준수"}
+                    </p>
+                  </div>
+
+                  <div className="bg-purple-50 rounded-2xl p-6">
                     <RatingStars
                       rating={formData.communication}
                       onRatingChange={(rating) =>
                         handleRatingChange("communication", rating)
                       }
                       label="커뮤니케이션"
+                      required={true}
                     />
+                    <p className="text-xs text-gray-600 mt-2">
+                      의사소통 능력 및 응답 속도
+                    </p>
                   </div>
 
-                  <div className="bg-green-50 rounded-2xl p-6">
+                  <div className="bg-yellow-50 rounded-2xl p-6">
                     <RatingStars
-                      rating={formData.technical}
+                      rating={formData.proactiveness}
                       onRatingChange={(rating) =>
-                        handleRatingChange("technical", rating)
+                        handleRatingChange("proactiveness", rating)
                       }
-                      label={isEvaluatingClient ? "프로젝트 관리" : "기술력"}
+                      label="적극성"
+                      required={true}
                     />
+                    <p className="text-xs text-gray-600 mt-2">
+                      문제 해결 및 제안의 능동성
+                    </p>
                   </div>
-
-                  <div className="bg-purple-50 rounded-2xl p-6">
-                    <RatingStars
-                      rating={formData.schedule}
-                      onRatingChange={(rating) =>
-                        handleRatingChange("schedule", rating)
-                      }
-                      label="일정 준수"
-                    />
-                  </div>
-
-                  {/* 클라이언트 평가 시에만 급여 준수 항목 추가 */}
-                  {isEvaluatingClient && (
-                    <div className="bg-yellow-50 rounded-2xl p-6">
-                      <RatingStars
-                        rating={formData.paymentCompliance}
-                        onRatingChange={(rating) =>
-                          handleRatingChange("paymentCompliance", rating)
-                        }
-                        label="급여 준수"
-                        required={true}
-                      />
-                    </div>
-                  )}
                 </div>
-
-                {/* 급여 준수 항목 설명 */}
-                {isEvaluatingClient && (
-                  <div className="mt-6 bg-amber-50 border border-amber-200 rounded-xl p-4">
-                    <div className="flex items-start">
-                      <i className="ri-information-line text-amber-600 mt-1 mr-3"></i>
-                      <div className="text-sm text-amber-700">
-                        <p className="font-medium mb-1">급여 준수 평가 기준</p>
-                        <ul className="space-y-1 text-xs">
-                          <li>• 약속된 일정에 급여가 지급되었는지</li>
-                          <li>• 계약서에 명시된 금액이 정확히 지급되었는지</li>
-                          <li>• 추가 비용 처리가 투명하게 이루어졌는지</li>
-                          <li>• 지급 과정에서의 소통이 원활했는지</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* 피드백 작성 */}
@@ -302,11 +331,11 @@ export default function Evaluation() {
                 </label>
                 <div className="bg-gray-50 rounded-2xl p-6">
                   <textarea
-                    value={formData.feedback}
+                    value={formData.comment}
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        feedback: e.target.value,
+                        comment: e.target.value,
                       }))
                     }
                     placeholder={`${
@@ -319,6 +348,7 @@ export default function Evaluation() {
 • 추천 여부 등${isEvaluatingClient ? "\n• 급여 지급 과정에서의 경험" : ""}`}
                     rows={8}
                     className="w-full px-4 py-3 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none bg-white"
+                    disabled={isSubmitting}
                   />
                   <div className="mt-3 flex justify-between items-center">
                     <p className="text-sm text-gray-500 flex items-center">
@@ -327,12 +357,12 @@ export default function Evaluation() {
                     </p>
                     <span
                       className={`text-sm ${
-                        formData.feedback.length >= 20
+                        formData.comment.length >= 20
                           ? "text-green-600"
                           : "text-red-500"
                       }`}
                     >
-                      {formData.feedback.length}/20
+                      {formData.comment.length}/20
                     </span>
                   </div>
                 </div>
@@ -344,6 +374,7 @@ export default function Evaluation() {
                   <Button
                     variant="outline"
                     className="w-full rounded-xl py-4 text-lg"
+                    disabled={isSubmitting}
                   >
                     <i className="ri-close-line mr-2"></i>
                     취소
@@ -352,9 +383,19 @@ export default function Evaluation() {
                 <Button
                   type="submit"
                   className="flex-1 rounded-xl py-4 text-lg bg-gradient-to-r from-indigo-500 to-purple-600"
+                  disabled={isSubmitting}
                 >
-                  <i className="ri-send-plane-fill mr-2"></i>
-                  평가 제출
+                  {isSubmitting ? (
+                    <>
+                      <i className="ri-loader-4-line mr-2 animate-spin"></i>
+                      제출 중...
+                    </>
+                  ) : (
+                    <>
+                      <i className="ri-send-plane-fill mr-2"></i>
+                      평가 제출
+                    </>
+                  )}
                 </Button>
               </div>
             </form>
@@ -390,13 +431,10 @@ export default function Evaluation() {
                   <i className="ri-checkbox-circle-line mr-2 mt-0.5 text-amber-600"></i>
                   부적절한 내용의 평가는 관리자에 의해 삭제될 수 있습니다
                 </li>
-                {isEvaluatingClient && (
-                  <li className="flex items-start">
-                    <i className="ri-checkbox-circle-line mr-2 mt-0.5 text-amber-600"></i>
-                    급여 준수 평가는 다른 프리랜서들에게 중요한 참고 자료가
-                    됩니다
-                  </li>
-                )}
+                <li className="flex items-start">
+                  <i className="ri-checkbox-circle-line mr-2 mt-0.5 text-amber-600"></i>
+                  전체 만족도는 4개 평가 항목의 평균으로 자동 계산됩니다
+                </li>
               </ul>
             </div>
           </div>
