@@ -103,7 +103,7 @@ public class MemberControllerTest {
     @DisplayName("회원가입 실패 : 이미 존재하는 회원")
     void t3_join_exception() throws Exception {
 
-        memberService.join("CLIENT", "유저new", "userNew", "1234", "1234", "test@test.com");
+        memberService.join(null, "CLIENT", "유저new", "userNew", "1234", "1234", "test@test.com");
 
         //이미 사용중인 아이디로 회원가입
         ResultActions resultActions = mvc.perform(post("/api/v1/members").contentType(MediaType.APPLICATION_JSON).content("""
@@ -503,5 +503,26 @@ public class MemberControllerTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data[?(@.projectTitle == '%s')]".formatted(project.getTitle())).exists())
                 .andExpect(jsonPath("$.data[?(@.freelancerName == '%s')]".formatted(freelancer.getMember().getName())).exists());
+    }
+
+    @Test
+    @DisplayName("회원 탈퇴 성공")
+    @WithUserDetails("client1")
+    public void t19_updatePassword_exception() throws Exception {
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/me/withdraw").contentType(MediaType.APPLICATION_JSON).content("""
+                {
+                    "password": "1234"
+                }
+                """)).andDo(print());
+
+        resultActions
+                //실행처 확인
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("withdrawMyAccount"))
+
+                //상태코드 확인
+                .andExpect(status().isOk())
+
+                //응답 데이터 확인
+                .andExpect(jsonPath("$.resultCode").value("200-11")).andExpect(jsonPath("$.msg").value("회원 탈퇴가 완료되었습니다."));
     }
 }

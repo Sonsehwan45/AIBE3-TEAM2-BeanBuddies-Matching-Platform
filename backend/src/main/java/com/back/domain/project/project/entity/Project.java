@@ -1,7 +1,9 @@
 package com.back.domain.project.project.entity;
 
+import com.back.domain.application.application.entity.Application;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.project.project.constant.ProjectStatus;
+import com.back.domain.proposal.proposal.entity.Proposal;
 import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -41,7 +43,13 @@ public class Project extends BaseEntity {
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProjectInterest> projectInterests = new ArrayList<>();
 
+    //프로젝트 - 지원서, 제안서 추가
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Application> applications = new ArrayList<>();
 
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Proposal> proposals = new ArrayList<>();
+    
     public Project(
             Client client,
             String title,
@@ -87,5 +95,9 @@ public class Project extends BaseEntity {
         this.description = description;
         this.deadline = deadline;
         this.status = status;
+    }
+
+    public void updateStatus(ProjectStatus projectStatus) {
+        this.status = projectStatus;
     }
 }

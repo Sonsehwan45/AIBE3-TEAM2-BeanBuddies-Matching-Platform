@@ -182,4 +182,14 @@ public class MemberController {
 
         return new ApiResponse<>("200-10", "내가 지원한 프로젝트 목록 조회 성공", applicationSummaries);
     }
+
+    @PatchMapping("/me/withdraw")
+    public ApiResponse<Void> withdrawMyAccount(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @Valid @RequestBody MemberWithdrawReq reqBody
+    ) {
+        Member member = memberService.findById(user.getId());
+        memberService.withdrawMember(member, reqBody.password());
+        return new ApiResponse<>("200-11", "회원 탈퇴가 완료되었습니다.");
+    }
 }
