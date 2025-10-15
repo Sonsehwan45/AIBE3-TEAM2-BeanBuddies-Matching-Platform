@@ -1,8 +1,8 @@
 import type { RouteObject } from "react-router-dom";
 import NotFound from "../pages/NotFound";
+import ChangePassword from "../pages/auth/change-password/page";
 import DeleteAccount from "../pages/auth/delete-account/page";
 import ForgotPassword from "../pages/auth/forgot-password/page";
-import ChangePassword from "../pages/auth/change-password/page";
 import Login from "../pages/auth/login/page";
 import Signup from "../pages/auth/signup/page";
 import Evaluation from "../pages/evaluation/page";
@@ -11,7 +11,7 @@ import FreelancerPropose from "../pages/freelancers/[id]/propose/page";
 import Freelancers from "../pages/freelancers/page";
 import Home from "../pages/home/page";
 import MyPage from "../pages/mypage/page";
-import ProjectApply from "../pages/projects/[id]/apply/page";
+import ProjectApply from "../pages/projects/[id]/apply/[applyId]/page";
 import ProjectsEditPage from "../pages/projects/[id]/edit/page";
 import ProjectDetail from "../pages/projects/[id]/page";
 import ProjectCreate from "../pages/projects/create/page";
@@ -104,6 +104,10 @@ const routes: RouteObject[] = [
   {
     path: "/auth/change-password",
     element: <ChangePassword />,
+  },
+  {
+    path: "/projects/:id/apply/:applyId",
+    element: <ProjectApply />,
   },
   {
     path: "*",
