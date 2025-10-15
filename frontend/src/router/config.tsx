@@ -1,5 +1,6 @@
 import type { RouteObject } from "react-router-dom";
 import NotFound from "../pages/NotFound";
+import ChangePassword from "../pages/auth/change-password/page";
 import DeleteAccount from "../pages/auth/delete-account/page";
 import ForgotPassword from "../pages/auth/forgot-password/page";
 import Login from "../pages/auth/login/page";
@@ -10,12 +11,13 @@ import FreelancerPropose from "../pages/freelancers/[id]/propose/page";
 import Freelancers from "../pages/freelancers/page";
 import Home from "../pages/home/page";
 import MyPage from "../pages/mypage/page";
-import ProjectApply from "../pages/projects/[id]/apply/page";
+import ProjectApply from "../pages/projects/[id]/apply/[applyId]/page";
 import ProjectsEditPage from "../pages/projects/[id]/edit/page";
 import ProjectDetail from "../pages/projects/[id]/page";
 import ProjectCreate from "../pages/projects/create/page";
 import Projects from "../pages/projects/page";
 import Recommendations from "../pages/recommendations/page";
+
 //테스트 용 페이지
 import MyInfo from "../pages/test/page";
 
@@ -91,7 +93,6 @@ const routes: RouteObject[] = [
     path: "/projects/create",
     element: <ProjectCreate />,
   },
-  //테스트 용 페이지
   {
     path: "/test/my-info",
     element: <MyInfo />, // 로그인 토큰 테스트 페이지
@@ -99,6 +100,14 @@ const routes: RouteObject[] = [
   {
     path: "/projects/:id/edit",
     element: <ProjectsEditPage />,
+  },
+  {
+    path: "/auth/change-password",
+    element: <ChangePassword />,
+  },
+  {
+    path: "/projects/:id/apply/:applyId",
+    element: <ProjectApply />,
   },
   {
     path: "*",

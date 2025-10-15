@@ -65,15 +65,15 @@ public class BaseInitData {
         memberService.setInitFlag(true);
 
         //임의 데이터 추가
-        Member admin = memberService.join("ADMIN", "관리자", "admin", "1234", "1234", "test@test.com");
-        Member client1 = memberService.join("CLIENT", "클라이언트1", "client1", "1234", "1234", "test@test.com");
-        Member client2 = memberService.join("CLIENT", "클라이언트2", "client2", "1234", "1234", "test@test.com");
-        Member freelancer1 = memberService.join("FREELANCER", "프리랜서1", "freelancer1", "1234", "1234", "test@test.com");
-        Member freelancer2 = memberService.join("FREELANCER", "프리랜서2", "freelancer2", "1234", "1234", "test@test.com");
-        Member freelancer3 = memberService.join("FREELANCER", "프리랜서3", "freelancer3", "1234", "1234", "test@test.com");
-        Member freelancer4 = memberService.join("FREELANCER", "프리랜서4", "freelancer4", "1234", "1234", "test@test.com");
-        Member freelancer5 = memberService.join("FREELANCER", "프리랜서5", "freelancer5", "1234", "1234", "test@test.com");
-        Member client3 = memberService.join("CLIENT", "클라이언트3", "client3", "1234", "1234", "test@test.com");
+        Member admin = memberService.join(null,"ADMIN", "관리자", "admin", "1234", "1234", "test@test.com");
+        Member client1 = memberService.join(null, "CLIENT", "클라이언트1", "client1", "1234", "1234", "test@test.com");
+        Member client2 = memberService.join(null, "CLIENT", "클라이언트2", "client2", "1234", "1234", "test@test.com");
+        Member freelancer1 = memberService.join(null, "FREELANCER", "프리랜서1", "freelancer1", "1234", "1234", "test@test.com");
+        Member freelancer2 = memberService.join(null, "FREELANCER", "프리랜서2", "freelancer2", "1234", "1234", "test@test.com");
+        Member freelancer3 = memberService.join(null, "FREELANCER", "프리랜서3", "freelancer3", "1234", "1234", "test@test.com");
+        Member freelancer4 = memberService.join(null, "FREELANCER", "프리랜서4", "freelancer4", "1234", "1234", "test@test.com");
+        Member freelancer5 = memberService.join(null, "FREELANCER", "프리랜서5", "freelancer5", "1234", "1234", "test@test.com");
+        Member client3 = memberService.join(null, "CLIENT", "클라이언트3", "client3", "1234", "1234", "test@test.com");
 
         //클라이언트2, 프리랜서2는 활동 정지 상태로 변경
         memberService.changeStatus(client2, "INACTIVE");

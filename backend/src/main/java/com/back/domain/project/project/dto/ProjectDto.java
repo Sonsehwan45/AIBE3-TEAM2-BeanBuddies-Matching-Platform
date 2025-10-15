@@ -23,6 +23,7 @@ public record ProjectDto(
         ProjectStatus status,
         LocalDateTime createDate,
         LocalDateTime modifyDate,
+        long ownerId,
         String ownerName,
         List<SkillDto> skills,
         List<InterestDto> interests
@@ -42,6 +43,7 @@ public record ProjectDto(
                 project.getStatus(),
                 project.getCreateDate(),
                 project.getModifyDate(),
+                project.getClient().getId(),
                 project.getClient().getMember().getName(),
                 skills,
                 interests

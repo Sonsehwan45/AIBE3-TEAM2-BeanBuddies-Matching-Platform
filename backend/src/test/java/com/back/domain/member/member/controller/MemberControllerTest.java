@@ -26,9 +26,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -223,45 +221,47 @@ public class MemberControllerTest {
                 .andExpect(status().isBadRequest())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("400-6")).andExpect(jsonPath("$.msg").value("새 비밀번호 확인이 일치하지 않습니다."));
+                .andExpect(jsonPath("$.resultCode").value("400-4")).andExpect(jsonPath("$.msg").value("새 비밀번호와 비밀번호 확인이 일치하지 않습니다."));
     }
 
     @Test
-    @DisplayName("임시 비밀번호 발급 성공")
-    public void t8_issueTempPassword() throws Exception {
-        ResultActions resultActions = mvc.perform(post("/api/v1/members/password-reset").contentType(MediaType.APPLICATION_JSON).content("""
+    @DisplayName("비밀번호 재설정 성공")
+    public void t8_resetPassword() throws Exception {
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/password-reset").contentType(MediaType.APPLICATION_JSON).content("""
                 {
                     "username": "client1",
                     "email":  "test@test.com",
-                    "code": "blahblah"
+                    "newPassword": "12341234",
+                    "newPasswordConfirm": "12341234"
                 }
                 """)).andDo(print());
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("issueTempPassword"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("passwordReset"))
 
                 //상태코드 확인
                 .andExpect(status().isOk())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("200-6")).andExpect(jsonPath("$.msg").value("임시 비밀번호가 이메일로 발송되었습니다."));
+                .andExpect(jsonPath("$.resultCode").value("200-6")).andExpect(jsonPath("$.msg").value("비밀번호 재설정이 완료되었습니다."));
     }
 
     @Test
-    @DisplayName("임시 비밀번호 발급 실패 - 존재하지 않는 사용자")
-    public void t9_issueTempPassword() throws Exception {
-        ResultActions resultActions = mvc.perform(post("/api/v1/members/password-reset").contentType(MediaType.APPLICATION_JSON).content("""
+    @DisplayName("비밀번호 재설정 실패 - username 오류")
+    public void t9_resetPassword() throws Exception {
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/password-reset").contentType(MediaType.APPLICATION_JSON).content("""
                 {
                     "username": "client12",
                     "email":  "test@test.com",
-                    "code": "blahblah"
+                    "newPassword": "12341234",
+                    "newPasswordConfirm": "12341234"
                 }
                 """)).andDo(print());
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("issueTempPassword"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("passwordReset"))
 
                 //상태코드 확인
                 .andExpect(status().isNotFound())
@@ -271,25 +271,26 @@ public class MemberControllerTest {
     }
 
     @Test
-    @DisplayName("임시 비밀번호 발급 실패 - 이메일 불일치")
-    public void t10_issueTempPassword() throws Exception {
-        ResultActions resultActions = mvc.perform(post("/api/v1/members/password-reset").contentType(MediaType.APPLICATION_JSON).content("""
-                {
+    @DisplayName("비밀번호 재설정 실패 - 이메일 오류")
+    public void t10_resetPassword() throws Exception {
+        ResultActions resultActions = mvc.perform(patch("/api/v1/members/password-reset").contentType(MediaType.APPLICATION_JSON).content("""
+               {
                     "username": "client1",
                     "email":  "testtest@test.com",
-                    "code": "blahblah"
+                    "newPassword": "12341234",
+                    "newPasswordConfirm": "12341234"
                 }
                 """)).andDo(print());
 
         resultActions
                 //실행처 확인
-                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("issueTempPassword"))
+                .andExpect(handler().handlerType(MemberController.class)).andExpect(handler().methodName("passwordReset"))
 
                 //상태코드 확인
                 .andExpect(status().isBadRequest())
 
                 //응답 데이터 확인
-                .andExpect(jsonPath("$.resultCode").value("400-2")).andExpect(jsonPath("$.msg").value("이메일이 회원 정보와 일치하지 않습니다."));
+                .andExpect(jsonPath("$.resultCode").value("400-5")).andExpect(jsonPath("$.msg").value("이메일이 회원 정보와 일치하지 않습니다."));
     }
 
     @Test

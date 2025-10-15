@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import client from "../../../../global/backend/client";
@@ -15,11 +16,12 @@ interface Interest {
 }
 
 export default function ProjectsEditPage() {
+  const { user, token, isLoggedIn } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState({
     title: "",
     summary: "",
@@ -30,9 +32,23 @@ export default function ProjectsEditPage() {
     workingCondition: "",
     description: "",
     deadline: "",
+    status: "",
     skills: [] as number[],
     interests: [] as number[],
   });
+
+  // ProjectStatus 옵션 정의
+  const projectStatusOptions = [
+    { value: "OPEN", label: "모집중" },
+    { value: "IN_PROGRESS", label: "진행중" },
+    { value: "COMPLETED", label: "완료" },
+    { value: "CLOSED", label: "종료" },
+  ];
+
+  // 상태 변경 핸들러
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFormData((prev) => ({ ...prev, status: e.target.value }));
+  };
 
   const [skills, setSkills] = useState<Skill[]>([]);
   const [interests, setInterests] = useState<Interest[]>([]);
@@ -45,7 +61,25 @@ export default function ProjectsEditPage() {
         if (response.error) throw response.error;
 
         const projectData = response.data;
-        
+
+        if (!isLoggedIn) {
+          alert("로그인이 필요합니다.");
+          navigate("/login");
+          return;
+        }
+
+        if (user?.role !== "CLIENT") {
+          alert("프로젝트 수정은 클라이언트만 가능합니다.");
+          navigate("/");
+          return;
+        }
+
+        if (projectData.ownerId !== user?.id) {
+          alert("이 프로젝트를 수정할 권한이 없습니다.");
+          navigate(`/projects/${id}`);
+          return;
+        }
+
         // ISO 날짜 문자열을 input[type="datetime-local"]에 맞는 형식으로 변환
         const deadline = new Date(projectData.deadline)
           .toISOString()
@@ -61,6 +95,7 @@ export default function ProjectsEditPage() {
           workingCondition: projectData.workingCondition,
           description: projectData.description,
           deadline: deadline,
+          status: projectData.status,
           skills: projectData.skills.map((s: Skill) => s.id),
           interests: projectData.interests.map((i: Interest) => i.id),
         });
@@ -74,16 +109,18 @@ export default function ProjectsEditPage() {
     Promise.all([
       client.GET("/api/v1/skills"),
       client.GET("/api/v1/interests"),
-      fetchProject()
-    ]).then(([skillsRes, interestsRes]) => {
-      setSkills(skillsRes.data?.data ?? []);
-      setInterests(interestsRes.data?.data ?? []);
-      setLoading(false);
-    }).catch(err => {
-      console.error("데이터 로드 실패:", err);
-      setError("필요한 데이터를 불러오는데 실패했습니다.");
-      setLoading(false);
-    });
+      fetchProject(),
+    ])
+      .then(([skillsRes, interestsRes]) => {
+        setSkills(skillsRes.data?.data ?? []);
+        setInterests(interestsRes.data?.data ?? []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("데이터 로드 실패:", err);
+        setError("필요한 데이터를 불러오는데 실패했습니다.");
+        setLoading(false);
+      });
   }, [id]);
 
   const handleChange = (
@@ -119,14 +156,19 @@ export default function ProjectsEditPage() {
       workingCondition: formData.workingCondition,
       description: formData.description,
       deadline: formData.deadline,
+      status: formData.status,
       skills: formData.skills,
       interests: formData.interests,
     };
 
     try {
-      // PATCH 요청으로 변경
-      const response = await client.PATCH(`/api/v1/projects/${id}`, { body });
-      
+      const response = await client.PATCH(`/api/v1/projects/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body,
+      });
+
       if (response.error) {
         alert(response.error.msg);
         return;
@@ -157,7 +199,7 @@ export default function ProjectsEditPage() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{error}</h2>
           <button
-            onClick={() => navigate('/projects')}
+            onClick={() => navigate("/projects")}
             className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
           >
             프로젝트 목록으로 돌아가기
@@ -179,7 +221,9 @@ export default function ProjectsEditPage() {
               <i className="ri-edit-2-line text-white text-2xl"></i>
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">프로젝트 수정</h1>
+              <h1 className="text-3xl font-bold text-gray-900">
+                프로젝트 수정
+              </h1>
               <p className="text-gray-600">프로젝트 정보를 수정하세요</p>
             </div>
           </div>
@@ -195,6 +239,25 @@ export default function ProjectsEditPage() {
               기본 정보
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">
+                  프로젝트 상태
+                </label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleStatusChange}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+                  required
+                >
+                  {projectStatusOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               <div>
                 <label className="block text-gray-700 font-medium mb-1">
                   제목

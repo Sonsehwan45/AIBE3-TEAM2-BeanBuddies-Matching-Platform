@@ -1,11 +1,8 @@
+import { useAuth } from "@/context/AuthContext";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Button from "../../../components/base/Button";
 import client from "../../../global/backend/client";
-
-interface ProjectDetailProps {
-  userType?: "client" | "freelancer";
-}
 
 interface Project {
   id: number;
@@ -22,6 +19,7 @@ interface Project {
   createDate: string;
   modifyDate: string;
   ownerName: string;
+  ownerId: number;
   skills: Array<{
     id: number;
     name: string;
@@ -54,9 +52,8 @@ interface PageInfo {
   first: boolean;
 }
 
-export default function ProjectDetail({
-  userType = "freelancer",
-}: ProjectDetailProps) {
+export default function ProjectDetail() {
+  const { user, token, isLoggedIn } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -64,9 +61,6 @@ export default function ProjectDetail({
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<
-    "info" | "applicants" | "proposed" | "myApplication"
-  >("info");
   const [applications, setApplications] = useState<Application[]>([]);
   const [page, setPage] = useState(0);
   const [pageInfo, setPageInfo] = useState<PageInfo | null>(null);
@@ -148,6 +142,11 @@ export default function ProjectDetail({
     fetchApplications();
   }, [id, page]);
 
+  // 지원서 상세 페이지 이동
+  const handleRowClick = (applyId: number) => {
+    navigate(`/projects/${id}/apply/${applyId}`);
+  };
+
   // 삭제 핸들러를 useCallback으로 메모이제이션
   const handleDelete = useCallback(async () => {
     if (!project || !window.confirm("정말로 이 프로젝트를 삭제하시겠습니까?"))
@@ -155,6 +154,9 @@ export default function ProjectDetail({
 
     try {
       const response = await client.DELETE("/api/v1/projects/{id}", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         params: { path: { id: project.id } },
       });
       if (response.error) throw response.error;
@@ -468,158 +470,171 @@ export default function ProjectDetail({
             )}
 
             {/* 지원서 목록 */}
-            {userType === "client" && (
-              <div className="mt-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-6">
-                  📝 지원서 목록
-                </h3>
-                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-                  {loadingApplications ? (
-                    <div className="p-8 text-center">
-                      <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-                      <p className="text-gray-600">지원서를 불러오는 중...</p>
-                    </div>
-                  ) : applications.length === 0 ? (
-                    <div className="p-8 text-center text-gray-600">
-                      아직 지원서가 없습니다.
-                    </div>
-                  ) : (
-                    <>
-                      <div className="overflow-x-auto">
-                        <table className="w-full">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
-                                지원자
-                              </th>
-                              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
-                                예상 견적
-                              </th>
-                              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
-                                예상 기간
-                              </th>
-                              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
-                                업무 계획
-                              </th>
-                              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
-                                상태
-                              </th>
-                              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
-                                지원일
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {applications.map((application) => (
-                              <tr key={application.id}>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {application.freelancerName}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {formatPrice(application.estimatedPay)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {application.expectedDuration}
-                                </td>
-                                <td className="px-6 py-4 text-sm text-gray-900">
-                                  {application.workPlan}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <span
-                                    className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getApplicationStatusStyle(
-                                      application.status
-                                    )}`}
-                                  >
-                                    {getApplicationStatusText(
-                                      application.status
-                                    )}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                  {formatDate(application.createDate)}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+            {isLoggedIn &&
+              user?.role === "CLIENT" &&
+              user?.id === project?.ownerId && (
+                <div className="mt-8">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                    📝 지원서 목록
+                  </h3>
+                  <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                    {loadingApplications ? (
+                      <div className="p-8 text-center">
+                        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+                        <p className="text-gray-600">지원서를 불러오는 중...</p>
                       </div>
-                      {/* 페이지네이션 */}
-                      {pageInfo && (
-                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-gray-700">
-                              총{" "}
-                              <span className="font-medium">
-                                {pageInfo.totalElements}
-                              </span>{" "}
-                              개의 지원서
-                            </p>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() =>
-                                setPage((prev) => Math.max(0, prev - 1))
-                              }
-                              disabled={pageInfo.first}
-                              className={`px-3 py-1 rounded ${
-                                pageInfo.first
-                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
-                              }`}
-                            >
-                              이전
-                            </button>
-                            <div className="px-2 py-1 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700">
-                              {pageInfo.pageNumber + 1} / {pageInfo.totalPages}
-                            </div>
-                            <button
-                              onClick={() => setPage((prev) => prev + 1)}
-                              disabled={pageInfo.last}
-                              className={`px-3 py-1 rounded ${
-                                pageInfo.last
-                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                  : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
-                              }`}
-                            >
-                              다음
-                            </button>
-                          </div>
+                    ) : applications.length === 0 ? (
+                      <div className="p-8 text-center text-gray-600">
+                        아직 지원서가 없습니다.
+                      </div>
+                    ) : (
+                      <>
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                                  지원자
+                                </th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                                  예상 견적
+                                </th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                                  예상 기간
+                                </th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                                  업무 계획
+                                </th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                                  상태
+                                </th>
+                                <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
+                                  지원일
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              {applications.map((application) => (
+                                <tr
+                                  key={application.id}
+                                  onClick={() => handleRowClick(application.id)}
+                                  className="cursor-pointer hover:bg-gray-100 transition"
+                                >
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {application.freelancerName}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {formatPrice(application.estimatedPay)}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {application.expectedDuration}
+                                  </td>
+                                  <td className="px-6 py-4 text-sm text-gray-900">
+                                    {application.workPlan}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span
+                                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getApplicationStatusStyle(
+                                        application.status
+                                      )}`}
+                                    >
+                                      {getApplicationStatusText(
+                                        application.status
+                                      )}
+                                    </span>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {formatDate(application.createDate)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
-                      )}
-                    </>
-                  )}
+                        {/* 페이지네이션 */}
+                        {pageInfo && (
+                          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-700">
+                                총{" "}
+                                <span className="font-medium">
+                                  {pageInfo.totalElements}
+                                </span>{" "}
+                                개의 지원서
+                              </p>
+                            </div>
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() =>
+                                  setPage((prev) => Math.max(0, prev - 1))
+                                }
+                                disabled={pageInfo.first}
+                                className={`px-3 py-1 rounded ${
+                                  pageInfo.first
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+                                }`}
+                              >
+                                이전
+                              </button>
+                              <div className="px-2 py-1 bg-white border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700">
+                                {pageInfo.pageNumber + 1} /{" "}
+                                {pageInfo.totalPages}
+                              </div>
+                              <button
+                                onClick={() => setPage((prev) => prev + 1)}
+                                disabled={pageInfo.last}
+                                className={`px-3 py-1 rounded ${
+                                  pageInfo.last
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300"
+                                }`}
+                              >
+                                다음
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* 버튼 영역 */}
             <div className="flex justify-end space-x-4 mt-8">
               {/* 클라이언트용 버튼 */}
-              <div className="client-only-buttons flex space-x-4">
-                <Link to={`/projects/${project.id}/edit`}>
-                  <button className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center">
-                    <i className="ri-edit-line mr-2"></i>
-                    수정하기
-                  </button>
-                </Link>
-                <button
-                  onClick={handleDelete}
-                  className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center"
-                >
-                  <i className="ri-delete-bin-line mr-2"></i>
-                  삭제하기
-                </button>
-              </div>
+              {isLoggedIn &&
+                user?.role === "CLIENT" &&
+                user?.id === project?.ownerId && (
+                  <div className="client-only-buttons flex space-x-4">
+                    <Link to={`/projects/${project.id}/edit`}>
+                      <button className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center">
+                        <i className="ri-edit-line mr-2"></i>
+                        수정하기
+                      </button>
+                    </Link>
+                    <button
+                      onClick={handleDelete}
+                      className="px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center"
+                    >
+                      <i className="ri-delete-bin-line mr-2"></i>
+                      삭제하기
+                    </button>
+                  </div>
+                )}
 
               {/* 프리랜서용 버튼 */}
-              <div className="freelancer-only-buttons">
-                <Link to={`/projects/${project.id}/apply`}>
-                  <button className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center">
-                    <i className="ri-file-edit-line mr-2"></i>
-                    지원서 작성하기
-                  </button>
-                </Link>
-              </div>
+              {isLoggedIn && user?.role === "FREELANCER" && (
+                <div className="freelancer-only-buttons">
+                  <Link to={`/projects/${project.id}/apply`}>
+                    <button className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-lg shadow-md hover:scale-105 transform transition flex items-center">
+                      <i className="ri-file-edit-line mr-2"></i>
+                      지원서 작성하기
+                    </button>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         </div>

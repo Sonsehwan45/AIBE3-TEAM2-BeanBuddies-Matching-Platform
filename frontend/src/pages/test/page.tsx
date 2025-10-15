@@ -37,9 +37,20 @@ export default function MyInfo() {
       </Button>
 
       {userData && (
-        <pre className="mt-4 bg-gray-100 p-4 rounded">
-          {JSON.stringify(userData, null, 2)}
-        </pre>
+        <>
+          <pre className="mt-4 bg-gray-100 p-4 rounded">
+            {JSON.stringify(userData, null, 2)}
+          </pre>
+
+          {/* 프로필 이미지 */}
+          {userData.profileImgUrl && (
+            <img
+              src={userData.profileImgUrl}
+              alt="프로필 이미지"
+              className="mt-4 w-32 h-32 rounded-full object-cover"
+            />
+          )}
+        </>
       )}
     </div>
   );

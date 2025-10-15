@@ -1,5 +1,6 @@
 "use client";
 
+import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import client from "../../../global/backend/client";
@@ -15,6 +16,7 @@ interface Interest {
 }
 
 export default function ProjectsCreatePage() {
+  const { user, token, isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     title: "",
@@ -29,6 +31,21 @@ export default function ProjectsCreatePage() {
     skills: [] as number[],
     interests: [] as number[],
   });
+
+  // ✅ 로그인 및 권한 확인
+  useEffect(() => {
+    if (!isLoggedIn) {
+      alert("로그인이 필요합니다.");
+      navigate("/login");
+      return;
+    }
+
+    if (user?.role !== "CLIENT") {
+      alert("프로젝트 등록은 클라이언트만 가능합니다.");
+      navigate("/");
+      return;
+    }
+  }, [isLoggedIn, user, navigate]);
 
   const [skills, setSkills] = useState<Skill[]>([]);
   const [interests, setInterests] = useState<Interest[]>([]);
@@ -166,15 +183,22 @@ export default function ProjectsCreatePage() {
     };
 
     // 요청
-    client.POST("/api/v1/projects", { body }).then((res: any) => {
-      if (res.error) {
-        alert(res.error.msg);
-        return;
-      }
+    client
+      .POST("/api/v1/projects", {
+        headers: {
+          Authorization: `Bearer ${token}`, // ✅ 토큰 포함
+        },
+        body,
+      })
+      .then((res: any) => {
+        if (res.error) {
+          alert(res.error.msg);
+          return;
+        }
 
-      alert(res.data.msg);
-      navigate(`/projects/${res.data.data.id}`);
-    });
+        alert(res.data.msg);
+        navigate(`/projects/${res.data.data.id}`);
+      });
   };
 
   return (
