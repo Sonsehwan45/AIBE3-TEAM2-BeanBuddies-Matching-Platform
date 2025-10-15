@@ -60,7 +60,7 @@ export default function ProjectsEditPage() {
         const response = await client.GET(`/api/v1/projects/${id}`);
         if (response.error) throw response.error;
 
-        const projectData = response.data;
+        const projectData = response.data.data;
 
         if (!isLoggedIn) {
           alert("로그인이 필요합니다.");

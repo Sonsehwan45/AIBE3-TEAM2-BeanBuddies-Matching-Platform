@@ -1,3 +1,4 @@
+import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Button from "../../../../components/base/Button";
@@ -31,6 +32,7 @@ interface Project {
 }
 
 export default function ProjectApply() {
+  const { user, token, isLoggedIn } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
   const [project, setProject] = useState<Project | null>(null);
@@ -115,10 +117,15 @@ export default function ProjectApply() {
       const response = await client.POST(
         "/api/v1/projects/{projectId}/applications",
         {
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ 토큰 포함
+          },
           params: { path: { projectId: project.id } },
           body: {
-            ...formData,
             estimatedPay: Number(formData.estimatedPay),
+            expectedDuration: formData.expectedDuration,
+            workPlan: formData.workPlan,
+            additionalRequest: formData.additionalRequest,
           },
         }
       );
