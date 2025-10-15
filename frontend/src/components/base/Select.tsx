@@ -35,9 +35,8 @@ export default function Select({
           onChange={(e) => onChange?.(e.target.value)}
           required={required}
           disabled={disabled}
-          className={`w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-sm appearance-none ${
-            error ? 'border-red-300 focus:ring-red-500' : ''
-          }`}
+          className={`w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed text-sm appearance-none ${error ? 'border-red-300 focus:ring-red-500' : ''
+            }`}
         >
           {placeholder && <option value="">{placeholder}</option>}
           {options.map((option) => (

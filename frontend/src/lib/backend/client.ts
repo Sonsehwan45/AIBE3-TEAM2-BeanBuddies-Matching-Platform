@@ -1,6 +1,6 @@
 import createClient from "openapi-fetch";
 
-import type { paths } from "@/lib/backend/apiV1/schema";
+import type { paths } from "@/global/backend/apiV1/schema";
 
 const API_BASE_URL = "http://localhost:8080";
 

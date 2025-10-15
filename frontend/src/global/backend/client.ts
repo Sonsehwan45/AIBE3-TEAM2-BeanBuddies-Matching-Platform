@@ -1,6 +1,6 @@
 import createClient from "openapi-fetch/dist/index.cjs";
 
-import type { paths } from "./apiV1/schema";
+import type { paths } from "@/global/backend/apiV1/schema";
 
 const NEXT_PUBLIC_API_BASE_URL = "http://localhost:8080";
 
