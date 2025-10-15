@@ -46,7 +46,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/*/members/password-update").authenticated()
                         .requestMatchers("/api/v1/members/me").authenticated() // 내 프로필 조회
                         .requestMatchers("/api/v1/members/me/profile").authenticated() // 내 프로필 수정
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/applications/**").authenticated() // 지원서 수정
 
                         //평가 생성 및 수정은 인증된 사용자만 가능
                         .requestMatchers(HttpMethod.POST, "/api/v1/evaluations").authenticated()
@@ -64,6 +63,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/*/projects").hasRole("CLIENT") // 프로젝트 등록
                         .requestMatchers(HttpMethod.DELETE, "/api/*/projects/**").hasRole("CLIENT") // 프로젝트 삭제
                         .requestMatchers(HttpMethod.PATCH, "/api/*/projects/**").hasRole("CLIENT") // 프로젝트 수정
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/projects/*/applications/**").hasRole("CLIENT") // 지원서 수정
                         .requestMatchers(HttpMethod.POST, "/api/v1/projects/*/proposals/*").hasRole("CLIENT") // 제안서 등록
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/projects/*/proposals/*").hasRole("CLIENT") // 제안서 삭제
 
