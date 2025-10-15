@@ -19,6 +19,7 @@ interface Project {
   createDate: string;
   modifyDate: string;
   ownerName: string;
+  ownerId: number;
   skills: Array<{
     id: number;
     name: string;
@@ -59,11 +60,11 @@ export default function ProjectApply() {
           params: { path: { id: parseInt(id) } },
         });
 
-        if (!response || !response.data) {
+        if (!response || !response.data.data) {
           throw new Error("프로젝트 데이터가 없습니다.");
         }
 
-        setProject(response.data);
+        setProject(response.data.data);
       } catch (err: any) {
         console.error("프로젝트 조회 실패:", err);
         setError(

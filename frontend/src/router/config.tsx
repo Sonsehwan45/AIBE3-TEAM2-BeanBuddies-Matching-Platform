@@ -11,7 +11,8 @@ import FreelancerPropose from "../pages/freelancers/[id]/propose/page";
 import Freelancers from "../pages/freelancers/page";
 import Home from "../pages/home/page";
 import MyPage from "../pages/mypage/page";
-import ProjectApply from "../pages/projects/[id]/apply/[applyId]/page";
+import ProjectApplyDetail from "../pages/projects/[id]/apply/[applyId]/page";
+import ProjectApplyCreate from "../pages/projects/[id]/apply/page";
 import ProjectsEditPage from "../pages/projects/[id]/edit/page";
 import ProjectDetail from "../pages/projects/[id]/page";
 import ProjectCreate from "../pages/projects/create/page";
@@ -58,10 +59,6 @@ const routes: RouteObject[] = [
     ),
   },
   {
-    path: "/projects/:id/apply",
-    element: <ProjectApply />,
-  },
-  {
     path: "/freelancers",
     element: ({ userType }: RouteProps) => <Freelancers userType={userType} />,
   },
@@ -106,8 +103,12 @@ const routes: RouteObject[] = [
     element: <ChangePassword />,
   },
   {
+    path: "/projects/:id/apply",
+    element: <ProjectApplyCreate />,
+  },
+  {
     path: "/projects/:id/apply/:applyId",
-    element: <ProjectApply />,
+    element: <ProjectApplyDetail />,
   },
   {
     path: "*",
