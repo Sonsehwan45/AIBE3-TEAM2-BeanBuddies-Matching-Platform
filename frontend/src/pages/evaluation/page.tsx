@@ -15,6 +15,7 @@ export default function Evaluation() {
     proactiveness: 0,
     comment: "",
   });
+  //커밋 위치 확인용 주석
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const project = mockProjects.find((p) => p.id === Number(projectId));
