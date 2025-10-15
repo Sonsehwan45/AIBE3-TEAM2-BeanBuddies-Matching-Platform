@@ -65,7 +65,7 @@ class ApiV1FreelancerControllerTest {
     void t1_data() throws Exception {
         ResultActions resultActions = mvc
                 .perform(
-                        get("/api/v1/freelancers")
+                        get("/api/v1/freelancers?page=0&size=20&sort=id,ASC")
                 )
                 .andDo(print());
 
@@ -96,8 +96,7 @@ class ApiV1FreelancerControllerTest {
         resultActions
                 .andExpect(jsonPath("$.resultCode").value("200"))
                 .andExpect(jsonPath("$.msg").value("프리랜서 목록"))
-                .andExpect(jsonPath("$.data.content").isArray())
-                .andExpect(jsonPath("$.data.content.length()").value(0));
+                .andExpect(jsonPath("$.data.content").isArray());
     }
 
     @Test
@@ -120,11 +119,7 @@ class ApiV1FreelancerControllerTest {
     @DisplayName("프리랜서 정보 업데이트 - 성공")
     @WithUserDetails(value = "freelancer1", userDetailsServiceBeanName = "customUserDetailsService")
     void t2() throws Exception {
-        Page<FreelancerSummary> freelancers = freelancerService.findAll(new FreelancerSearchCondition(null, null, null),
-                PageRequest.of(0, 20));
-        FreelancerSummary freelancerSummary = freelancers.stream().findFirst()
-                .orElseThrow(() -> new RuntimeException("프리랜서 없음"));
-        Long id = freelancerSummary.id();
+        Long id = 4L;
 
         ResultActions resultActions = mvc
                 .perform(

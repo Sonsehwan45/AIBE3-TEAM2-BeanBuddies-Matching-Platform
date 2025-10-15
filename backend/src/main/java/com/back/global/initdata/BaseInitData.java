@@ -24,6 +24,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -61,6 +62,15 @@ public class BaseInitData {
         };
     }
 
+    @Bean
+    @Profile("dev")
+    ApplicationRunner devBaseInitDataApplicationRunner() {
+        return args -> {
+            self.addDevMember();
+            self.updateDevFreelancerInfo();
+        };
+    }
+
 
     @Transactional
     public void addMember() {
@@ -80,14 +90,22 @@ public class BaseInitData {
         Member freelancer5 = memberService.join("FREELANCER", "프리랜서5", "freelancer5", "1234", "1234", "test@test.com");
         Member client3 = memberService.join("CLIENT", "클라이언트3", "client3", "1234", "1234", "test@test.com");
 
-        for (int i = 6; i <= 50; i++) {
-            memberService.join("FREELANCER", "프리랜서" + i, "freelancer" + i, "1234", "1234", "test@test.com");
-        }
-
         //클라이언트2, 프리랜서2는 활동 정지 상태로 변경
         memberService.changeStatus(client2, "INACTIVE");
         memberService.changeStatus(freelancer2, "INACTIVE");
 
+        memberService.setInitFlag(false);
+    }
+
+    @Transactional
+    public void addDevMember() {
+        if (memberService.count() > 10) {
+            return;
+        }
+        memberService.setInitFlag(true);
+        for (int i = 6; i <= 50; i++) {
+            memberService.join("FREELANCER", "프리랜서" + i, "freelancer" + i, "1234", "1234", "test@test.com");
+        }
         memberService.setInitFlag(false);
     }
 
@@ -274,7 +292,10 @@ public class BaseInitData {
 
         freelancerService.updateFreelancer(freelancerId5, "프론트엔드", "test@test.com", "안녕하세요",
                 null, List.of());
+    }
 
+    @Transactional
+    public void updateDevFreelancerInfo() {
         List<String> jobs = List.of("백엔드", "프론트엔드", "풀스택", "백엔드", "모바일");
         List<String> comments = List.of("안녕하세요", "잘 부탁드립니다", "열심히 하겠습니다");
         List<List<Long>> skills = List.of(
@@ -311,7 +332,7 @@ public class BaseInitData {
                                     ratingsList.get((i + 2) % ratingsList.size()),
                                     ratingsList.get((i + 3) % ratingsList.size())
                             ),
-                    evaluationComments.get(i % evaluationComments.size()))
+                            evaluationComments.get(i % evaluationComments.size()))
             );
         }
     }
