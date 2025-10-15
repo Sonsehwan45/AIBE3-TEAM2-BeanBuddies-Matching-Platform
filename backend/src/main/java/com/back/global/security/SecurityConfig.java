@@ -74,8 +74,8 @@ public class SecurityConfig {
                         //관리자만 접근 가능
                         .requestMatchers("/api/*/test/auth/admin").hasRole("ADMIN")
 
-                        //그 외 요청은 인증 필요
-                        .anyRequest().authenticated()
+                        //그 외 요청은 모두 허용
+                        .anyRequest().permitAll()
                 )
 
                 // REST API용 Security 기본 기능 비활성화

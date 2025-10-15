@@ -6,7 +6,6 @@ import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.client.client.service.ClientService;
 import com.back.domain.common.interest.service.InterestService;
-import com.back.domain.common.skill.entity.Skill;
 import com.back.domain.common.skill.service.SkillService;
 import com.back.domain.evaluation.dto.EvaluationCreateReq;
 import com.back.domain.evaluation.dto.EvaluationCreateReq.Ratings;
