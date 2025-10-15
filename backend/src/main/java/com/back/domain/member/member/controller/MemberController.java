@@ -1,6 +1,5 @@
 package com.back.domain.member.member.controller;
 
-import com.back.domain.application.application.dto.ApplicationDto;
 import com.back.domain.application.application.dto.ApplicationSummaryDto;
 import com.back.domain.application.application.entity.Application;
 import com.back.domain.application.application.service.ApplicationService;
@@ -122,22 +121,33 @@ public class MemberController {
     }
 
     @PostMapping("/password-reset/email")
-    public ApiResponse<Void> sendTempPasswordCode(@Valid @RequestBody TempPasswordEmailReq reqBody) {
-        memberService.sendTempPasswordCode(
+    public ApiResponse<Void> sendPasswordResetCode(@Valid @RequestBody PasswordResetEmailReq reqBody) {
+        memberService.sendPasswordResetCode(
                 reqBody.username(),
                 reqBody.email()
         );
         return new ApiResponse<>("200-3", "인증 코드가 이메일로 전송되었습니다.");
     }
 
-    @PostMapping("/password-reset")
-    public ApiResponse<Void> issueTempPassword(@Valid @RequestBody TempPasswordVerifyReq reqBody) {
-        memberService.issueTempPassword(
+    @PostMapping("/password-reset/verification")
+    public ApiResponse<Void> verifyPasswordResetCode(@Valid @RequestBody PasswordResetVerifyReq reqBody) {
+        memberService.verifyPasswordResetCode(
                 reqBody.username(),
                 reqBody.email(),
                 reqBody.code()
         );
-        return new ApiResponse<>("200-6", "임시 비밀번호가 이메일로 발송되었습니다.");
+        return new ApiResponse<>("200-4", "이메일 인증이 완료되었습니다.");
+    }
+
+    @PatchMapping("/password-reset")
+    public ApiResponse<Void> passwordReset(@Valid @RequestBody PasswordResetReq reqBody) {
+        memberService.resetPassword(
+                reqBody.username(),
+                reqBody.email(),
+                reqBody.newPassword(),
+                reqBody.newPasswordConfirm()
+        );
+        return new ApiResponse<>("200-6", "비밀번호 재설정이 완료되었습니다.");
     }
 
     @GetMapping("/me/projects")

@@ -19,4 +19,7 @@ public class MockEmailService implements EmailService {
     public boolean isVerified(String purpose, String email) {
         return true;
     }
+
+    public void clearVerification(String join, String email) {
+    }
 }

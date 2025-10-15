@@ -168,15 +168,24 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                   </button>
                 ))}
               </nav>
-
+              
               <div className="mt-8 pt-6 border-t border-gray-200">
-                <Link to="/auth/delete-account">
-                  <Button variant="danger" size="sm" className="w-full rounded-xl">
-                    <i className="ri-delete-bin-line mr-2"></i>
-                    계정 탈퇴
-                  </Button>
-                </Link>
+                <div className="space-y-3">
+                  <Link to="/auth/change-password">
+                    <Button variant="outline" size="sm" className="w-full rounded-xl">
+                      <i className="ri-lock-password-line mr-2"></i>
+                      비밀번호 변경
+                    </Button>
+                  </Link>
+                  <Link to="/auth/delete-account">
+                    <Button variant="danger" size="sm" className="w-full rounded-xl">
+                      <i className="ri-delete-bin-line mr-2"></i>
+                      계정 탈퇴
+                    </Button>
+                  </Link>
+                </div>
               </div>
+
             </div>
           </div>
 
