@@ -56,7 +56,6 @@ dependencies {
     // swagger
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
     // flyway
-    implementation("org.flywaydb:flyway-bom:11.7.2")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-mysql")
 }
