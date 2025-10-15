@@ -190,11 +190,14 @@ public class BaseInitData {
         Freelancer freelancer1 = freelancerService.findById(freelancerMember1.getId());
         Member freelancerMember2 = memberService.findByUsername("freelancer2").get();
         Freelancer freelancer2 = freelancerService.findById(freelancerMember2.getId());
+        Member freelancerMember3 = memberService.findByUsername("freelancer3").get();
+        Freelancer freelancer3 = freelancerService.findById(freelancerMember3.getId());
 
         // 프로젝트 조회
         Project project1 = projectService.findById(1);
         Project project2 = projectService.findById(2);
         Project project3 = projectService.findById(3);
+        Project project25 = projectService.findById(25);
 
         // 지원서 3개 생성
         Application application1 = applicationService.create(
@@ -229,6 +232,19 @@ public class BaseInitData {
                 freelancer1,
                 project3
         );
+
+        for (int i = 1; i <= 12; i++) {
+            applicationService.create(
+                    new ApplicationWriteReqBody(
+                            BigDecimal.valueOf(500_000 + (i * 100_000)),
+                            (i % 6 + 1) + "개월",
+                            (i % 2 == 0) ? "주 5일, 원격 근무" : "주 3일, 출근 근무",
+                            "추가 자료 없음"
+                    ),
+                    freelancer3,
+                    project25
+            );
+        }
     }
 
     @Transactional
@@ -245,20 +261,26 @@ public class BaseInitData {
 
     @Transactional
     public void updateFreelancerInfo() {
-        freelancerService.updateFreelancer(4L, "백엔드", "test@test.com", "안녕하세요",
+        Long freelancerId1 = memberService.findByUsername("freelancer1").get().getFreelancer().getId();
+        Long freelancerId2 = memberService.findByUsername("freelancer2").get().getFreelancer().getId();
+        Long freelancerId3 = memberService.findByUsername("freelancer3").get().getFreelancer().getId();
+        Long freelancerId4 = memberService.findByUsername("freelancer4").get().getFreelancer().getId();
+        Long freelancerId5 = memberService.findByUsername("freelancer5").get().getFreelancer().getId();
+
+        freelancerService.updateFreelancer(freelancerId1, "백엔드", "test@test.com", "안녕하세요",
                 Map.of("Spring", 24, "JPA", 30), List.of(1L, 2L));
 
-        freelancerService.updateFreelancer(5L, "백엔드", "test@test.com", "안녕하세요",
+        freelancerService.updateFreelancer(freelancerId2, "백엔드", "test@test.com", "안녕하세요",
                 Map.of("Python", 10), List.of(1L, 2L));
 
-        freelancerService.updateFreelancer(6L, "풀스택", "test@test.com", "안녕하세요",
+        freelancerService.updateFreelancer(freelancerId3, "풀스택", "test@test.com", "안녕하세요",
                 Map.of("스프링", 24, "리액트", 48), List.of(1L, 2L, 3L));
 
-        freelancerService.updateFreelancer(7L, "프론트엔드", "test@test.com", "안녕하세요",
+        freelancerService.updateFreelancer(freelancerId4, "프론트엔드", "test@test.com", "안녕하세요",
                 Map.of("React", 100, "Next.js", 30), List.of(3L));
 
-        freelancerService.updateFreelancer(8L, "프론트엔드", "test@test.com", "안녕하세요",
-                null, null);
+        freelancerService.updateFreelancer(freelancerId5, "프론트엔드", "test@test.com", "안녕하세요",
+                null, List.of());
     }
 }
 

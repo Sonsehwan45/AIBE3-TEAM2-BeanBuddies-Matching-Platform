@@ -5,7 +5,12 @@ pipeline {
 
     environment {
         DOCKERHUB_USERNAME = 'yhcho14' // 본인의 Docker Hub 사용자 이름으로 변경
-        APP_NAME = 'beanbuddies-matching-platform'
+        BACKEND_APP_NAME = 'beanbuddies-matching-platform'
+        FRONTEND_APP_NAME = 'beanbuddies-frontend'
+    }
+
+    tools {
+        nodejs 'NodeJS-24'
     }
 
     stages {
@@ -25,14 +30,22 @@ pipeline {
             }
         }
 
-        stage('Copy Frontend to Backend') {
+        stage('Build & Push Frontend Docker Image') {
+            // main 브랜치에 푸시될 때만 실행
+            when {
+                branch 'main'
+            }
             steps {
-                sh 'mkdir -p backend/src/main/resources/static'
-                sh 'cp -r frontend/out/* backend/src/main/resources/static/'
+                script {
+                    def appImage = docker.build("${DOCKERHUB_USERNAME}/${FRONTEND_APP_NAME}:${env.BUILD_NUMBER}", './frontend')
+                    docker.withRegistry('https://registry.hub.docker.com', 'yhcho-dockerhub') {
+                        appImage.push()
+                    }
+                }
             }
         }
 
-        stage('Build & Test') {
+        stage('Build & Test Backend') {
             steps {
                 dir('backend') {
                     sh 'chmod +x gradlew'
@@ -48,14 +61,14 @@ pipeline {
             }
         }
 
-        stage('Build & Push Docker Image') {
+        stage('Build & Push Backend Docker Image') {
             // main 브랜치에 푸시될 때만 실행
             when {
                 branch 'main'
             }
             steps {
                 script {
-                    def appImage = docker.build("${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER}", './backend')
+                    def appImage = docker.build("${DOCKERHUB_USERNAME}/${BACKEND_APP_NAME}:${env.BUILD_NUMBER}", './backend')
                     docker.withRegistry('https://registry.hub.docker.com', 'yhcho-dockerhub') {
                         appImage.push()
                     }
@@ -63,7 +76,7 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy Backend') {
             // main 브랜치에 푸시될 때만 실행
             when {
                 branch 'main'
@@ -82,32 +95,59 @@ pipeline {
                     string(credentialsId: 'mail-password', variable: 'MAIL_PASSWORD_SECRET')
                 ]) {
                     sshagent(['yhcho-ssh']) {
-                        sh '''
-                            ssh -o StrictHostKeyChecking=no yhcho@192.168.50.35 " \
-                                docker stop ${APP_NAME} || true && docker rm ${APP_NAME} || true && \
-                                docker pull ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER} && \
-                                docker run -d --name ${APP_NAME} -p 8080:8080 \
+                        sh """
+                            ssh -o StrictHostKeyChecking=no yhcho@192.168.50.35 /bin/bash << EOF
+
+                                echo "Deploying backend build number: ${env.BUILD_NUMBER}"
+
+                                docker stop ${BACKEND_APP_NAME} || true && docker rm ${BACKEND_APP_NAME} || true
+                                docker pull ${DOCKERHUB_USERNAME}/${BACKEND_APP_NAME}:${env.BUILD_NUMBER}
+                                docker run -d --name ${BACKEND_APP_NAME} -p 8080:8080 \
                                     -e SPRING_PROFILES_ACTIVE=prod \
-                                    -e SPRING_DATASOURCE_URL=${DB_URL_SECRET} \
-                                    -e SPRING_DATASOURCE_USERNAME=${DB_USERNAME_SECRET} \
-                                    -e SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD_SECRET} \
-                                    -e CUSTOM_JWT_ACCESSTOKEN_SECRETKEY=${JWT_ACCESS_KEY_SECRET} \
+                                    -e SPRING_DATASOURCE_URL='${DB_URL_SECRET}' \
+                                    -e SPRING_DATASOURCE_USERNAME='${DB_USERNAME_SECRET}' \
+                                    -e SPRING_DATASOURCE_PASSWORD='${DB_PASSWORD_SECRET}' \
+                                    -e CUSTOM_JWT_ACCESSTOKEN_SECRETKEY='${JWT_ACCESS_KEY_SECRET}' \
                                     -e CUSTOM_JWT_ACCESSTOKEN_EXPIRESECONDS=3600 \
-                                    -e CUSTOM_JWT_REFRESHTOKEN_SECRETKEY=${JWT_REFRESH_KEY_SECRET} \
+                                    -e CUSTOM_JWT_REFRESHTOKEN_SECRETKEY='${JWT_REFRESH_KEY_SECRET}' \
                                     -e CUSTOM_JWT_REFRESHTOKEN_EXPIRESECONDS=604800 \
-                                    -e SPRING_DATA_REDIS_HOST=${REDIS_HOST_SECRET} \
-                                    -e SPRING_DATA_REDIS_PORT=${REDIS_PORT_SECRET} \
-                                    -e SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD_SECRET} \
+                                    -e SPRING_DATA_REDIS_HOST='${REDIS_HOST_SECRET}' \
+                                    -e SPRING_DATA_REDIS_PORT='${REDIS_PORT_SECRET}' \
+                                    -e SPRING_DATA_REDIS_PASSWORD='${REDIS_PASSWORD_SECRET}' \
                                     -e SPRING_MAIL_HOST=smtp.gmail.com \
                                     -e SPRING_MAIL_PORT=587 \
                                     -e SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true \
                                     -e SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true \
-                                    -e SPRING_MAIL_USERNAME=${MAIL_USERNAME_SECRET} \
-                                    -e SPRING_MAIL_PASSWORD=${MAIL_PASSWORD_SECRET} \
-                                    ${DOCKERHUB_USERNAME}/${APP_NAME}:${env.BUILD_NUMBER}
-                            "
-                        '''
+                                    -e SPRING_MAIL_USERNAME='${MAIL_USERNAME_SECRET}' \
+                                    -e SPRING_MAIL_PASSWORD='${MAIL_PASSWORD_SECRET}' \
+                                    ${DOCKERHUB_USERNAME}/${BACKEND_APP_NAME}:${env.BUILD_NUMBER}
+                                echo "Backend deploy complete"
+EOF
+                        """
                     }
+                }
+            }
+        }
+
+        stage('Deploy Frontend') {
+            // main 브랜치에 푸시될 때만 실행
+            when {
+                branch 'main'
+            }
+            steps {
+                sshagent(['yhcho-ssh']) {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no yhcho@192.168.50.35 /bin/bash << EOF
+
+                            echo "Deploying frontend build number: ${env.BUILD_NUMBER}"
+
+                            docker stop ${FRONTEND_APP_NAME} || true && docker rm ${FRONTEND_APP_NAME} || true
+                            docker pull ${DOCKERHUB_USERNAME}/${FRONTEND_APP_NAME}:${env.BUILD_NUMBER}
+                            docker run -d --name ${FRONTEND_APP_NAME} -p 3000:80 ${DOCKERHUB_USERNAME}/${FRONTEND_APP_NAME}:${env.BUILD_NUMBER}
+
+                            echo "Frontend deploy complete"
+EOF
+                    """
                 }
             }
         }
