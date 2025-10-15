@@ -141,11 +141,15 @@ public class ApiV1ProjectController {
 
     @GetMapping("/{id}")
     @Transactional(readOnly = true)
-    public ProjectDto getItem(@PathVariable long id) {
+    public ApiResponse<ProjectDto> getItem(@PathVariable long id) {
         Project project = projectService.findById(id);
         List<SkillDto> skillDtoList = skillService.findByProjectId(id);
         List<InterestDto> interestDtoList = interestService.findByProjectId(id);
-        return new ProjectDto(project, skillDtoList, interestDtoList);
+        return new ApiResponse<>(
+                "200-1",
+                "%d번 프로젝트 조회 성공".formatted(id),
+                new ProjectDto(project, skillDtoList, interestDtoList)
+        );
     }
 
     // 테스트용으로 만든 다건 조회이기에 임시로 "/all" 붙임 처리함 이후 삭제하거나 수정할 예정

@@ -27,7 +27,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                 member.getId(),
                 member.getName(),
                 member.getRole().name(),
-                member.getStatus().name()
+                member.getStatus().name(),
+                member.getProfileImgUrl()
         );
     }
 }

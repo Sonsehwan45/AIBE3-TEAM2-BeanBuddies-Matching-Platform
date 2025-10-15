@@ -7,14 +7,16 @@ public record MemberDto(
         Long id,
         String name,
         String role,
-        String status
+        String status,
+        String profileImgUrl
 ) {
     public MemberDto(Member member) {
         this(
                 member.getId(),
                 member.getName(),
                 member.getRole().name(),
-                member.getStatus().name()
+                member.getStatus().name(),
+                member.getProfileImgUrl()
         );
     }
 
@@ -23,7 +25,8 @@ public record MemberDto(
                 user.getId(),
                 user.getName(),
                 user.getRole(),
-                user.getStatus()
+                user.getStatus(),
+                user.getProfileImgUrl()
         );
     }
 }

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record MemberJoinReq(
+        String profileImgUrl,
         @NotBlank
         String role,
         @NotBlank @Size(min = 2, max = 20)

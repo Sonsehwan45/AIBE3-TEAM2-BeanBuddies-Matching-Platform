@@ -50,13 +50,14 @@ public class Member extends BaseEntity {
     @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
     private Client client;
 
-    public Member(String role, String name, String username, String password, String email) {
+    public Member(String profileImgUrl, String role, String name, String username, String password, String email) {
         this.role = Role.valueOf(role);
         this.name = name;
         this.username = username;
         this.password = password;
         this.email = email;
         this.status = MemberStatus.valueOf("ACTIVE");
+        this.profileImgUrl = profileImgUrl;
         this.profileScope = ProfileScope.PUBLIC;
     }
 

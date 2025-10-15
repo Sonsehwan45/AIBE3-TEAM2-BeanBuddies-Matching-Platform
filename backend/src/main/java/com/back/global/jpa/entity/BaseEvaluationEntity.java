@@ -23,19 +23,19 @@ public abstract class BaseEvaluationEntity {
     private String comment;
 
     @Column(nullable = false)
-    private Integer ratingSatisfaction;
+    private Integer ratingSatisfaction;//지금 평가의 평균
 
     @Column(nullable = false)
-    private Integer ratingProfessionalism;
+    private Integer ratingProfessionalism;//전문성(프로젝트 관리)
 
     @Column(nullable = false)
-    private Integer ratingScheduleAdherence;
+    private Integer ratingScheduleAdherence;//일정 준수(클: 급여일정 준수, 프: 협의 기간 준수)
 
     @Column(nullable = false)
-    private Integer ratingCommunication;
+    private Integer ratingCommunication;//커뮤니케이션(의사소통)
 
     @Column(nullable = false)
-    private Integer ratingProactiveness;
+    private Integer ratingProactiveness;//적극성: 문제 해결, 제안 등 업무에 얼마나 능동적이었는지
 
     @Column(updatable = false, nullable = false)
     private LocalDateTime createdAt;

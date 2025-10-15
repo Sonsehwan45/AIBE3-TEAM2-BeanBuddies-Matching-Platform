@@ -27,6 +27,10 @@ spring:
     redis:
       host: localhost
       port: 6379
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/mroonga
 logging:
   level:
     org.hibernate.orm.jdbc.bind: TRACE

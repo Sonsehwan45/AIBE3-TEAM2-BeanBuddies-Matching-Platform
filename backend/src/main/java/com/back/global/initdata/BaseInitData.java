@@ -18,6 +18,7 @@ import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
 import com.back.domain.proposal.proposal.service.ProposalService;
+import com.back.domain.recommendations.recommendations.service.SearchIndexService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -49,6 +50,7 @@ public class BaseInitData {
     private final FreelancerService freelancerService;
     private final ProposalService proposalService;
     private final EvaluationService evaluationService;
+    private final SearchIndexService searchIndexService;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {
@@ -59,6 +61,7 @@ public class BaseInitData {
             self.addApplication();
             self.updateFreelancerInfo();
             self.addProposal();
+            self.synchronization();
         };
     }
 
@@ -80,15 +83,15 @@ public class BaseInitData {
         memberService.setInitFlag(true);
 
         //임의 데이터 추가
-        Member admin = memberService.join("ADMIN", "관리자", "admin", "1234", "1234", "test@test.com");
-        Member client1 = memberService.join("CLIENT", "클라이언트1", "client1", "1234", "1234", "test@test.com");
-        Member client2 = memberService.join("CLIENT", "클라이언트2", "client2", "1234", "1234", "test@test.com");
-        Member freelancer1 = memberService.join("FREELANCER", "프리랜서1", "freelancer1", "1234", "1234", "test@test.com");
-        Member freelancer2 = memberService.join("FREELANCER", "프리랜서2", "freelancer2", "1234", "1234", "test@test.com");
-        Member freelancer3 = memberService.join("FREELANCER", "프리랜서3", "freelancer3", "1234", "1234", "test@test.com");
-        Member freelancer4 = memberService.join("FREELANCER", "프리랜서4", "freelancer4", "1234", "1234", "test@test.com");
-        Member freelancer5 = memberService.join("FREELANCER", "프리랜서5", "freelancer5", "1234", "1234", "test@test.com");
-        Member client3 = memberService.join("CLIENT", "클라이언트3", "client3", "1234", "1234", "test@test.com");
+        Member admin = memberService.join(null,"ADMIN", "관리자", "admin", "1234", "1234", "test@test.com");
+        Member client1 = memberService.join(null, "CLIENT", "클라이언트1", "client1", "1234", "1234", "test@test.com");
+        Member client2 = memberService.join(null, "CLIENT", "클라이언트2", "client2", "1234", "1234", "test@test.com");
+        Member freelancer1 = memberService.join(null, "FREELANCER", "프리랜서1", "freelancer1", "1234", "1234", "test@test.com");
+        Member freelancer2 = memberService.join(null, "FREELANCER", "프리랜서2", "freelancer2", "1234", "1234", "test@test.com");
+        Member freelancer3 = memberService.join(null, "FREELANCER", "프리랜서3", "freelancer3", "1234", "1234", "test@test.com");
+        Member freelancer4 = memberService.join(null, "FREELANCER", "프리랜서4", "freelancer4", "1234", "1234", "test@test.com");
+        Member freelancer5 = memberService.join(null, "FREELANCER", "프리랜서5", "freelancer5", "1234", "1234", "test@test.com");
+        Member client3 = memberService.join(null, "CLIENT", "클라이언트3", "client3", "1234", "1234", "test@test.com");
 
         //클라이언트2, 프리랜서2는 활동 정지 상태로 변경
         memberService.changeStatus(client2, "INACTIVE");
@@ -104,7 +107,7 @@ public class BaseInitData {
         }
         memberService.setInitFlag(true);
         for (int i = 6; i <= 50; i++) {
-            memberService.join("FREELANCER", "프리랜서" + i, "freelancer" + i, "1234", "1234", "test@test.com");
+            memberService.join(null, "FREELANCER", "프리랜서" + i, "freelancer" + i, "1234", "1234", "test@test.com");
         }
         memberService.setInitFlag(false);
     }
@@ -118,6 +121,11 @@ public class BaseInitData {
         skillService.create("Java");
         skillService.create("Spring boot");
         skillService.create("React");
+
+        skillService.create("JPA");
+        skillService.create("Next.js");
+        skillService.create("Python");
+        skillService.create("Docker");
 
         interestService.create("웹 개발");
         interestService.create("모바일 앱");
@@ -217,11 +225,14 @@ public class BaseInitData {
         Freelancer freelancer1 = freelancerService.findById(freelancerMember1.getId());
         Member freelancerMember2 = memberService.findByUsername("freelancer2").get();
         Freelancer freelancer2 = freelancerService.findById(freelancerMember2.getId());
+        Member freelancerMember3 = memberService.findByUsername("freelancer3").get();
+        Freelancer freelancer3 = freelancerService.findById(freelancerMember3.getId());
 
         // 프로젝트 조회
         Project project1 = projectService.findById(1);
         Project project2 = projectService.findById(2);
         Project project3 = projectService.findById(3);
+        Project project25 = projectService.findById(25);
 
         // 지원서 3개 생성
         Application application1 = applicationService.create(
@@ -256,6 +267,19 @@ public class BaseInitData {
                 freelancer1,
                 project3
         );
+
+        for (int i = 1; i <= 12; i++) {
+            applicationService.create(
+                    new ApplicationWriteReqBody(
+                            BigDecimal.valueOf(500_000 + (i * 100_000)),
+                            (i % 6 + 1) + "개월",
+                            (i % 2 == 0) ? "주 5일, 원격 근무" : "주 3일, 출근 근무",
+                            "추가 자료 없음"
+                    ),
+                    freelancer3,
+                    project25
+            );
+        }
     }
 
     @Transactional
@@ -335,6 +359,10 @@ public class BaseInitData {
                             evaluationComments.get(i % evaluationComments.size()))
             );
         }
+    }
+
+    public void synchronization() {
+        searchIndexService.rebuildAll();
     }
 }
 

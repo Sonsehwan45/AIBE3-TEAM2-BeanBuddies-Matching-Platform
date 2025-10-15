@@ -4,6 +4,7 @@ import Button from "../../../components/base/Button";
 import Input from "../../../components/base/Input";
 import { client } from "../../../lib/backend/client";
 import { useAuth } from "@/context/AuthContext";
+import toast from "react-hot-toast";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -14,34 +15,41 @@ export default function Login() {
     password: "",
   });
 
+  const [formErrors, setFormErrors] = useState<string[]>([]); // <-- 폼 하단용
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormErrors([]);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setFormErrors([]); // 기존 에러 초기화
 
-    const res = await client.POST("/api/v1/auth/login", {
-      body: {
-        username: formData.username,
-        password: formData.password,
-      },
-      throwHttpErrors: false,
-    });
+    try {
+      const res = await client.POST("/api/v1/auth/login", {
+        body: formData,
+        throwHttpErrors: false,
+      });
 
-    console.log("로그인 응답:", res);
+      if (res.response.ok && res.data) {
+        // 성공
+        const token = res.response.headers.get("Authorization");
+        if (token) setToken(token.replace("Bearer ", ""));
+        if (res.data.data) setUser(res.data.data);
 
-    const token = res.response.headers.get("Authorization");
-    const userData = res.data?.data;
+        toast.success(res.data.msg || "로그인 성공!", { duration: 3000 });
+        navigate("/", { replace: true });
+      } else {
+        // 실패
+        const { resultCode, msg } = res.error ?? {};
 
-    if (token && userData) {
-      setToken(token.replace("Bearer ", ""));
-      setUser(userData);
-
-      alert(res.data?.msg);
-      navigate("/", { replace: true });
-    } else {
-      alert(res.data?.msg);
+        // 폼 하단 표시
+        const messages = Array.isArray(msg) ? msg : [msg];
+        setFormErrors(messages.filter(Boolean));
+      }
+    } catch (err: any) {
+      toast.error("알 수 없는 에러가 발생했습니다.", { duration: 3000 });
     }
   };
 
@@ -77,6 +85,15 @@ export default function Login() {
               required
             />
 
+            {/* 에러 메시지 폼 하단 표시 */}
+            {formErrors.length > 0 && (
+              <ul className="text-red-500 text-sm mt-2 list-disc ml-5">
+                {formErrors.map((msg, idx) => (
+                  <li key={idx}>{msg}</li>
+                ))}
+              </ul>
+            )}
+
             <div className="flex items-center justify-between">
               <label className="flex items-center cursor-pointer">
                 <input
@@ -92,7 +109,7 @@ export default function Login() {
                 to="/forgot-password"
                 className="text-sm text-blue-600 hover:text-blue-500 cursor-pointer"
               >
-                비밀번호 찾기
+                비밀번호를 잊으셨나요?
               </Link>
             </div>
 
