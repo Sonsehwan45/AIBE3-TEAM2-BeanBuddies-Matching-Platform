@@ -78,10 +78,10 @@ public class BaseInitData {
         Member freelancer5 = memberService.join(null, "FREELANCER", "프리랜서5", "freelancer5", "1234", "1234", "test@test.com");
         Member client3 = memberService.join(null, "CLIENT", "클라이언트3", "client3", "1234", "1234", "test@test.com");
 
-        memberService.join("FREELANCER", "프리랜서6", "freelancer6", "1234", "1234", "test@test.com");
-        memberService.join("FREELANCER", "프리랜서7", "freelancer7", "1234", "1234", "test@test.com");
-        memberService.join("FREELANCER", "프리랜서8", "freelancer8", "1234", "1234", "test@test.com");
-        memberService.join("FREELANCER", "프리랜서9", "freelancer9", "1234", "1234", "test@test.com");
+        memberService.join(null,"FREELANCER", "프리랜서6", "freelancer6", "1234", "1234", "test@test.com");
+        memberService.join(null,"FREELANCER", "프리랜서7", "freelancer7", "1234", "1234", "test@test.com");
+        memberService.join(null,"FREELANCER", "프리랜서8", "freelancer8", "1234", "1234", "test@test.com");
+        memberService.join(null,"FREELANCER", "프리랜서9", "freelancer9", "1234", "1234", "test@test.com");
 
         //클라이언트2, 프리랜서2는 활동 정지 상태로 변경
         memberService.changeStatus(client2, "INACTIVE");
