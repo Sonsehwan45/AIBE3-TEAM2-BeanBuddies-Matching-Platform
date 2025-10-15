@@ -14,6 +14,7 @@ import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
 import com.back.domain.proposal.proposal.service.ProposalService;
+import com.back.domain.recommendations.recommendations.service.SearchIndexService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationRunner;
@@ -43,6 +44,7 @@ public class BaseInitData {
     private final ApplicationService applicationService;
     private final FreelancerService freelancerService;
     private final ProposalService proposalService;
+    private final SearchIndexService searchIndexService;
 
     @Bean
     ApplicationRunner baseInitDataApplicationRunner() {
@@ -53,6 +55,7 @@ public class BaseInitData {
             self.addApplication();
             self.updateFreelancerInfo();
             self.addProposal();
+            self.synchronization();
         };
     }
 
@@ -75,6 +78,11 @@ public class BaseInitData {
         Member freelancer5 = memberService.join("FREELANCER", "프리랜서5", "freelancer5", "1234", "1234", "test@test.com");
         Member client3 = memberService.join("CLIENT", "클라이언트3", "client3", "1234", "1234", "test@test.com");
 
+        memberService.join("FREELANCER", "프리랜서6", "freelancer6", "1234", "1234", "test@test.com");
+        memberService.join("FREELANCER", "프리랜서7", "freelancer7", "1234", "1234", "test@test.com");
+        memberService.join("FREELANCER", "프리랜서8", "freelancer8", "1234", "1234", "test@test.com");
+        memberService.join("FREELANCER", "프리랜서9", "freelancer9", "1234", "1234", "test@test.com");
+
         //클라이언트2, 프리랜서2는 활동 정지 상태로 변경
         memberService.changeStatus(client2, "INACTIVE");
         memberService.changeStatus(freelancer2, "INACTIVE");
@@ -91,6 +99,11 @@ public class BaseInitData {
         skillService.create("Java");
         skillService.create("Spring boot");
         skillService.create("React");
+
+        skillService.create("JPA");
+        skillService.create("Next.js");
+        skillService.create("Python");
+        skillService.create("Docker");
 
         interestService.create("웹 개발");
         interestService.create("모바일 앱");
@@ -161,6 +174,70 @@ public class BaseInitData {
                 skillIds3,
                 interestIds3
         );
+
+        // 4) 프론트엔드 React/Next.js 대개편 → f(7)이 1위가 되도록
+        projectService.create(
+                client1,
+                "프론트엔드 React Next.js 대개편",
+                "프론트 전면 개편",
+                BigDecimal.valueOf(4_000_000),
+                "React Next.js 경험 필수",       // preferred_condition
+                "협의",
+                "Next.js 기반, 최신 React 생태", // working_condition
+                "4개월",
+                "대규모 프론트 리뉴얼",
+                LocalDateTime.now().plusMonths(4),
+                List.of(3L, 5L),               // React(id≈3), Next.js(id≈5)
+                List.of(1L)
+        );
+
+        // 5) 백엔드 Spring/JPA 마이그레이션 → f(4)가 1위가 되도록
+        projectService.create(
+                client1,
+                "백엔드 Spring JPA 마이그레이션",
+                "도메인 리팩토링",
+                BigDecimal.valueOf(5_000_000),
+                "Spring JPA 경력 2년 이상",     // preferred_condition
+                "협의",
+                "Spring boot/JPA 중심",         // working_condition
+                "3개월",
+                "레거시 JPA 마이그레이션",
+                LocalDateTime.now().plusMonths(3),
+                List.of(2L, 4L),               // Spring boot(id≈2), JPA(id≈4)
+                List.of(1L)
+        );
+
+        // 6) 데이터 Python ETL (f(5)=INACTIVE로 필터 제외 확인용)
+        projectService.create(
+                client1,
+                "데이터 파이프라인 Python ETL",
+                "ETL 파이프라인 고도화",
+                BigDecimal.valueOf(3_000_000),
+                "Python ETL 경험자 우대",        // preferred_condition
+                "협의",
+                "Docker 기반 배포",              // working_condition
+                "2개월",
+                "데이터 적재/변환",
+                LocalDateTime.now().plusMonths(2),
+                List.of(6L, 7L),               // Python(id≈6), Docker(id≈7)
+                List.of(3L)
+        );
+
+        // 7) 풀스택 React+Spring 통합 → f(6)이 1위가 되도록
+        projectService.create(
+                client1,
+                "풀스택 React Spring 통합",
+                "FE/BE 통합 개발",
+                BigDecimal.valueOf(4_500_000),
+                "React Spring 모두 가능자",      // preferred_condition
+                "협의",
+                "React + Spring boot",          // working_condition
+                "3개월",
+                "양방향 개발",
+                LocalDateTime.now().plusMonths(3),
+                List.of(2L, 3L),               // Spring boot(id≈2), React(id≈3)
+                List.of(1L, 2L)
+        );
     }
 
     @Transactional
@@ -174,7 +251,6 @@ public class BaseInitData {
         Freelancer freelancer1 = freelancerService.findById(freelancerMember1.getId());
         Member freelancerMember2 = memberService.findByUsername("freelancer2").get();
         Freelancer freelancer2 = freelancerService.findById(freelancerMember2.getId());
-
         // 프로젝트 조회
         Project project1 = projectService.findById(1);
         Project project2 = projectService.findById(2);
@@ -243,6 +319,56 @@ public class BaseInitData {
 
         freelancerService.updateFreelancer(8L, "프론트엔드", "test@test.com", "안녕하세요",
                 null, null);
+
+
+        // f6: 프론트(React/Next.js) → p4에서 1위
+        freelancerService.updateFreelancer(
+                10L,
+                "프론트엔드",
+                "test@test.com",
+                "안녕하세요",
+                Map.of(
+                        "React", 48,
+                        "Next.js", 24,
+                        "Spring", 16,
+                        "JPA", 12
+                ),
+                List.of(3L, 5L )
+        );
+
+        // f7: 백엔드(Spring/JPA) → p5에서 1위
+        freelancerService.updateFreelancer(
+                11L,
+                "백엔드",
+                "test@test.com",
+                "안녕하세요",
+                Map.of("Spring", 36, "JPA", 24),
+                List.of(1L, 2L, 4L)
+        );
+
+        // f8: 풀스택(React+Spring) → p7에서 1위
+        freelancerService.updateFreelancer(
+                12L,
+                "풀스택",
+                "test@test.com",
+                "안녕하세요",
+                Map.of("React", 36, "Spring", 24),
+                List.of(2L, 3L)
+        );
+
+        // f9: 소음/백업용(낮은 가중치)
+        freelancerService.updateFreelancer(
+                13L,
+                "프론트엔드",
+                "test@test.com",
+                "안녕하세요",
+                Map.of("HTML", 12),
+                List.of(3L)
+        );
+    }
+
+    public void synchronization() {
+        searchIndexService.rebuildAll();
     }
 }
 
