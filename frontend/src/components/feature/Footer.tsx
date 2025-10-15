@@ -4,7 +4,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">프리랜서 매칭</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">WorkBudduy</h3>
             <p className="text-gray-600">
               최고의 프리랜서와 클라이언트를 연결하는 플랫폼입니다.
             </p>
