@@ -45,6 +45,7 @@ public class MemberController {
     @PostMapping
     public ApiResponse<MemberDto> join(@Valid @RequestBody MemberJoinReq reqBody) {
         Member member = memberService.join(
+                reqBody.profileImgUrl(),
                 reqBody.role(),
                 reqBody.name(),
                 reqBody.username(),

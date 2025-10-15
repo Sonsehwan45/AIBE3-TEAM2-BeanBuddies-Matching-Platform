@@ -37,7 +37,7 @@ public class MemberService {
     }
 
     @Transactional
-    public Member join(String role, String name, String username, String password, String passwordConfirm,
+    public Member join(String profileImgUrl, String role, String name, String username, String password, String passwordConfirm,
                        String email) {
         //이메일 인증 확인
         if(!initFlag) {
@@ -61,7 +61,7 @@ public class MemberService {
         String encodedPassword = passwordEncoder.encode(password);
 
         //DTO -> ENTITY 변환
-        Member member = new Member(role, name, username, encodedPassword, email);
+        Member member = new Member(profileImgUrl, role, name, username, encodedPassword, email);
 
         //회원 유형에 따른 엔티티 등록
         if (member.isFreelancer()) {

@@ -110,7 +110,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 ((Number) claims.get("id")).longValue(),
                 (String) claims.get("name"),
                 (String) claims.get("role"),
-                (String) claims.get("status")
+                (String) claims.get("status"),
+                (String) claims.get("profileImgUrl")
         );
 
         //Spring Security 인증 토큰 생성
