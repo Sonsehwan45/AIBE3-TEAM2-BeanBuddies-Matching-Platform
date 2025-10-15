@@ -4,6 +4,11 @@ import Button from "../../../components/base/Button";
 import Input from "../../../components/base/Input";
 import toast from "react-hot-toast";
 import { client } from "../../../lib/backend/client";
+import { supabase } from "@/utils/supabase";
+import {
+  uploadImageToStorage,
+  generateImageFileName,
+} from "@/utils/imageUtils";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -13,8 +18,14 @@ export default function Signup() {
   const [emailVerified, setEmailVerified] = useState(false); // 인증 완료 여부
   const [emailCode, setEmailCode] = useState(""); // 사용자가 입력한 인증 코드
 
-  const [userType, setUserType] = useState<"CLIENT" | "FREELANCER">("CLIENT");
+  // const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  //프로필 이미지 관련 상태
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  //폼 데이터 관련 상태
+  const [userType, setUserType] = useState<"CLIENT" | "FREELANCER">("CLIENT");
   const [formData, setFormData] = useState({
     email: "",
     username: "",
@@ -23,6 +34,7 @@ export default function Signup() {
     name: "",
   });
 
+  //에러 관련 상태
   const [formErrors, setFormErrors] = useState<string[]>([]);
   const [emailErrors, setEmailErrors] = useState<string[]>([]);
 
@@ -34,9 +46,10 @@ export default function Signup() {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setProfileImageFile(file); // 실제 파일 저장
       const reader = new FileReader();
       reader.onload = (e) => {
-        setProfileImage(e.target?.result as string);
+        setProfileImage(e.target?.result as string); // 미리보기
       };
       reader.readAsDataURL(file);
     }
@@ -101,9 +114,21 @@ export default function Signup() {
     setFormErrors([]); // 기존 에러 초기화
 
     try {
+      //프로필 이미지 업로드
+      let profileImageUrl: string | null = null;
+      if (profileImageFile) {
+        const fileName = generateImageFileName(profileImageFile);
+        profileImageUrl = await uploadImageToStorage(
+          profileImageFile,
+          fileName
+        );
+      }
+
+      console.log(profileImageUrl);
       // 실제 회원가입 요청
       const res = await client.POST("/api/v1/members", {
         body: {
+          profileImgUrl: profileImageUrl,
           role: userType,
           name: formData.name,
           username: formData.username,
@@ -295,9 +320,7 @@ export default function Signup() {
               <Input
                 label="회사명"
                 value={formData.name}
-                onChange={(e) =>
-                  handleInputChange("companyName", e.target.value)
-                }
+                onChange={(e) => handleInputChange("name", e.target.value)}
                 placeholder="회사명을 입력하세요"
                 required
               />

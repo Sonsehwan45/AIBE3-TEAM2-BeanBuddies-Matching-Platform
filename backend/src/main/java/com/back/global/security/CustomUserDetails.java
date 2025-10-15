@@ -17,12 +17,14 @@ public class CustomUserDetails implements UserDetails {
     private final String name;
     private final String role;
     private final String status;
+    private final String profileImgUrl;
 
-    public CustomUserDetails(Long id, String name, String role, String status) {
+    public CustomUserDetails(Long id, String name, String role, String status, String profileImgUrl) {
         this.id = id;
         this.name = name;
         this.role = role;
         this.status = status;
+        this.profileImgUrl = profileImgUrl;
     }
 
     //Role 설정
