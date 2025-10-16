@@ -107,8 +107,18 @@ public class Project extends BaseEntity {
     }
 
     public void addParticipant(Freelancer participant) {
-        ProjectParticipant projectParticipant = new ProjectParticipant(this, participant);
-        this.projectParticipants.add(projectParticipant);
-        participant.getMyProjects().add(projectParticipant);
+        boolean alreadyAdded = this.projectParticipants.stream()
+                .anyMatch(pp -> pp.getFreelancer().equals(participant));
+
+        if (!alreadyAdded) {
+            ProjectParticipant projectParticipant = new ProjectParticipant(this, participant);
+            this.projectParticipants.add(projectParticipant);
+            participant.getMyProjects().add(projectParticipant);
+        }
+    }
+
+    public void removeParticipant(Freelancer participant) {
+        this.projectParticipants.removeIf(pp -> pp.getFreelancer().equals(participant));
+        participant.getMyProjects().removeIf(pp -> pp.getProject().equals(this));
     }
 }

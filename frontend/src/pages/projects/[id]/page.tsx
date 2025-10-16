@@ -28,6 +28,18 @@ interface Project {
     id: number;
     name: string;
   }>;
+  participants: Array<FreelancerSummary>;
+}
+
+interface FreelancerSummary {
+  id: number;
+  name: string;
+  careerLevel: "JUNIOR" | "MID" | "SENIOR"; // CareerLevel enum 대응
+  ratingAvg: number;
+  skills: Array<{
+    id: number;
+    name: string;
+  }>;
 }
 
 interface Application {
@@ -600,6 +612,38 @@ export default function ProjectDetail() {
                   </div>
                 </div>
               )}
+
+            {/* 참여 프리랜서 목록 */}
+            {project.participants.length > 0 && (
+              <div className="mt-8">
+                <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                  👥 참여 프리랜서
+                </h3>
+                <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+                  {project.participants.map((freelancer) => (
+                    <div
+                      key={freelancer.id}
+                      className="p-4 border border-gray-100 rounded-lg shadow-sm hover:shadow-md transition"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-lg font-semibold text-gray-900">
+                            {freelancer.name} ({freelancer.careerLevel})
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            평점: {freelancer.ratingAvg}
+                          </p>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          스킬:{" "}
+                          {freelancer.skills.map((s) => s.name).join(", ")}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* 버튼 영역 */}
             <div className="flex justify-end space-x-4 mt-8">

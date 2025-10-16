@@ -7,12 +7,13 @@ import com.back.domain.application.application.repository.ApplicationRepository;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.project.project.entity.Project;
 import com.back.global.exception.ServiceException;
-import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -24,6 +25,10 @@ public class ApplicationService {
     }
 
     public Application create(ApplicationWriteReqBody reqBody, Freelancer freelancer, Project project) {
+        boolean exists = applicationRepository.findByFreelancerAndProject(freelancer, project).isPresent();
+        if (exists) {
+            throw new ServiceException("409-2", "이미 해당 프로젝트에 지원한 상태입니다.");
+        }
         Application application = new Application(reqBody, freelancer, project);
 
         return applicationRepository.save(application);

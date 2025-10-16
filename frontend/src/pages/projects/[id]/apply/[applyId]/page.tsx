@@ -138,7 +138,7 @@ export default function ApplicationDetail() {
       navigate(`/projects/${application.projectId}`);
     } catch (err) {
       console.error("지원서 삭제 실패:", err);
-      alert("지원서 삭제에 실패했습니다.");
+      alert(err.msg);
     }
   }, [application, token, navigate]);
 
