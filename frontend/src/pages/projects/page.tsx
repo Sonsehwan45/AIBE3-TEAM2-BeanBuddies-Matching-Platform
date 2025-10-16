@@ -154,7 +154,7 @@ export default function Projects() {
       setFavorites((prev) => [...prev, projectId]);
     } catch (err) {
       console.error("즐겨찾기 추가 실패:", err);
-      alert("즐겨찾기 추가에 실패했습니다.");
+      alert(err.msg);
     }
   };
 
