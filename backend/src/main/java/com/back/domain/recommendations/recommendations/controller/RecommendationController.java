@@ -3,8 +3,10 @@ package com.back.domain.recommendations.recommendations.controller;
 import com.back.domain.recommendations.recommendations.dto.ProjectOptionDto;
 import com.back.domain.recommendations.recommendations.service.RecommendationService;
 import com.back.global.response.ApiResponse;
+import com.back.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,10 +32,12 @@ public class RecommendationController {
     public ApiResponse<Page<?>> recommend(
             @RequestParam(required = false) Long projectId,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal CustomUserDetails user
     ) {
+
         Page<?> data =
-                recommendationService.recommendForCurrentUser(projectId, page, size);
+                recommendationService.recommendForUser(user, projectId, page, size);
         return new ApiResponse<>("200-0", "OK", data);
     }
 
@@ -42,9 +46,10 @@ public class RecommendationController {
      */
     @GetMapping("/client/projects")
     public ApiResponse<List<ProjectOptionDto>> myProjectsSelect(
-            @RequestParam(defaultValue = "10") int limit
+            @RequestParam(defaultValue = "10") int limit,
+            @AuthenticationPrincipal CustomUserDetails user
     ) {
-        java.util.List<ProjectOptionDto> options = recommendationService.getMyProjectOptions(limit);
+        java.util.List<ProjectOptionDto> options = recommendationService.getMyProjectOptions(user, limit);
         return new ApiResponse<>("200-0", "OK", options);
     }
 }

@@ -6,11 +6,10 @@ import com.back.domain.member.member.repository.MemberRepository;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.repository.ProjectRepository;
 import com.back.domain.recommendations.recommendations.dto.ProjectOptionDto;
-import com.back.domain.recommendations.recommendations.entity.FreelancersSearch;
-import com.back.domain.recommendations.recommendations.entity.ProjectsSearch;
 import com.back.domain.recommendations.recommendations.repository.FreelancersSearchRepository;
 import com.back.domain.recommendations.recommendations.repository.ProjectsSearchRepository;
 import com.back.global.exception.ServiceException;
+import com.back.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -24,7 +23,6 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -51,20 +49,20 @@ public class RecommendationService {
     private static final double RF_TOP = 1.25;
     private static final double DEFAULT_RATING = 2.5; // 미평가 시 1.00배(= 0.75 + 0.1*2.5)
 
-    /** 로그인 사용자를 기준으로 프로젝트/프리랜서 추천 페이지 반환 */
-    public Page<?> recommendForCurrentUser(Long projectIdOrNull, int page, int size) {
-        Member me = getCurrentMember();
+    public Page<?> recommendForUser(CustomUserDetails user, Long projectIdOrNull, int page, int size) {
+        Member me = memberRepo.findById(user.getId())
+                .orElseThrow(() -> new ServiceException("401-2", "사용자 정보를 찾을 수 없습니다"));
+
         Pageable pageable = PageRequest.of(page, size);
 
-        // 프리랜서 -> 프로젝트 추천
         if (me.getRole() == Role.FREELANCER) {
-            Optional<FreelancersSearch> fsOpt = freelancersSearchRepo.findFirstByFreelancerId(me.getId());
+            var fsOpt = freelancersSearchRepo.findFirstByFreelancerId(me.getId());
             if (fsOpt.isEmpty()) return Page.empty(pageable);
-            FreelancersSearch fs = fsOpt.get();
+            var fs = fsOpt.get();
 
-            String qTitleAny = toAnyBooleanQuery(fs.getJob());                 // job -> title
-            String qPrefAny  = toAnyBooleanQuery(flattenCareer(fs.getCareer())); // career -> preferred_condition
-            String qWorkAny  = toAnyBooleanQuery(fs.getTechStack());           // tech_stack -> working_condition
+            String qTitleAny = toAnyBooleanQuery(fs.getJob());
+            String qPrefAny  = toAnyBooleanQuery(flattenCareer(fs.getCareer()));
+            String qWorkAny  = toAnyBooleanQuery(fs.getTechStack());
 
             return projectsSearchRepo.scoreProjects(
                     qTitleAny, qPrefAny, qWorkAny,
@@ -73,22 +71,22 @@ public class RecommendationService {
             );
         }
 
-        // 클라이언트 -> 프리랜서 추천
         if (me.getRole() == Role.CLIENT) {
             Long targetProjectId = projectIdOrNull;
             if (targetProjectId == null) {
-                Optional<Project> lastProjectOpt = projectRepo.findByIdWithAuthor(me.getId());
+                // 최근 프로젝트(예: author 기준) 가져오는 기존 로직 유지
+                var lastProjectOpt = projectRepo.findByIdWithAuthor(me.getId());
                 if (lastProjectOpt.isEmpty()) return Page.empty(pageable);
                 targetProjectId = lastProjectOpt.get().getId();
             }
 
-            Optional<ProjectsSearch> psOpt = projectsSearchRepo.findFirstByProjectId(targetProjectId);
+            var psOpt = projectsSearchRepo.findFirstByProjectId(targetProjectId);
             if (psOpt.isEmpty()) return Page.empty(pageable);
-            ProjectsSearch ps = psOpt.get();
+            var ps = psOpt.get();
 
-            String qJobAny    = toAnyBooleanQuery(ps.getTitle());              // title -> job
-            String qCareerAny = toAnyBooleanQuery(ps.getPreferredCondition()); // preferred_condition -> career
-            String qStackAny  = toAnyBooleanQuery(ps.getWorkingCondition());   // working_condition -> tech_stack
+            String qJobAny    = toAnyBooleanQuery(ps.getTitle());
+            String qCareerAny = toAnyBooleanQuery(ps.getPreferredCondition());
+            String qStackAny  = toAnyBooleanQuery(ps.getWorkingCondition());
 
             return freelancersSearchRepo.scoreFreelancers(
                     qJobAny, qCareerAny, qStackAny,
@@ -100,9 +98,10 @@ public class RecommendationService {
         return Page.empty(pageable);
     }
 
-    /** 콤보박스용: 나의 프로젝트 (최신순) */
-    public List<ProjectOptionDto> getMyProjectOptions(int limit) {
-        Member me = getCurrentMember();
+    public List<ProjectOptionDto> getMyProjectOptions(CustomUserDetails user, int limit) {
+        Member me = memberRepo.findById(user.getId())
+                .orElseThrow(() -> new ServiceException("401-2", "사용자 정보를 찾을 수 없습니다"));
+
         if (me.getRole() != Role.CLIENT) return Collections.emptyList();
 
         int pageSize = Math.max(1, Math.min(limit, 200));
@@ -110,12 +109,9 @@ public class RecommendationService {
 
         Page<Project> page = projectRepo.findByClientId(me.getId(), pageable);
         return page.getContent().stream()
-                .map(p -> new ProjectOptionDto(
-                        p.getId(),
-                        p.getTitle(),
-                        p.getStatus() == null ? null : p.getStatus().name()
-                ))
-                .collect(Collectors.toList());
+                .map(p -> new ProjectOptionDto(p.getId(), p.getTitle(),
+                        p.getStatus() == null ? null : p.getStatus().name()))
+                .toList();
     }
 
 
