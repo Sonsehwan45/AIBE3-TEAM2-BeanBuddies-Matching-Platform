@@ -103,6 +103,7 @@ pipeline {
                                 docker stop ${BACKEND_APP_NAME} || true && docker rm ${BACKEND_APP_NAME} || true
                                 docker pull ${DOCKERHUB_USERNAME}/${BACKEND_APP_NAME}:${env.BUILD_NUMBER}
                                 docker run -d --name ${BACKEND_APP_NAME} -p 8080:8080 \
+                                    --add-host=host.docker.internal:host-gateway \
                                     -e SPRING_PROFILES_ACTIVE=prod \
                                     -e SPRING_DATASOURCE_URL='${DB_URL_SECRET}' \
                                     -e SPRING_DATASOURCE_USERNAME='${DB_USERNAME_SECRET}' \
