@@ -1,4 +1,9 @@
 spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://host.docker.internal:3306/db_dev?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root123414}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
       host: ${SPRING_DATA_REDIS_HOST:host.docker.internal}
@@ -8,7 +13,7 @@ spring:
   jpa:
     show-sql: false
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: false
