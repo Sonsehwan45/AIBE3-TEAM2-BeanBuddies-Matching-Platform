@@ -238,15 +238,70 @@ public class MemberService {
         return tempPassword.toString();
     }
 
+    @Transactional(readOnly = true)
     public Member getProfile(Long userId, CustomUserDetails user) {
         Member member = findById(userId);
 
         if (member.getProfileScope() == ProfileScope.PUBLIC) {
+            // initialize associations for DTO serialization outside transaction
+            if (member.isClient() && member.getClient() != null) {
+                member.getClient().getCompanyEmail();
+                member.getClient().getCompanyPhone();
+                member.getClient().getCompanySize();
+                member.getClient().getCompanyDescription();
+                member.getClient().getRepresentative();
+                member.getClient().getBusinessNo();
+                member.getClient().getProjects().size();
+            }
+            if (member.isFreelancer() && member.getFreelancer() != null) {
+                member.getFreelancer().getJob();
+                member.getFreelancer().getCareer();
+                member.getFreelancer().getFreelancerEmail();
+                member.getFreelancer().getComment();
+                member.getFreelancer().getRatingAvg();
+                if (member.getFreelancer().getSkills() != null) {
+                    member.getFreelancer().getSkills().forEach(fs -> {
+                        if (fs.getSkill() != null) fs.getSkill().getName();
+                    });
+                }
+                if (member.getFreelancer().getInterests() != null) {
+                    member.getFreelancer().getInterests().forEach(fi -> {
+                        if (fi.getInterest() != null) fi.getInterest().getName();
+                    });
+                }
+            }
             return member;
         }
 
         // 자신의 프로필은 항상 접근 가능
         if (user != null && Objects.equals(user.getId(), member.getId())) {
+            // initialize associations similarly
+            if (member.isClient() && member.getClient() != null) {
+                member.getClient().getCompanyEmail();
+                member.getClient().getCompanyPhone();
+                member.getClient().getCompanySize();
+                member.getClient().getCompanyDescription();
+                member.getClient().getRepresentative();
+                member.getClient().getBusinessNo();
+                member.getClient().getProjects().size();
+            }
+            if (member.isFreelancer() && member.getFreelancer() != null) {
+                member.getFreelancer().getJob();
+                member.getFreelancer().getCareer();
+                member.getFreelancer().getFreelancerEmail();
+                member.getFreelancer().getComment();
+                member.getFreelancer().getRatingAvg();
+                if (member.getFreelancer().getSkills() != null) {
+                    member.getFreelancer().getSkills().forEach(fs -> {
+                        if (fs.getSkill() != null) fs.getSkill().getName();
+                    });
+                }
+                if (member.getFreelancer().getInterests() != null) {
+                    member.getFreelancer().getInterests().forEach(fi -> {
+                        if (fi.getInterest() != null) fi.getInterest().getName();
+                    });
+                }
+            }
             return member;
         }
 
@@ -263,6 +318,33 @@ public class MemberService {
                         .anyMatch(app -> app.getProject().getClient().getMember().getId().equals(requestMember.getId()));
 
                 if (hasApplied) {
+                    // initialize associations before returning
+                    if (member.isClient() && member.getClient() != null) {
+                        member.getClient().getCompanyEmail();
+                        member.getClient().getCompanyPhone();
+                        member.getClient().getCompanySize();
+                        member.getClient().getCompanyDescription();
+                        member.getClient().getRepresentative();
+                        member.getClient().getBusinessNo();
+                        member.getClient().getProjects().size();
+                    }
+                    if (member.isFreelancer() && member.getFreelancer() != null) {
+                        member.getFreelancer().getJob();
+                        member.getFreelancer().getCareer();
+                        member.getFreelancer().getFreelancerEmail();
+                        member.getFreelancer().getComment();
+                        member.getFreelancer().getRatingAvg();
+                        if (member.getFreelancer().getSkills() != null) {
+                            member.getFreelancer().getSkills().forEach(fs -> {
+                                if (fs.getSkill() != null) fs.getSkill().getName();
+                            });
+                        }
+                        if (member.getFreelancer().getInterests() != null) {
+                            member.getFreelancer().getInterests().forEach(fi -> {
+                                if (fi.getInterest() != null) fi.getInterest().getName();
+                            });
+                        }
+                    }
                     return member;
                 }
             }
