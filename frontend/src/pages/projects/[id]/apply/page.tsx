@@ -29,6 +29,18 @@ interface Project {
     id: number;
     name: string;
   }>;
+  participants: Array<FreelancerSummary>;
+}
+
+interface FreelancerSummary {
+  id: number;
+  name: string;
+  careerLevel: "JUNIOR" | "MID" | "SENIOR"; // CareerLevel enum 대응
+  ratingAvg: number;
+  skills: Array<{
+    id: number;
+    name: string;
+  }>;
 }
 
 export default function ProjectApply() {
@@ -69,9 +81,7 @@ export default function ProjectApply() {
         setProject(response.data.data);
       } catch (err: any) {
         console.error("프로젝트 조회 실패:", err);
-        setError(
-          err.message || "프로젝트 정보를 불러오는 중 오류가 발생했습니다."
-        );
+        setError(err.msg || "프로젝트 정보를 불러오는 중 오류가 발생했습니다.");
       } finally {
         setLoading(false);
       }
@@ -130,15 +140,22 @@ export default function ProjectApply() {
         }
       );
 
-      if (!response || response.error) {
-        throw new Error(response?.error?.msg || "지원서 제출에 실패했습니다.");
+      // ApiResponse 구조 기준
+      if (!response?.data || response.data.code !== "200") {
+        throw new Error(response?.data?.msg || "지원서 제출에 실패했습니다.");
       }
 
       alert("지원서가 성공적으로 제출되었습니다!");
       navigate(`/projects/${project.id}`);
     } catch (err: any) {
       console.error("지원서 제출 실패:", err);
-      alert(err.message || "지원서 제출에 실패했습니다.");
+      // API 응답 에러 메시지 추출
+      const errorMessage =
+        err.data?.msg ||
+        err.msg ||
+        err.message ||
+        "지원서 제출에 실패했습니다.";
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }

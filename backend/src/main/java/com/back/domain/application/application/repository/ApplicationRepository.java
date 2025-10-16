@@ -35,4 +35,6 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
             WHERE a.id = :id
     """)
     Optional<Application> findByIdWithDetail(long id);
+
+    Optional<Application> findByFreelancerAndProject(Freelancer freelancer, Project project);
 }

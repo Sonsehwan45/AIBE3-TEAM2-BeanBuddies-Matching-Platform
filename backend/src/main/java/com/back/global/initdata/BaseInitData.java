@@ -271,18 +271,16 @@ public class BaseInitData {
                 project3
         );
 
-        for (int i = 1; i <= 12; i++) {
-            applicationService.create(
-                    new ApplicationWriteReqBody(
-                            BigDecimal.valueOf(500_000 + (i * 100_000)),
-                            (i % 6 + 1) + "개월",
-                            (i % 2 == 0) ? "주 5일, 원격 근무" : "주 3일, 출근 근무",
-                            "추가 자료 없음"
+        applicationService.create(
+                new ApplicationWriteReqBody(
+                        BigDecimal.valueOf(2_500_000),
+                        "3개월",
+                        "주 4일, 혼합 근무",
+                        "기술 자료 요청"
                     ),
                     freelancer3,
                     project25
-            );
-        }
+        );
     }
 
     @Transactional
