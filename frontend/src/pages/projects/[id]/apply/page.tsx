@@ -104,18 +104,22 @@ export default function ProjectApply() {
       // 입력값 검증
       if (!formData.estimatedPay || Number(formData.estimatedPay) <= 0) {
         alert("유효한 예상 급여를 입력해주세요.");
+        setSubmitting(false);
         return;
       }
       if (!formData.expectedDuration.trim()) {
         alert("예상 기간을 입력해주세요.");
+        setSubmitting(false);
         return;
       }
       if (!formData.workPlan.trim()) {
         alert("작업 계획을 입력해주세요.");
+        setSubmitting(false);
         return;
       }
       if (!formData.additionalRequest.trim()) {
         alert("추가 요청사항을 입력해주세요.");
+        setSubmitting(false);
         return;
       }
 
@@ -128,7 +132,7 @@ export default function ProjectApply() {
         "/api/v1/projects/{projectId}/applications",
         {
           headers: {
-            Authorization: `Bearer ${token}`, // ✅ 토큰 포함
+            Authorization: `Bearer ${token}`,
           },
           params: { path: { projectId: project.id } },
           body: {
@@ -140,22 +144,13 @@ export default function ProjectApply() {
         }
       );
 
-      // ApiResponse 구조 기준
-      if (!response?.data || response.data.code !== "200") {
-        throw new Error(response?.data?.msg || "지원서 제출에 실패했습니다.");
-      }
+      if (response.error) throw response.error;
 
       alert("지원서가 성공적으로 제출되었습니다!");
       navigate(`/projects/${project.id}`);
     } catch (err: any) {
       console.error("지원서 제출 실패:", err);
-      // API 응답 에러 메시지 추출
-      const errorMessage =
-        err.data?.msg ||
-        err.msg ||
-        err.message ||
-        "지원서 제출에 실패했습니다.";
-      alert(errorMessage);
+      alert(err.msg || "지원서 제출에 실패했습니다.");
     } finally {
       setSubmitting(false);
     }
