@@ -17,7 +17,10 @@ public interface FreelancersSearchRepository extends JpaRepository<FreelancersSe
     @Query(value = """
     SELECT
       f.freelancer_id                                    AS freelancerId,
-      f.job                                              AS jobRole,
+      f.job                                              AS job,
+      f.one_liner                                        AS one_liner,
+      f.tech_stack                                       AS tech_stack,
+      f.rating_avg                                       AS ratingAvg,
       (
         (  MATCH(f.job)            AGAINST (:qJobAny    IN BOOLEAN MODE) * :wJob
          + MATCH(f.career)         AGAINST (:qCareerAny IN BOOLEAN MODE) * :wCareer
