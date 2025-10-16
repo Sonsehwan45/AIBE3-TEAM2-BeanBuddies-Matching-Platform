@@ -56,6 +56,7 @@ public class MemberController {
     private final MemberSocialService memberSocialService;
     private final KakaoService kakaoService;
     private final NaverService naverService;
+    private final GoogleService googleService;
 
     @Transactional
     @PostMapping
@@ -354,6 +355,40 @@ public class MemberController {
 
         String providerId = memberSocialService.getProviderIdFromLinkCode(SocialProvider.NAVER, code);
         memberSocialService.linkSocialAccount(memberId, SocialProvider.NAVER, providerId);
+
+        response.sendRedirect("http://localhost:3000/mypage/social");
+    }
+
+    //구글
+    @GetMapping("/oauth/google/link")
+    public void redirectToGoogleLink(
+            @RequestParam String id,
+            HttpServletResponse response
+    ) throws IOException {
+        String clientId = googleService.getClientId();
+        String redirectUri = googleService.getLinkRedirectUri();
+
+        String url = "https://accounts.google.com/o/oauth2/v2/auth" +
+                "?client_id=" + clientId +
+                "&redirect_uri=" + redirectUri +
+                "&response_type=code" +
+                "&scope=email%20profile" +
+                "&state=" + id +
+                "&prompt=select_account";
+
+        response.sendRedirect(url);
+    }
+
+    @GetMapping("/oauth/google/link/callback")
+    public void googleLinkCallback(
+            @RequestParam String code,
+            @RequestParam String state,
+            HttpServletResponse response
+    ) throws IOException {
+
+        Long memberId = Long.parseLong(state);
+        String providerId = memberSocialService.getProviderIdFromLinkCode(SocialProvider.GOOGLE, code);
+        memberSocialService.linkSocialAccount(memberId, SocialProvider.GOOGLE, providerId);
 
         response.sendRedirect("http://localhost:3000/mypage/social");
     }

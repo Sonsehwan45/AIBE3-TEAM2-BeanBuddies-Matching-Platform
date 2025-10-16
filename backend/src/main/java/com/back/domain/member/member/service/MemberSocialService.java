@@ -20,6 +20,7 @@ public class MemberSocialService {
     private final MemberRepository memberRepository;
     private final KakaoService kakaoService;
     private final NaverService naverService;
+    private final GoogleService googleService;
 
     // 로그인 상태에서 소셜 계정 연동
     public MemberSocial linkSocialAccount(Long memberId, SocialProvider provider, String providerId) {
@@ -43,6 +44,8 @@ public class MemberSocialService {
             return kakaoService.getUserIdFromLoginCode(code);
         } else if (provider == SocialProvider.NAVER) {
             return naverService.getUserIdFromLoginCode(code);
+        } else if (provider == SocialProvider.GOOGLE) {
+            return googleService.getUserIdFromLoginCode(code);
         }
         throw new ServiceException("400-3", "지원하지 않는 소셜 로그인입니다.");
     }
@@ -52,6 +55,8 @@ public class MemberSocialService {
             return kakaoService.getUserIdFromLinkCode(code);
         } else if (provider == SocialProvider.NAVER) {
             return naverService.getUserIdFromLinkCode(code);
+        } else if (provider == SocialProvider.GOOGLE) {
+            return googleService.getUserIdFromLinkCode(code);
         }
         throw new ServiceException("400-3", "지원하지 않는 소셜 로그인입니다.");
     }

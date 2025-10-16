@@ -115,6 +115,8 @@ export default function MyPageSocial() {
         window.location.href = `http://localhost:8080/api/v1/members/oauth/kakao/link?id=${user?.id}`;
       } else if (provider === "naver") {
         window.location.href = `http://localhost:8080/api/v1/members/oauth/naver/link?id=${user?.id}`;
+      } else if (provider === "google") {
+        window.location.href = `http://localhost:8080/api/v1/members/oauth/google/link?id=${user?.id}`;
       } else {
         showModal(
           "준비 중",

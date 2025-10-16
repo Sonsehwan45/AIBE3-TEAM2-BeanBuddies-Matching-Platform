@@ -92,8 +92,8 @@ export default function Login() {
         url = "http://localhost:8080/api/v1/auth/oauth/kakao/login";
         break;
       case "Google":
-        toast.error("Google 로그인은 아직 준비 중이에요 😅");
-        return;
+        url = "http://localhost:8080/api/v1/auth/oauth/google/login";
+        break;
       case "Naver":
         url = "http://localhost:8080/api/v1/auth/oauth/naver/login";
         break;

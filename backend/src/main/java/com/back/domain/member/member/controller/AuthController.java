@@ -4,10 +4,7 @@ import com.back.domain.member.member.constant.SocialProvider;
 import com.back.domain.member.member.dto.MemberDto;
 import com.back.domain.member.member.dto.MemberLoginReq;
 import com.back.domain.member.member.entity.Member;
-import com.back.domain.member.member.service.AuthService;
-import com.back.domain.member.member.service.KakaoService;
-import com.back.domain.member.member.service.MemberSocialService;
-import com.back.domain.member.member.service.NaverService;
+import com.back.domain.member.member.service.*;
 import com.back.global.response.ApiResponse;
 import com.back.global.web.CookieHelper;
 import com.back.global.web.HeaderHelper;
@@ -28,6 +25,7 @@ public class AuthController {
     private final MemberSocialService memberSocialService;
     private final KakaoService kakaoService;
     private final NaverService naverService;
+    private final GoogleService googleService;
     private final CookieHelper cookieHelper;
     private final HeaderHelper headerHelper;
 
@@ -170,6 +168,37 @@ public class AuthController {
                 encodeValue(role),
                 encodeValue(status),
                 encodeValue(profileImg)
+        );
+
+        response.sendRedirect(redirectUrl);
+    }
+
+    //구글
+    @GetMapping("/oauth/google/login")
+    public void redirectToGoogleLogin(HttpServletResponse response) throws IOException {
+        String url = "https://accounts.google.com/o/oauth2/v2/auth" +
+                "?client_id=" + googleService.getClientId() +
+                "&redirect_uri=" + googleService.getLoginRedirectUri() +
+                "&response_type=code" +
+                "&scope=openid%20email%20profile";
+        response.sendRedirect(url);
+    }
+
+    @GetMapping("/oauth/google/login/callback")
+    public void googleLoginCallback(@RequestParam String code, HttpServletResponse response) throws IOException {
+        String providerId = memberSocialService.getProviderIdFromLoginCode(SocialProvider.GOOGLE, code);
+        Map<String, Object> loginResult = authService.loginWithSocial(SocialProvider.GOOGLE, providerId);
+
+        Member member = (Member) loginResult.get("member");
+        String accessToken = (String) loginResult.get("accessToken");
+        String refreshToken = (String) loginResult.get("refreshToken");
+        cookieHelper.setCookie("refreshToken", refreshToken);
+
+        String redirectUrl = String.format(
+                "http://localhost:3000/login#accessToken=%s&id=%d&name=%s",
+                accessToken,
+                member.getId(),
+                encodeValue(member.getName())
         );
 
         response.sendRedirect(redirectUrl);
