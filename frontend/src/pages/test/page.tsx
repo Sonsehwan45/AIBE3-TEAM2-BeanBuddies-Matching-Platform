@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { client } from "@/lib/backend/client";
+import { useApiClient } from "@/lib/backend/apiClient";
 import Button from "../../components/base/Button";
 
 export default function MyInfo() {
+  const client = useApiClient();
   const { token } = useAuth(); // 로그인 시 저장된 토큰
   const [userData, setUserData] = useState<any>(null);
 
@@ -15,9 +16,6 @@ export default function MyInfo() {
 
     try {
       const res = await client.GET("/api/v1/test/auth/me", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         throwHttpErrors: false,
       });
 

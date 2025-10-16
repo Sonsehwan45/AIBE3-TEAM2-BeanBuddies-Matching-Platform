@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Button from "../../../../components/base/Button";
 import Input from "../../../../components/base/Input";
-import client from "../../../../global/backend/client";
+import { useApiClient } from "../../../../lib/backend/apiClient";
 
 interface Project {
   id: number;
@@ -44,6 +44,7 @@ interface FreelancerSummary {
 }
 
 export default function ProjectApply() {
+  const client = useApiClient();
   const { user, token, isLoggedIn } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
