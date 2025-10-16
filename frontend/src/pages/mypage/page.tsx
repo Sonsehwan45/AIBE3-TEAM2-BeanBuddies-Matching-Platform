@@ -82,7 +82,7 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
   const navigate = useNavigate();
   const { isLoggedIn, user, token } = useAuth();
   const [activeTab, setActiveTab] = useState<
-    "profile" | "projects" | "bookmarks" | "feedback"
+    "profile" | "projects" | "bookmarks" | "feedback" | "social" //OAuth : 소셜 계정 연결 확인용 화면 제공
   >("profile");
 
   const defaultFreelancerProfile: FreelancerProfile = {
@@ -483,6 +483,8 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
           },
           { id: "bookmarks", label: "관심 프리랜서", icon: "ri-heart-3-line" },
           { id: "feedback", label: "피드백 관리", icon: "ri-star-line" },
+          //OAuth : 소셜 계정 연결 확인용 화면 제공
+          { id: "social", label: "소셜 계정 연결", icon: "ri-links-line" },
         ]
       : [
           { id: "profile", label: "프로필 관리", icon: "ri-user-3-line" },
@@ -493,6 +495,8 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
           },
           { id: "bookmarks", label: "관심 프로젝트", icon: "ri-heart-3-line" },
           { id: "feedback", label: "피드백 관리", icon: "ri-star-line" },
+          //OAuth : 소셜 계정 연결 확인용 화면 제공
+          { id: "social", label: "소셜 계정 연결", icon: "ri-links-line" },
         ];
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
@@ -850,6 +854,61 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
   }, [favProjects, favProjSearch, favProjPageSize]);
 
   // 프로젝트 통계
+
+  ////////////////////////////////////////////////// OUATH - 소셜 계정 연결 관리 //////////////////////////////////////////////////
+  // 소셜 계정 연결 상태 관리
+  const [socialAccounts, setSocialAccounts] = useState({
+    google: {
+      connected: true,
+      email: "user@gmail.com",
+      connectedAt: "2024-01-15",
+    },
+    kakao: {
+      connected: false,
+      email: null,
+      connectedAt: null,
+    },
+    naver: {
+      connected: true,
+      email: "user@naver.com",
+      connectedAt: "2024-02-10",
+    },
+  });
+
+  // 소셜 계정 연결/해제 함수
+  const handleSocialConnect = (provider: "google" | "kakao" | "naver") => {
+    if (socialAccounts[provider].connected) {
+      // 연결 해제
+      const confirmed = confirm(
+        `${provider.toUpperCase()} 계정 연결을 해제하시겠습니까?`
+      );
+      if (confirmed) {
+        setSocialAccounts((prev) => ({
+          ...prev,
+          [provider]: {
+            connected: false,
+            email: null,
+            connectedAt: null,
+          },
+        }));
+        alert(`${provider.toUpperCase()} 계정 연결이 해제되었습니다.`);
+      }
+    } else {
+      // 연결
+      const mockEmail = `user@${
+        provider === "google" ? "gmail.com" : provider + ".com"
+      }`;
+      setSocialAccounts((prev) => ({
+        ...prev,
+        [provider]: {
+          connected: true,
+          email: mockEmail,
+          connectedAt: new Date().toISOString().split("T")[0],
+        },
+      }));
+      alert(`${provider.toUpperCase()} 계정이 연결되었습니다.`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
@@ -2674,6 +2733,207 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                             </div>
                           </div>
                         ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 소셜 계정 연결 관리 */}
+              {activeTab === "social" && (
+                <div className="p-8">
+                  <div className="flex items-center space-x-3 mb-8">
+                    <div className="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl">
+                      <i className="ri-links-line text-white text-xl"></i>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">
+                        소셜 계정 연결
+                      </h2>
+                      <p className="text-gray-600">
+                        소셜 계정을 연결하여 간편하게 로그인하세요
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6">
+                    {/* Google 계정 */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center">
+                            <i className="ri-google-fill text-red-500 text-2xl"></i>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              Google
+                            </h3>
+                            {socialAccounts.google.connected ? (
+                              <div className="space-y-1">
+                                <p className="text-sm text-gray-600">
+                                  {socialAccounts.google.email}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  연결일: {socialAccounts.google.connectedAt}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500">
+                                연결되지 않음
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          {socialAccounts.google.connected && (
+                            <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                              연결됨
+                            </span>
+                          )}
+                          <Button
+                            variant={
+                              socialAccounts.google.connected
+                                ? "danger"
+                                : "primary"
+                            }
+                            size="sm"
+                            onClick={() => handleSocialConnect("google")}
+                            className="rounded-xl whitespace-nowrap"
+                          >
+                            {socialAccounts.google.connected
+                              ? "연결 해제"
+                              : "연결하기"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Kakao 계정 */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-yellow-50 rounded-xl flex items-center justify-center">
+                            <i className="ri-kakao-talk-fill text-yellow-500 text-2xl"></i>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              Kakao
+                            </h3>
+                            {socialAccounts.kakao.connected ? (
+                              <div className="space-y-1">
+                                <p className="text-sm text-gray-600">
+                                  {socialAccounts.kakao.email}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  연결일: {socialAccounts.kakao.connectedAt}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500">
+                                연결되지 않음
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          {socialAccounts.kakao.connected && (
+                            <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                              연결됨
+                            </span>
+                          )}
+                          <Button
+                            variant={
+                              socialAccounts.kakao.connected
+                                ? "danger"
+                                : "primary"
+                            }
+                            size="sm"
+                            onClick={() => handleSocialConnect("kakao")}
+                            className="rounded-xl whitespace-nowrap"
+                          >
+                            {socialAccounts.kakao.connected
+                              ? "연결 해제"
+                              : "연결하기"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Naver 계정 */}
+                    <div className="bg-white rounded-xl border border-gray-200 p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center">
+                            <i className="ri-naver-fill text-green-500 text-2xl"></i>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              Naver
+                            </h3>
+                            {socialAccounts.naver.connected ? (
+                              <div className="space-y-1">
+                                <p className="text-sm text-gray-600">
+                                  {socialAccounts.naver.email}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  연결일: {socialAccounts.naver.connectedAt}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-gray-500">
+                                연결되지 않음
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          {socialAccounts.naver.connected && (
+                            <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                              연결됨
+                            </span>
+                          )}
+                          <Button
+                            variant={
+                              socialAccounts.naver.connected
+                                ? "danger"
+                                : "primary"
+                            }
+                            size="sm"
+                            onClick={() => handleSocialConnect("naver")}
+                            className="rounded-xl whitespace-nowrap"
+                          >
+                            {socialAccounts.naver.connected
+                              ? "연결 해제"
+                              : "연결하기"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 안내 메시지 */}
+                  <div className="mt-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
+                    <div className="flex items-start space-x-3">
+                      <i className="ri-information-line text-blue-500 text-xl mt-0.5"></i>
+                      <div>
+                        <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                          소셜 계정 연결 안내
+                        </h4>
+                        <ul className="text-sm text-blue-800 space-y-1">
+                          <li>
+                            • 각 소셜 서비스당 하나의 계정만 연결할 수 있습니다.
+                          </li>
+                          <li>
+                            • 연결된 소셜 계정으로 간편하게 로그인할 수
+                            있습니다.
+                          </li>
+                          <li>
+                            • 계정 연결을 해제해도 기존 계정 정보는 유지됩니다.
+                          </li>
+                          <li>
+                            • 보안을 위해 정기적으로 연결 상태를 확인해주세요.
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 </div>

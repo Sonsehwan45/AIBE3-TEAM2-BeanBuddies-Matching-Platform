@@ -11,11 +11,11 @@ import com.back.domain.member.favorite.dto.FavoriteProjectReq;
 import com.back.domain.member.favorite.dto.FreelancerSummaryDto;
 import com.back.domain.member.favorite.service.FavoriteService;
 import com.back.domain.member.member.constant.Role;
+import com.back.domain.member.member.constant.SocialProvider;
 import com.back.domain.member.member.dto.*;
 import com.back.domain.member.member.entity.Member;
-import com.back.domain.member.member.service.AuthService;
-import com.back.domain.member.member.service.EmailService;
-import com.back.domain.member.member.service.MemberService;
+import com.back.domain.member.member.entity.MemberSocial;
+import com.back.domain.member.member.service.*;
 import com.back.domain.project.project.dto.ProjectSummaryDto;
 import com.back.domain.project.project.entity.Project;
 import com.back.domain.project.project.service.ProjectService;
@@ -25,12 +25,14 @@ import com.back.global.security.CustomUserDetails;
 import com.back.global.web.CookieHelper;
 import com.back.global.web.HeaderHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -51,6 +53,8 @@ public class MemberController {
     private final CookieHelper cookieHelper;
     private final AuthService authService;
     private final FavoriteService favoriteService;
+    private final MemberSocialService memberSocialService;
+    private final KakaoService kakaoService;
 
     @Transactional
     @PostMapping
@@ -282,5 +286,70 @@ public class MemberController {
         Member member = memberService.findById(user.getId());
         memberService.withdrawMember(member, reqBody.password());
         return new ApiResponse<>("200-11", "회원 탈퇴가 완료되었습니다.");
+    }
+
+    //소셜 관련
+    @GetMapping("/oauth/kakao/link")
+    public void redirectToKakaoLink(
+            @RequestParam String id,
+            HttpServletResponse response
+    ) throws IOException {
+        String clientId = kakaoService.getClientId();
+        String redirectUri = kakaoService.getLinkRedirectUri();
+
+        // 카카오 로그인 URL 구성
+        String url = "https://kauth.kakao.com/oauth/authorize" +
+                "?response_type=code" +
+                "&client_id=" + clientId +
+                "&redirect_uri=" + redirectUri +
+                "&state=" + id +
+                "&prompt=login";
+
+        response.sendRedirect(url);
+    }
+
+    @GetMapping("/oauth/kakao/link/callback")
+    public void kakaoLinkCallback(
+            @RequestParam String code,
+            @RequestParam String state,
+            HttpServletResponse response
+    ) throws IOException {
+
+        Long memberId = Long.parseLong(state);
+
+        String providerId = memberSocialService.getProviderIdFromLinkCode(SocialProvider.KAKAO, code);
+        memberSocialService.linkSocialAccount(memberId, SocialProvider.KAKAO, providerId);
+
+        //TODO : 테스트 후 변경 필요
+        response.sendRedirect("http://localhost:3000/mypage/social");
+    }
+
+    // 연동된 소셜 계정 조회
+    @GetMapping("/me/social")
+    public ApiResponse<List<Map<String, String>>> getLinkedSocialAccounts(@AuthenticationPrincipal CustomUserDetails user) {
+
+        Long memberId = user.getId();
+        List<MemberSocial> linkedAccounts = memberSocialService.getLinkedAccounts(memberId);
+
+        List<Map<String, String>> response = linkedAccounts.stream()
+                .map(ms -> Map.of(
+                        "provider", ms.getProvider().name(),
+                        "providerId", ms.getProviderId()
+                ))
+                .collect(Collectors.toList());
+
+        return new ApiResponse<>("200-4", "연동된 소셜 계정 목록", response);
+    }
+
+    @DeleteMapping("/me/social")
+    public ApiResponse<Void> removeLinkedSocialAccount(
+            @AuthenticationPrincipal CustomUserDetails user,
+            @RequestParam String provider
+    ) {
+        Long memberId = user.getId();
+        memberSocialService.removeLinkedSocialAccount(memberId, SocialProvider.valueOf(provider));
+
+        return new ApiResponse<>("200-4", provider + " 계정 연결 해제에 성공하였습니다.");
+
     }
 }
