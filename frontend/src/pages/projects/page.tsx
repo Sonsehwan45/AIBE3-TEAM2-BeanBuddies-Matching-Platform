@@ -7,7 +7,7 @@ import Select from "../../components/base/Select";
 import client from "../../global/backend/client";
 
 export default function Projects() {
-  const { user, isLoggedIn } = useAuth();
+  const { user, token, isLoggedIn } = useAuth();
   const [keyword, setKeyword] = useState("");
   const [keywordType, setKeywordType] = useState("");
   const [sortBy, setSortBy] = useState("latest");
@@ -133,12 +133,29 @@ export default function Projects() {
     fetchProjects(0);
   };
 
-  const toggleFavorite = (projectId: number) => {
-    setFavorites((prev) =>
-      prev.includes(projectId)
-        ? prev.filter((id) => id !== projectId)
-        : [...prev, projectId]
-    );
+  const handleFavorite = async (projectId: number) => {
+    try {
+      const response = await client.POST(
+        "/api/v1/members/me/favorites/projects",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: {
+            projectId: projectId, // ✅ 매개변수 그대로 사용
+          },
+        }
+      );
+
+      if (response.error) throw response.error;
+
+      alert("프로젝트가 즐겨찾기에 추가되었습니다.");
+      // 예: 로컬 상태 업데이트 (선택)
+      setFavorites((prev) => [...prev, projectId]);
+    } catch (err) {
+      console.error("즐겨찾기 추가 실패:", err);
+      alert(err.msg);
+    }
   };
 
   const Pagination = () => {
@@ -376,19 +393,6 @@ export default function Projects() {
                             </span>
                           </div>
                         </div>
-
-                        <button
-                          onClick={() => toggleFavorite(project.id)}
-                          className="ml-4 p-3 rounded-xl hover:bg-gray-100/50 transition-colors cursor-pointer"
-                        >
-                          <i
-                            className={`text-xl ${
-                              favorites.includes(project.id)
-                                ? "ri-heart-fill text-red-500"
-                                : "ri-heart-line text-gray-400"
-                            }`}
-                          ></i>
-                        </button>
                       </div>
 
                       <p className="text-gray-600 mb-4 line-clamp-2 leading-relaxed">
@@ -448,21 +452,21 @@ export default function Projects() {
                         </div>
 
                         <div className="flex space-x-3">
+                          {isLoggedIn && user?.role === "FREELANCER" && (
+                            <Button
+                              onClick={() => handleFavorite(project.id)}
+                              className="rounded-xl bg-gradient-to-r from-pink-500 to-purple-600"
+                            >
+                              <i className="ri-heart-line mr-2"></i>
+                              즐겨찾기
+                            </Button>
+                          )}
                           <Link to={`/projects/${project.id}`}>
                             <Button variant="outline" className="rounded-xl">
                               <i className="ri-eye-line mr-2"></i>
                               자세히 보기
                             </Button>
                           </Link>
-                          {project.status === "모집중" &&
-                            userType === "freelancer" && (
-                              <Link to={`/projects/${project.id}/apply`}>
-                                <Button className="rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600">
-                                  <i className="ri-send-plane-line mr-2"></i>
-                                  지원하기
-                                </Button>
-                              </Link>
-                            )}
                         </div>
                       </div>
                     </div>
