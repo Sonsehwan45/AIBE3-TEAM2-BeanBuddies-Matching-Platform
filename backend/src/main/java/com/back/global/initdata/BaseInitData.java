@@ -310,19 +310,19 @@ public class BaseInitData {
         Long freelancerId5 = memberService.findByUsername("freelancer5").get().getFreelancer().getId();
 
         freelancerService.updateFreelancer(freelancerId1, "백엔드", "test@test.com", "안녕하세요",
-                Map.of("Spring", 24, "JPA", 30), List.of(1L, 2L));
+                Map.of("Spring", 24, "JPA", 30), List.of(1L, 2L), List.of(1L, 2L));
 
         freelancerService.updateFreelancer(freelancerId2, "백엔드", "test@test.com", "안녕하세요",
-                Map.of("Python", 10), List.of(1L, 2L));
+                Map.of("Python", 10), List.of(1L, 2L), List.of(1L));
 
         freelancerService.updateFreelancer(freelancerId3, "풀스택", "test@test.com", "안녕하세요",
-                Map.of("스프링", 24, "리액트", 48), List.of(1L, 2L, 3L));
+                Map.of("스프링", 24, "리액트", 48), List.of(1L, 2L, 3L), List.of(1L, 2L));
 
         freelancerService.updateFreelancer(freelancerId4, "프론트엔드", "test@test.com", "안녕하세요",
-                Map.of("React", 100, "Next.js", 30), List.of(3L));
+                Map.of("React", 100, "Next.js", 30), List.of(3L), List.of(2L, 3L));
 
         freelancerService.updateFreelancer(freelancerId5, "프론트엔드", "test@test.com", "안녕하세요",
-                null, List.of());
+                null, List.of(), List.of());
     }
 
     @Transactional
@@ -339,6 +339,10 @@ public class BaseInitData {
                 List.of(1L), List.of(2L), List.of(3L),
                 List.of(1L, 2L), List.of(1L, 3L), List.of(2L, 3L),
                 List.of(1L, 2L, 3L)
+        );
+        List<List<Long>> interests = List.of(
+                List.of(2L), List.of(3L), List.of(2L, 3L),
+                List.of(1L, 3L), List.of(1L, 3L), List.of(1L, 2L, 3L)
         );
         List<Integer> careerMonths = List.of(5, 12, 18, 24, 30, 36, 42, 48, 54);
         List<String> evaluationComments = List.of("좋은 프리랜서입니다.", "다음에 또 함께 일하고 싶습니다.", "프로젝트를 성공적으로 완료했습니다.");
@@ -359,7 +363,8 @@ public class BaseInitData {
                     comments.get(i % comments.size()),
                     Map.of("Java", careerMonths.get(i % careerMonths.size()), "Spring",
                             careerMonths.get(i % careerMonths.size())),
-                    skills.get(i % skills.size()));
+                    skills.get(i % skills.size()),
+                    interests.get(i % interests.size()));
 
             // 프리랜서 평가 데이터 추가
             evaluationService.createEvaluation(

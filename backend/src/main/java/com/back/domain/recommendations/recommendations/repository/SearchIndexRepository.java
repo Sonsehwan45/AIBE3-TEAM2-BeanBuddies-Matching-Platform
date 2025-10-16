@@ -64,10 +64,11 @@ public class SearchIndexRepository {
 
         String sql = """
         INSERT INTO project_search
-        (project_id, title, summary, duration, price, `status`,
+        (id, project_id, title, summary, duration, price, `status`,
          description, preferred_condition, working_condition)
         SELECT
-            p.client_id,
+            ROW_NUMBER() OVER(),
+            p.id,
             COALESCE(p.title, ''),
             p.summary,
             p.duration,
@@ -88,8 +89,9 @@ public class SearchIndexRepository {
 
         String sql = """
         INSERT INTO freelancer_search
-        (freelancer_id, job, one_liner, career, tech_stack, rating_avg, status)
+        (id, freelancer_id, job, one_liner, career, tech_stack, rating_avg, status)
         SELECT
+            ROW_NUMBER() OVER(),
             f.member_id AS freelancer_id,
             f.job,
             f.comment AS one_liner,

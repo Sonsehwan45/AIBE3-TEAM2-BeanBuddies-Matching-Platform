@@ -12,7 +12,7 @@ public class FreelancerSearchConditionConverter {
         return CareerLevel.of(careerLevel);
     }
 
-    public List<Long> convertSkillIds(String input) {
+    public List<Long> convertIds(String input) {
         if (input == null || input.isBlank()) {
             return List.of();
         }

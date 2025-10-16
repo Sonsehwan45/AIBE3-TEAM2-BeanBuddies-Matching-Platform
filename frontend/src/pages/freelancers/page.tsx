@@ -6,10 +6,6 @@ import Button from '../../components/base/Button';
 import Select from '../../components/base/Select';
 import { useAuth } from '../../context/AuthContext';
 
-interface FreelancersProps {
-  userType?: 'client' | 'freelancer';
-}
-
 // API 응답 타입 정의
 type FreelancerSummary = {
   id?: number;
@@ -19,12 +15,8 @@ type FreelancerSummary = {
   skills?: Array<{ id?: number; name?: string; }>;
 };
 
-interface FreelancersProps {
-  userType?: 'client' | 'freelancer';
-}
-
-export default function Freelancers({ userType = 'client' }: FreelancersProps) {
-  const { token } = useAuth();
+export default function Freelancers() {
+  const { token, user } = useAuth();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedExperience, setSelectedExperience] = useState('');
@@ -82,65 +74,68 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
   const fetchFreelancers = async () => {
     setLoading(true);
     try {
-      // URL을 직접 구성해서 호출
-      const params = new URLSearchParams();
-      params.append('page', currentPage.toString());
-      params.append('size', '20');
-
       // 정렬 파라미터 설정
-      let sortParam = 'id,desc'; // 기본값
+      let sortParam: string[] = ['id,desc']; // 기본값
       switch (sortBy) {
         case 'ratingAvg':
-          sortParam = 'ratingAvg,desc';
+          sortParam = ['ratingAvg,desc'];
           break;
         case 'careerTotalYears':
-          sortParam = 'careerTotalYears,desc';
+          sortParam = ['careerTotalYears,desc'];
           break;
         case 'latest':
         default:
-          sortParam = 'id,desc';
+          sortParam = ['id,desc'];
           break;
       }
-      params.append('sort', sortParam);
       console.log('정렬 파라미터:', sortBy, '→', sortParam);
 
+      // openapi-fetch 클라이언트 사용
+      // pageable 객체를 평탄화하여 전달
+      const queryParams: any = {
+        'pageable.page': currentPage,
+        'pageable.size': 20,
+        'pageable.sort': sortParam,
+      };
+
+      if (searchKeyword.trim()) {
+        queryParams.searchKeyword = searchKeyword.trim();
+      }
       if (selectedExperience) {
-        params.append('careerLevel', selectedExperience);
+        queryParams.careerLevel = selectedExperience;
       }
       if (selectedRating) {
-        const ratingParam = parseFloat(selectedRating.replace('+', ''));
-        params.append('ratingAvg', ratingParam.toString());
+        queryParams.ratingAvg = parseFloat(selectedRating.replace('+', ''));
       }
       if (selectedSkills.length > 0) {
-        const skillIds = selectedSkills.map(skill => skill.id).join(',');
-        params.append('skillIds', skillIds);
-        console.log('선택된 스킬 IDs:', skillIds);
+        queryParams.skillIds = selectedSkills.map(skill => skill.id).join(',');
+      }
+      if (selectedCategory) {
+        queryParams.interestIds = selectedCategory;
       }
 
-      const url = `http://localhost:8080/api/v1/freelancers?${params.toString()}`;
-      console.log('API 호출 URL:', url);
+      console.log('쿼리 파라미터:', queryParams);
 
-      const response = await fetch(url, {
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
+      const { data: response, error } = await client.GET("/api/v1/freelancers", {
+        params: {
+          query: queryParams
         }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      console.log('API 응답:', response);
+
+      if (error) {
+        console.error('API 에러:', error);
+        throw new Error('프리랜서 목록 조회 실패');
       }
 
-      const result = await response.json();
-      console.log('API 응답:', result);
-
-      if (result?.data) {
-        setFreelancers(result.data.content ?? []);
-        setTotalElements(result.data.totalElements ?? 0);
-        setTotalPages(result.data.totalPages ?? 0);
-        console.log('프리랜서 목록:', result.data.content);
+      if (response?.data) {
+        setFreelancers(response.data.content ?? []);
+        setTotalElements(response.data.totalElements ?? 0);
+        setTotalPages(response.data.totalPages ?? 0);
+        console.log('프리랜서 목록:', response.data.content);
       } else {
-        console.error('API 응답 데이터가 없습니다:', result);
+        console.error('API 응답 데이터가 없습니다:', response);
       }
     } catch (error) {
       console.error('프리랜서 목록 조회 실패:', error);
@@ -152,7 +147,7 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
   // 프리랜서 목록 초기 로드 및 필터 변경시 재로드
   useEffect(() => {
     fetchFreelancers();
-  }, [currentPage, selectedExperience, selectedRating, selectedSkills, sortBy]);
+  }, [currentPage, selectedExperience, selectedRating, selectedSkills, sortBy, searchKeyword, selectedCategory]);
 
   // 흥미 분야 불러오기
   type InterestItem = {
@@ -275,19 +270,10 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
     setCurrentPage(0);
   };
 
-  // 키워드 검색 필터링 (클라이언트 사이드)
-  const filteredFreelancers = freelancers.filter(freelancer => {
-    // 키워드 검색 필터
-    if (searchKeyword) {
-      const nameMatch = freelancer.name?.toLowerCase().includes(searchKeyword.toLowerCase());
-      const skillMatch = freelancer.skills?.some(skill =>
-        skill.name?.toLowerCase().includes(searchKeyword.toLowerCase())
-      );
-      if (!nameMatch && !skillMatch) return false;
-    }
+  // 백엔드에서 검색/필터링하므로 클라이언트 사이드 필터링 불필요
+  const filteredFreelancers = freelancers;
 
-    return true;
-  }); const activeFiltersCount = (selectedCategory ? 1 : 0) +
+  const activeFiltersCount = (selectedCategory ? 1 : 0) +
     (selectedExperience ? 1 : 0) +
     (selectedRating ? 1 : 0) +
     selectedSkills.length;
@@ -316,7 +302,7 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
               <i className="ri-search-line absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg"></i>
               <input
                 type="text"
-                placeholder="프리랜서 이름, 소개, 기술 스택으로 검색"
+                placeholder="프리랜서 이름, 소개로 검색"
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -462,7 +448,7 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
         {/* 프리랜서 리스트 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredFreelancers.map((freelancer) => (
-            <div key={freelancer.id} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 group">
+            <div key={freelancer.id} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300">
               <div className="flex items-start space-x-4">
                 <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
                   {freelancer.name?.charAt(0) || 'F'}
@@ -470,7 +456,7 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                    <h3 className="text-lg font-bold text-gray-900 hover:text-indigo-600 transition-colors">
                       <Link to={`/freelancers/${freelancer.id}`}>{freelancer.name || '이름 없음'}</Link>
                     </h3>
                     <button
@@ -482,10 +468,10 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
                   </div>
 
                   <p className="text-sm text-gray-600 mb-2 font-medium">
-                    {freelancer.careerLevel === 'NEWBIE' && '신입'}
-                    {freelancer.careerLevel === 'JUNIOR' && '주니어'}
-                    {freelancer.careerLevel === 'MID' && '미드'}
-                    {freelancer.careerLevel === 'SENIOR' && '시니어'}
+                    {freelancer.careerLevel === 'NEWBIE' && '신입 (1년 미만)'}
+                    {freelancer.careerLevel === 'JUNIOR' && '주니어 (1-3년)'}
+                    {freelancer.careerLevel === 'MID' && '미드 (3-7년)'}
+                    {freelancer.careerLevel === 'SENIOR' && '시니어 (7년 이상)'}
                     {freelancer.careerLevel === 'UNDEFINED' && '경력 미입력'}
                   </p>
 
@@ -510,22 +496,15 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
                     )}
                   </div>
 
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-500">
-                      <span className="flex items-center">
-                        <i className="ri-time-line mr-1"></i>
-                        보통 1일 내 응답
-                      </span>
-                    </div>
-
+                  <div className="flex justify-end items-center">
                     <div className="flex space-x-2">
                       <Link to={`/freelancers/${freelancer.id}`}>
-                        <Button variant="outline" size="sm" className="rounded-lg group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all">
+                        <Button variant="outline" size="sm" className="rounded-lg hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all">
                           <i className="ri-user-line mr-1"></i>
                           프로필 보기
                         </Button>
                       </Link>
-                      {userType === 'client' && (
+                      {user?.role === 'CLIENT' && (
                         <Link to={`/freelancers/${freelancer.id}/propose`}>
                           <Button size="sm" className="rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600">
                             <i className="ri-send-plane-line mr-1"></i>

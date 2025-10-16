@@ -8,6 +8,7 @@ public record FreelancerUpdateForm(
         String freelancerEmail,
         String comment,
         Map<String, Integer> career,
-        List<Long> skillIds
+        List<Long> skillIds,
+        List<Long> interestIds
 ) {
 }

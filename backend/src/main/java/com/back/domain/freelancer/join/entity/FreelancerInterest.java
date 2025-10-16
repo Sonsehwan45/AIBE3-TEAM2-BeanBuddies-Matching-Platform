@@ -29,6 +29,12 @@ public class FreelancerInterest {
     @JoinColumn(name = "interest_id")
     private Interest interest;
 
+    public FreelancerInterest(Freelancer freelancer, Interest interest) {
+        this.freelancer = freelancer;
+        this.interest = interest;
+        this.id = new FreelancerInterestId(freelancer.getId(), interest.getId());
+    }
+
     // 명시적 getter 추가 (정적 분석/컴파일러 이슈 방지)
     public Interest getInterest() {
         return this.interest;
