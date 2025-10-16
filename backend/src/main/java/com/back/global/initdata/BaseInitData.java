@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 @RequiredArgsConstructor
 @Configuration
@@ -551,7 +552,6 @@ public class BaseInitData {
     // ========================= Dev Freelancer Info (safe) =========================
     @Transactional
     public void updateDevFreelancerInfo() {
-        // 이미 dev 보강이 끝났으면 스킵(예: freelancer31의 job 존재)
         var any = memberService.findByUsername("freelancer31")
                 .map(Member::getFreelancer)
                 .map(Freelancer::getJob)
@@ -595,7 +595,7 @@ public class BaseInitData {
                 );
             } catch (Exception ignore) {}
 
-            // 평가 1건 (가능할 때만)
+            // 평가 1건 (가능할 때만) — 점수 랜덤(1~5)
             try {
                 Project p = projects.get(idx % projects.size());
                 Long evaluatorId = memberService.findByUsername("client1").map(Member::getId).orElse(null);
@@ -605,7 +605,7 @@ public class BaseInitData {
                             new EvaluationCreateReq(
                                     p.getId(),
                                     fid,
-                                    new EvaluationCreateReq.Ratings(4,4,4,4),
+                                    new EvaluationCreateReq.Ratings(rand15(), rand15(), rand15(), rand15()),
                                     "수행이 원활했습니다."
                             )
                     );
@@ -613,6 +613,10 @@ public class BaseInitData {
                 idx++;
             } catch (Exception ignore) {}
         }
+    }
+
+    private int rand15() {
+        return ThreadLocalRandom.current().nextInt(1, 6); // 상한 6은 미포함 → 1~5
     }
 
     // ========================= Rebuild Search Index =========================
