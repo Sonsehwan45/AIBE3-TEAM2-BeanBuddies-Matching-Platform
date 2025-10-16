@@ -13,6 +13,7 @@ import com.back.domain.member.favorite.service.FavoriteService;
 import com.back.domain.member.member.constant.Role;
 import com.back.domain.member.member.dto.*;
 import com.back.domain.member.member.entity.Member;
+import com.back.domain.member.member.service.AuthService;
 import com.back.domain.member.member.service.EmailService;
 import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.dto.ProjectSummaryDto;
@@ -21,6 +22,8 @@ import com.back.domain.project.project.service.ProjectService;
 import com.back.global.exception.ServiceException;
 import com.back.global.response.ApiResponse;
 import com.back.global.security.CustomUserDetails;
+import com.back.global.web.CookieHelper;
+import com.back.global.web.HeaderHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +47,9 @@ public class MemberController {
     private final SkillService skillService;
     private final InterestService interestService;
     private final ApplicationService applicationService;
+    private final HeaderHelper headerHelper;
+    private final CookieHelper cookieHelper;
+    private final AuthService authService;
     private final FavoriteService favoriteService;
 
     @Transactional
@@ -263,6 +269,16 @@ public class MemberController {
             @AuthenticationPrincipal CustomUserDetails user,
             @Valid @RequestBody MemberWithdrawReq reqBody
     ) {
+
+        String accessToken = headerHelper.getHeader("Authorization", "");
+        if(accessToken != null && accessToken.startsWith("Bearer ")) {
+            accessToken = accessToken.replace("Bearer ", "");
+            authService.addBlacklistToken(accessToken);
+        }
+
+        cookieHelper.deleteCookie("refreshToken");
+        headerHelper.setHeader("Authorization", null);
+
         Member member = memberService.findById(user.getId());
         memberService.withdrawMember(member, reqBody.password());
         return new ApiResponse<>("200-11", "회원 탈퇴가 완료되었습니다.");
