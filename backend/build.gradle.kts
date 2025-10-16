@@ -75,6 +75,8 @@ sourceSets {
 
 tasks.withType<JavaCompile> {
     options.generatedSourceOutputDirectory = file(querydslDir)
+    // Spring에서 생성자 파라미터 이름 식별 가능하도록 설정
+    options.compilerArgs.add("-parameters")
 
     // 위의 설정이 안되면 아래 설정 사용
     // options.generatedSourceOutputDirectory.set(file(querydslDir))

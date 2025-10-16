@@ -2,6 +2,7 @@ package com.back.domain.member.member.service;
 
 import com.back.global.exception.ServiceException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.SimpleMailMessage;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 
 @Service
+@Primary
 @Profile({"dev", "prod"})
 @RequiredArgsConstructor
 public class SmtpEmailService implements EmailService {
