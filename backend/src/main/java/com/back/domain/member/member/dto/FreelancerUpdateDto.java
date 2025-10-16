@@ -23,4 +23,6 @@ public class FreelancerUpdateDto {
     private String comment;
     private List<String> skills;
     private List<String> interests;
+    // 프론트에서 넘겨주는 스킬 ID 배열을 처리하기 위한 필드 (이름 기반과 병행 지원)
+    private List<Long> skillIds;
 }
