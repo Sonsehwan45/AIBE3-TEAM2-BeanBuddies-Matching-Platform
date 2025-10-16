@@ -1,10 +1,8 @@
-"use client";
-
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "@/components/base/Button";
-import client from "@/global/backend/client";
+import { useApiClient } from "../../lib/backend/apiClient";
 
 // ===== 프론트에서 사용할 타입(느슨한 형태로 안전 가드 포함) =====
 type ProjectItem = {
@@ -27,6 +25,7 @@ type FreelancerItem = {
 
 export default function RecommendationsPage() {
     const navigate = useNavigate();
+    const client = useApiClient();
     const { user, token, isLoggedIn } = useAuth();
 
     // 로그인 가드
