@@ -1,22 +1,83 @@
 
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/base/Button';
-import { Input } from '@/components/base/Input';
-import { Select } from '@/components/base/Select';
-import { ProfileResponse, ProfileUpdateRequest } from '@/types/profile';
-  mockFreelancerApplications,
-} from '@/mocks/users';
-import { ProfileResponse, ProfileUpdateRequest } from '@/types/profile';
+import { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../components/base/Button';
+import Card from '../../components/base/Card';
+import Badge from '../../components/base/Badge';
 import Input from '../../components/base/Input';
 import Select from '../../components/base/Select';
+import { client } from '@/lib/backend/client';
+import { useAuth } from '@/context/AuthContext';
+import { mockProjects, mockFreelancers, mockFeedback, mockFreelancerApplications } from '@/mocks/users';
+
+interface BaseProfile {
+  username: string;
+  name: string;
+  role: 'CLIENT' | 'FREELANCER';
+  createdAt: string;
+  ratingAvg: number;
+  email: string;
+  profileScope?: 'PUBLIC' | 'PRIVATE';
+}
+
+interface FreelancerProfile extends BaseProfile {
+  role: 'FREELANCER';
+  job: string;
+  career: { [key: string]: number };
+  freelancerEmail: string;
+  comment: string;
+}
+
+interface ClientProfile extends BaseProfile {
+  role: 'CLIENT';
+  companyName: string;
+  companySize: 'STARTUP' | 'SMALL' | 'MEDIUM' | 'LARGE';
+  companyDescription: string;
+  representative: string;
+  businessNo: string;
+  companyPhone: string;
+  companyEmail: string;
+}
+
+type ExtendedProfileResponse = FreelancerProfile | ClientProfile;
+
+// 내가 지원한 프로젝트 응답 아이템 타입
+interface MyApplicationItem {
+  id: number;
+  estimatedPay: number;
+  expectedDuration: string;
+  workPlan: string;
+  additionalRequest?: string;
+  status: 'WAIT' | 'ACCEPT' | 'DENIED';
+  createDate: string;
+  projectId: number;
+  projectTitle: string;
+  freelancerId: number;
+  freelancerName: string;
+}
+
+// 내가 등록한 프로젝트 응답 아이템 타입 (CLIENT 전용)
+interface MyProjectItem {
+  id: number;
+  title: string;
+  summary: string;
+  status: string; // e.g., OPEN | CLOSED
+  ownerName: string;
+  duration: string;
+  price: number;
+  deadline: string; // yyyy-MM-dd
+  createDate: string; // ISO
+  skills: { id: number; name: string }[];
+  interests: { id: number; name: string }[];
+}
 
 interface MyPageProps {
   userType?: 'client' | 'freelancer';
 }
 
 export default function MyPage({ userType = 'client' }: MyPageProps) {
+  const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'projects' | 'bookmarks' | 'feedback'>(
     'profile',
   );
@@ -27,15 +88,56 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
   const [applicationStatusFilter, setApplicationStatusFilter] = useState<
     'all' | '대기중' | '거절' | '진행중' | '완료'
   >('all');
-  const [profileData, setProfileData] = useState<ProfileResponse>({
+
+  const defaultFreelancerProfile: FreelancerProfile = {
+    username: '',
+    name: '',
+    role: 'FREELANCER',
+    createdAt: '',
+    ratingAvg: 0,
+    email: '',
+    profileScope: 'PUBLIC',
+    job: '',
+    career: {},
+    freelancerEmail: '',
+    comment: ''
+  };
+
+  const defaultClientProfile: ClientProfile = {
     username: '',
     name: '',
     role: 'CLIENT',
     createdAt: '',
-    ratingAvg: 0
-  });
+    ratingAvg: 0,
+    email: '',
+    profileScope: 'PUBLIC',
+    companyName: '',
+    companySize: 'STARTUP',
+    companyDescription: '',
+    representative: '',
+    businessNo: '',
+    companyPhone: '',
+    companyEmail: ''
+  };
+
+  const [profileData, setProfileData] = useState<ExtendedProfileResponse>(
+    userType === 'freelancer' ? defaultFreelancerProfile : defaultClientProfile
+  );
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // applications/projects for profile tab
+  const [applications, setApplications] = useState<MyApplicationItem[]>([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+  const [projects, setProjects] = useState<MyProjectItem[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+  // pagination for profile tab lists
+  const [appsPage, setAppsPage] = useState(1);
+  const [appsPageSize] = useState(5);
+  const [projectsPage, setProjectsPage] = useState(1);
+  const [projectsPageSize] = useState(5);
+  const appsSectionRef = useRef<HTMLDivElement>(null);
+  const projectsSectionRef = useRef<HTMLDivElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -51,37 +153,211 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
       [name]: value
     }));
   };
-  };
+
+  // 로그인 체크 및 리다이렉트
+  useEffect(() => {
+    if (!isLoggedIn) {
+      alert('로그인이 필요한 페이지입니다.');
+      navigate('/login');
+    }
+  }, [isLoggedIn, navigate]);
+
+  // 프리랜서만: 내가 지원한 프로젝트 목록 조회
+  useEffect(() => {
+    const fetchMyApplications = async () => {
+      if (!isLoggedIn) return;
+      if (profileData.role !== 'FREELANCER') return;
+
+      try {
+        setAppsLoading(true);
+        const accessToken = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('accessToken='))
+          ?.split('=')[1];
+
+        const { data, error } = await client.GET('/api/v1/members/me/applications', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+
+        if (error) {
+          const code = (error as any)?.data?.resultCode;
+          if (code === '401-1') {
+            navigate('/login');
+            return;
+          }
+          if (code?.startsWith('400-')) {
+            console.warn('지원 목록 400 응답 처리:', (error as any)?.data?.msg);
+            setApplications([]);
+            return;
+          }
+          console.error('지원 목록 조회 에러:', error);
+          setApplications([]);
+          return;
+        }
+
+        if (!data) {
+          console.error('지원 목록 데이터가 없습니다.');
+          setApplications([]);
+          return;
+        }
+
+        if ((data as any)?.resultCode === '401-1') {
+          navigate('/login');
+          return;
+        }
+
+        if (Array.isArray(data.data)) {
+          setApplications(data.data);
+        } else {
+          console.warn('지원 목록 응답 포맷이 예상과 다릅니다:', data);
+          setApplications([]);
+        }
+      } catch (err) {
+        console.error('지원 목록 조회 실패:', err);
+        setApplications([]);
+      } finally {
+        setAppsLoading(false);
+      }
+    };
+
+    fetchMyApplications();
+  }, [isLoggedIn, profileData.role, navigate]);
+
+  // 목록 길이 변경 시 페이지 보정
+  useEffect(() => {
+    const total = Math.max(1, Math.ceil(applications.length / appsPageSize));
+    if (appsPage > total) setAppsPage(total);
+  }, [applications, appsPage, appsPageSize]);
+
+  useEffect(() => {
+    const total = Math.max(1, Math.ceil(projects.length / projectsPageSize));
+    if (projectsPage > total) setProjectsPage(total);
+  }, [projects, projectsPage, projectsPageSize]);
+
+  // 클라이언트만: 내가 등록한 프로젝트 목록 조회
+  useEffect(() => {
+    const fetchMyProjects = async () => {
+      if (!isLoggedIn) return;
+      if (profileData.role !== 'CLIENT') return;
+      try {
+        setProjectsLoading(true);
+        const accessToken = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('accessToken='))
+          ?.split('=')[1];
+
+        const { data, error } = await client.GET('/api/v1/members/me/projects', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+
+        if (error) {
+          const code = (error as any)?.data?.resultCode;
+          if (code === '401-1') {
+            navigate('/login');
+            return;
+          }
+          if (code === '400-1') {
+            console.warn('프로젝트 목록 400 응답 처리:', (error as any)?.data?.msg);
+            setProjects([]);
+            return;
+          }
+          console.error('프로젝트 목록 조회 에러:', error);
+          setProjects([]);
+          return;
+        }
+        if (!data) throw new Error('프로젝트 목록 데이터가 없습니다.');
+
+        if (data.resultCode === '200-9' && Array.isArray(data.data)) {
+          setProjects(data.data as MyProjectItem[]);
+        } else if (data.resultCode === '401-1') {
+          navigate('/login');
+        } else if (data.resultCode === '400-1') {
+          console.warn('프로젝트 목록 400 응답 처리:', data.msg);
+          setProjects([]);
+        } else {
+          console.warn('프로젝트 목록 응답 포맷이 예상과 다릅니다:', data);
+          setProjects([]);
+        }
+      } catch (err) {
+        console.error('프로젝트 목록 조회 실패:', err);
+        setProjects([]);
+      } finally {
+        setProjectsLoading(false);
+      }
+    };
+
+    fetchMyProjects();
+  }, [isLoggedIn, profileData.role, navigate]);
 
   // 프로필 조회
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch('/api/v1/members/me', {
-          method: 'GET',
+        const accessToken = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('accessToken='))
+          ?.split('=')[1];
+
+        const { data, error } = await client.GET('/api/v1/members/me', {
           headers: {
             'Content-Type': 'application/json',
-          },
-          credentials: 'include',
+            'Authorization': `Bearer ${accessToken}`
+          }
         });
-        
-        if (!response.ok) {
-          throw new Error('프로필 조회에 실패했습니다.');
+
+        if (error) {
+          throw error;
         }
 
-        const result = await response.json();
-        if (result.resultCode === '200-7') {
-          setProfileData(result.data);
+        if (!data) {
+          throw new Error('프로필 데이터가 없습니다.');
         }
-      } catch (error) {
-        console.error('프로필 조회 에러:', error);
+
+        if (data.resultCode === '200-7') {
+          const responseData = data.data;
+          setProfileData(prev => ({
+            ...prev,
+            ...responseData,
+            profileScope: (responseData as any)?.profileScope || 'PUBLIC',
+            ...(responseData.role === 'CLIENT'
+              ? {
+                  companyName: responseData.companyName || responseData.name || '',
+                  companySize: responseData.companySize || 'STARTUP',
+                  companyDescription: responseData.companyDescription || '',
+                  representative: responseData.representative || '',
+                  businessNo: responseData.businessNo || '',
+                  companyPhone: responseData.companyPhone || '',
+                  companyEmail: responseData.companyEmail || ''
+                }
+              : {
+                  job: responseData.job || '',
+                  career: responseData.career || {},
+                  freelancerEmail: responseData.freelancerEmail || responseData.email || '',
+                  comment: responseData.comment || ''
+                })
+          }));
+        } else {
+          throw new Error('프로필 조회에 실패했습니다.');
+        }
+      } catch (error: any) {
+        if (error?.data?.resultCode === '401-1') {
+          navigate('/login');
+        } else {
+          alert('프로필 조회에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchProfile();
-  }, []);
+    if (isLoggedIn) {
+      fetchProfile();
+    }
+  }, [isLoggedIn, navigate]);
 
   const tabs =
     userType === 'client'
@@ -100,44 +376,54 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profileData) return;
-
     try {
-      const updateData: ProfileUpdateRequest = {
-        name: profileData.name,
-        profileScope: "PUBLIC",
-        companyName: profileData.companyName,
-        companySize: profileData.companySize,
-        companyDescription: profileData.companyDescription,
-        representative: profileData.representative,
-        businessNo: profileData.businessNo,
-        companyPhone: profileData.companyPhone,
-        companyEmail: profileData.companyEmail,
-        contact: profileData.contact,
-        experience: profileData.experience,
-        introduction: profileData.introduction
+      const updateData = profileData.role === 'CLIENT' ? {
+        name: (profileData as ClientProfile).companyName || profileData.name || '',
+        profileScope: profileData.profileScope || 'PUBLIC',
+        companyName: (profileData as ClientProfile).companyName || profileData.name || '',
+        companySize: (profileData as ClientProfile).companySize || 'STARTUP',
+        companyDescription: (profileData as ClientProfile).companyDescription || '',
+        representative: (profileData as ClientProfile).representative || '',
+        businessNo: (profileData as ClientProfile).businessNo || '',
+        companyPhone: (profileData as ClientProfile).companyPhone || '',
+        companyEmail: (profileData as ClientProfile).companyEmail || '',
+        email: profileData.email || ''
+      } : {
+        name: profileData.name || '',
+        profileScope: profileData.profileScope || 'PUBLIC',
+        job: (profileData as FreelancerProfile).job || '',
+        freelancerEmail: (profileData as FreelancerProfile).freelancerEmail || '',
+        comment: (profileData as FreelancerProfile).comment || '',
+        career: (profileData as FreelancerProfile).career || {}
       };
 
-      const response = await fetch('/api/v1/members/me/profile', {
-        method: 'PATCH',
+      const accessToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('accessToken='))
+        ?.split('=')[1];
+
+      const { data, error } = await client.PATCH('/api/v1/members/me/profile', {
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
         },
-        credentials: 'include',
-        body: JSON.stringify(updateData),
+        body: updateData
       });
 
-      if (!response.ok) {
-        throw new Error('프로필 수정에 실패했습니다.');
+      if (error || !data) {
+        throw error || new Error('프로필 수정에 실패했습니다.');
       }
 
-      const result = await response.json();
-      if (result.resultCode === '200-8') {
+      if (data.resultCode === '200-8') {
         alert('프로필이 성공적으로 업데이트되었습니다!');
       }
-    } catch (error) {
-      console.error('프로필 수정 에러:', error);
-      alert('프로필 수정에 실패했습니다.');
+    } catch (error: any) {
+      if (error?.data?.resultCode === '401-1') {
+        alert('로그인이 필요한 서비스입니다.');
+        navigate('/login');
+      } else {
+        alert('프로필 수정에 실패했습니다.');
+      }
     }
   };
 
@@ -230,7 +516,7 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                 </p>
                 <div className="flex items-center">
                   <i className="ri-star-fill text-yellow-400 mr-1"></i>
-                  <span className="font-bold text-lg text-gray-900">{profileData.averageRating}</span>
+                  <span className="font-bold text-lg text-gray-900">{(profileData as any).ratingAvg ?? (profileData as any).averageRating ?? 0}</span>
                 </div>
               </div>
             </div>
@@ -284,7 +570,6 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
               {/* 프로필 관리 */}
               {activeTab === 'profile' && (
                 <>
-                  {/* 기존 코드 삽입 시작 */}
                   <div className="p-8">
                     <div className="flex items-center space-x-3 mb-8">
                       <div className="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl">
@@ -317,55 +602,85 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                           </label>
                         </div>
                         <p className="text-sm text-gray-500 mt-3">프로필 사진을 업로드하세요</p>
+                        {profileData.createdAt && (
+                          <p className="text-xs text-gray-400 mt-1">등록일: {new Date(profileData.createdAt).toLocaleDateString('ko-KR')}</p>
+                        )}
                       </div>
 
-                      {/* 나머지 프로필 폼 내용은 동일 */}
-                      {userType === 'client' ? (
+                      {/* 프로필 공개 범위 설정 */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <Select
+                          label="프로필 공개 범위"
+                          value={profileData.profileScope || 'PUBLIC'}
+                          onChange={handleSelectChange('profileScope')}
+                          options={[
+                            { label: '공개', value: 'PUBLIC' },
+                            { label: '비공개', value: 'PRIVATE' },
+                          ]}
+                        />
+                      </div>
+
+                      {profileData.role === 'CLIENT' ? (
                         <>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Input
                               label="회사명"
-                              value={profileData.companyName || ''}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, companyName: e.target.value }))}
+                              name="companyName"
+                              value={(profileData as ClientProfile).companyName || ''}
+                              onChange={handleInputChange}
                               className="rounded-xl"
                             />
                             <Select
                               label="회사 규모"
+                              value={(profileData as ClientProfile).companySize || ''}
+                              onChange={handleSelectChange('companySize')}
                               options={[
-                                { value: '스타트업', label: '스타트업 (1-10명)' },
-                                { value: '중소기업', label: '중소기업 (11-50명)' },
-                                { value: '중견기업', label: '중견기업 (51-300명)' },
-                                { value: '대기업', label: '대기업 (300명 이상)' },
+                                { label: '스타트업', value: 'STARTUP' },
+                                { label: '중소기업', value: 'SMALL' },
+                                { label: '중견기업', value: 'MEDIUM' },
+                                { label: '대기업', value: 'LARGE' }
                               ]}
-                              value={profileData.companySize || ''}
-                              onChange={(value) => setProfileData((prev) => ({ ...prev, companySize: value }))}
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-6">
+                            <Input
+                              label="개인 이메일"
+                              type="email"
+                              name="email"
+                              placeholder="개인 연락용 이메일을 입력하세요"
+                              value={profileData.email || ''}
+                              onChange={handleInputChange}
+                              className="rounded-xl"
                             />
                           </div>
 
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">회사 소개</label>
                             <textarea
+                              name="companyDescription"
                               rows={4}
                               className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                              value={profileData.companyDescription || ''}
-                              onChange={(e) =>
-                                setProfileData((prev) => ({ ...prev, companyDescription: e.target.value }))
-                              }
+                              value={(profileData as ClientProfile).companyDescription || ''}
+                              onChange={handleInputChange}
                             />
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Input
                               label="연락처"
-                              value={profileData.contact || ''}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, contact: e.target.value }))}
+                              name="companyPhone"
+                              value={(profileData as ClientProfile).companyPhone || ''}
+                              onChange={handleInputChange}
                               className="rounded-xl"
                             />
                             <Input
-                              label="이메일"
+                              label="회사 이메일"
                               type="email"
-                              value={profileData.email}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, email: e.target.value }))}
+                              name="companyEmail"
+                              placeholder="회사 업무용 이메일을 입력하세요"
+                              value={(profileData as ClientProfile).companyEmail || ''}
+                              onChange={handleInputChange}
                               className="rounded-xl"
                             />
                           </div>
@@ -373,16 +688,87 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Input
                               label="대표자명"
-                              value={profileData.representative || ''}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, representative: e.target.value }))}
+                              name="representative"
+                              value={(profileData as ClientProfile).representative || ''}
+                              onChange={handleInputChange}
                               className="rounded-xl"
                             />
                             <Input
                               label="사업자등록번호"
-                              value={profileData.businessNumber || ''}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, businessNumber: e.target.value }))}
+                              name="businessNo"
+                              value={(profileData as ClientProfile).businessNo || ''}
+                              onChange={handleInputChange}
                               className="rounded-xl"
                             />
+                          </div>
+
+                          {/* 내가 등록한 프로젝트 목록 (클라이언트 전용) */}
+                          <div className="mt-10" ref={projectsSectionRef}>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4">내가 등록한 프로젝트</h3>
+                            {projectsLoading ? (
+                              <div className="text-sm text-gray-500">불러오는 중...</div>
+                            ) : projects.length === 0 ? (
+                              <div className="text-sm text-gray-500">등록한 프로젝트가 없습니다.</div>
+                            ) : (
+                              <div className="space-y-3">
+                                {projects
+                                  .slice((projectsPage - 1) * projectsPageSize, projectsPage * projectsPageSize)
+                                  .map((p) => (
+                                  <Card key={p.id} className="p-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-2">
+                                          <Link to={`/projects/${p.id}`} className="text-base font-semibold text-gray-900 hover:underline truncate">
+                                            {p.title}
+                                          </Link>
+                                          <Badge variant={(p.status === 'OPEN' ? 'success' : 'secondary')} size="sm">{p.status}</Badge>
+                                        </div>
+                                        <div className="mt-1 text-sm text-gray-600 line-clamp-2">{p.summary}</div>
+                                        <div className="mt-1 text-sm text-gray-600">예산: {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(p.price)} · 기간: {p.duration} · 마감: {p.deadline}</div>
+                                        <div className="mt-1 text-xs text-gray-500">
+                                          스킬: {p.skills?.map(s => s.name).join(', ') || '-'}
+                                        </div>
+                                        <div className="mt-0.5 text-xs text-gray-500">
+                                          관심사: {p.interests?.map(i => i.name).join(', ') || '-'}
+                                        </div>
+                                      </div>
+                                      <div className="text-xs text-gray-500 whitespace-nowrap">{new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(p.createDate))}</div>
+                                    </div>
+                                  </Card>
+                                ))}
+                                {/* pagination controls */}
+                                <div className="flex items-center justify-center gap-3 pt-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={projectsPage <= 1}
+                                    onClick={() => {
+                                      setProjectsPage((prev) => Math.max(1, prev - 1));
+                                      projectsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }}
+                                    className="rounded-xl"
+                                  >
+                                    이전
+                                  </Button>
+                                  <span className="text-sm text-gray-600">
+                                    {projectsPage} / {Math.max(1, Math.ceil(projects.length / projectsPageSize))}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={projectsPage >= Math.ceil(projects.length / projectsPageSize)}
+                                    onClick={() => {
+                                      const total = Math.max(1, Math.ceil(projects.length / projectsPageSize));
+                                      setProjectsPage((prev) => Math.min(total, prev + 1));
+                                      projectsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }}
+                                    className="rounded-xl"
+                                  >
+                                    다음
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </>
                       ) : (
@@ -390,368 +776,182 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <Input
                               label="이름"
+                              name="name"
                               value={profileData.name}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, name: e.target.value }))}
+                              onChange={handleInputChange}
                               className="rounded-xl"
                             />
                             <Input
-                              label="이메일"
+                              label="개인 이메일"
                               type="email"
-                              value={profileData.email}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, email: e.target.value }))}
+                              name="email"
+                              placeholder="개인 연락용 이메일을 입력하세요"
+                              value={profileData.email || ''}
+                              onChange={handleInputChange}
                               className="rounded-xl"
                             />
                           </div>
 
-                          <Input
-                            label="경력"
-                            value={profileData.experience || ''}
-                            onChange={(e) => setProfileData((prev) => ({ ...prev, experience: e.target.value }))}
-                            className="rounded-xl"
-                          />
-
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">기술 스택</label>
-                            <div className="flex flex-wrap gap-2 p-4 border border-gray-200 rounded-xl bg-gray-50">
-                              {(profileData.skills || []).map((skill: string, index: number) => (
-                                <span
-                                  key={index}
-                                  className="px-3 py-1 bg-white text-indigo-700 rounded-full text-sm border border-indigo-200 shadow-sm flex items-center"
-                                >
-                                  {skill}
-                                  <button className="ml-2 text-indigo-400 hover:text-indigo-600 cursor-pointer">×</button>
-                                </span>
-                              ))}
-                              <input
-                                type="text"
-                                placeholder="새 기술 스택 추가..."
-                                className="border-none outline-none text-sm bg-transparent"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">관심 분야</label>
-                            <div className="flex flex-wrap gap-2 p-4 border border-gray-200 rounded-xl bg-gray-50">
-                              {(profileData.interests || []).map((interest: string, index: number) => (
-                                <span
-                                  key={index}
-                                  className="px-3 py-1 bg-white text-gray-700 rounded-full text-sm border border-gray-200 shadow-sm flex items-center"
-                                >
-                                  {interest}
-                                  <button className="ml-2 text-gray-400 hover:text-gray-600 cursor-pointer">×</button>
-                                </span>
-                              ))}
-                              <input
-                                type="text"
-                                placeholder="새 관심 분야 추가..."
-                                className="border-none outline-none text-sm bg-transparent"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">자기소개</label>
-                            <textarea
-                              rows={4}
-                              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                              value={profileData.introduction || ''}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, introduction: e.target.value }))}
+                            <label className="block text-sm font-medium text-gray-700 mb-2">직무</label>
+                            <Input
+                              name="job"
+                              value={(profileData as FreelancerProfile).job || ''}
+                              onChange={handleInputChange}
+                              placeholder="예: 백엔드 개발자"
+                              className="rounded-xl"
                             />
                           </div>
 
-                          {/* 파일 업로드 섹션 */}
-                          <div className="space-y-4">
-                            <h3 className="text-lg font-semibold text-gray-900">문서 관리</h3>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div className="border-2 border-dashed border-indigo-200 rounded-xl p-6 text-center bg-indigo-50/50">
-                                <i className="ri-file-text-line text-3xl text-indigo-400 mb-3"></i>
-                                <p className="text-sm text-gray-700 mb-3 font-medium">이력서</p>
-                                <Button variant="outline" size="sm" className="rounded-xl">
-                                  업로드
-                                </Button>
-                                <div className="mt-3">
-                                  <label className="flex items-center justify-center text-xs text-gray-500">
-                                    <input type="checkbox" className="mr-1" />
-                                    비공개
-                                  </label>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">기술 스택 및 경력</label>
+                            <div className="grid grid-cols-1 gap-4">
+                              {Object.entries((profileData as FreelancerProfile).career || {}).map(([skill, months]) => (
+                                <div key={skill} className="flex items-center gap-4">
+                                  <Input
+                                    name={`skill-${skill}`}
+                                    value={skill}
+                                    onChange={(e) => {
+                                      const newCareer = { ...(profileData as FreelancerProfile).career };
+                                      delete newCareer[skill];
+                                      newCareer[e.target.value] = months as number;
+                                      setProfileData(prev => ({
+                                        ...prev,
+                                        career: newCareer
+                                      }) as FreelancerProfile);
+                                    }}
+                                    placeholder="기술명"
+                                    className="rounded-xl flex-1"
+                                  />
+                                  <Input
+                                    name={`months-${skill}`}
+                                    type="number"
+                                    value={String(months)}
+                                    onChange={(e) => {
+                                      setProfileData(prev => ({
+                                        ...prev,
+                                        career: {
+                                          ...(prev as FreelancerProfile).career,
+                                          [skill]: parseInt(e.target.value) || 0
+                                        }
+                                      }) as FreelancerProfile);
+                                    }}
+                                    placeholder="개월 수"
+                                    className="rounded-xl w-32"
+                                  />
                                 </div>
-                              </div>
-
-                              <div className="border-2 border-dashed border-green-200 rounded-xl p-6 text-center bg-green-50/50">
-                                <i className="ri-article-line text-3xl text-green-400 mb-3"></i>
-                                <p className="text-sm text-gray-700 mb-3 font-medium">자기소개서</p>
-                                <Button variant="outline" size="sm" className="rounded-xl">
-                                  업로드
-                                </Button>
-                                <div className="mt-3">
-                                  <label className="flex items-center justify-center text-xs text-gray-500">
-                                    <input type="checkbox" className="mr-1" />
-                                    공개
-                                  </label>
-                                </div>
-                              </div>
-
-                              <div className="border-2 border-dashed border-purple-200 rounded-xl p-6 text-center bg-purple-50/50">
-                                <i className="ri-folder-line text-3xl text-purple-400 mb-3"></i>
-                                <p className="text-sm text-gray-700 mb-3 font-medium">포트폴리오</p>
-                                <Button variant="outline" size="sm" className="rounded-xl">
-                                  업로드
-                                </Button>
-                                <div className="mt-3">
-                                  <label className="flex items-center justify-center text-xs text-gray-500">
-                                    <input type="checkbox" className="mr-1" />
-                                    공개
-                                  </label>
-                                </div>
-                              </div>
+                              ))}
+                              <Button 
+                                type="button"
+                                onClick={() => {
+                                  setProfileData(prev => ({
+                                    ...prev,
+                                    career: {
+                                      ...(prev as FreelancerProfile).career,
+                                      '': 0
+                                    }
+                                  }) as FreelancerProfile);
+                                }}
+                                className="mt-2"
+                              >
+                                + 기술 추가
+                              </Button>
                             </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">업무용 이메일</label>
+                              <Input
+                                name="freelancerEmail"
+                                type="email"
+                                value={(profileData as FreelancerProfile).freelancerEmail || ''}
+                                onChange={handleInputChange}
+                                placeholder="업무 연락용 이메일을 입력하세요"
+                                className="rounded-xl"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">한줄 소개</label>
+                              <textarea
+                                name="comment"
+                                rows={2}
+                                placeholder="간단한 자기소개를 작성해주세요"
+                                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                                value={(profileData as FreelancerProfile).comment || ''}
+                                onChange={handleInputChange}
+                              />
+                            </div>
+                          </div>
+
+                          {/* 내가 지원한 프로젝트 목록 (프리랜서 전용) */}
+                          <div className="mt-10" ref={appsSectionRef}>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-4">내 지원 현황</h3>
+                            {appsLoading ? (
+                              <div className="text-sm text-gray-500">불러오는 중...</div>
+                            ) : applications.length === 0 ? (
+                              <div className="text-sm text-gray-500">지원한 프로젝트가 없습니다.</div>
+                            ) : (
+                              <div className="space-y-3">
+                                {applications
+                                  .slice((appsPage - 1) * appsPageSize, appsPage * appsPageSize)
+                                  .map((app) => (
+                                  <Card key={app.id} className="p-4">
+                                    <div className="flex items-start justify-between gap-4">
+                                      <div>
+                                        <div className="flex items-center gap-2">
+                                          <Link to={`/projects/${app.projectId}`} className="text-base font-semibold text-gray-900 hover:underline">
+                                            {app.projectTitle}
+                                          </Link>
+                                          <Badge variant={(app.status === 'WAIT' ? 'warning' : app.status === 'ACCEPT' ? 'success' : 'danger')} size="sm">{app.status}</Badge>
+                                        </div>
+                                        <div className="mt-1 text-sm text-gray-600">예상 급여: {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(app.estimatedPay)}</div>
+                                        <div className="mt-0.5 text-sm text-gray-600">예상 기간: {app.expectedDuration}</div>
+                                        <div className="mt-0.5 text-sm text-gray-600">근무 계획: {app.workPlan}</div>
+                                      </div>
+                                      <div className="text-xs text-gray-500 whitespace-nowrap">{new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(app.createDate))}</div>
+                                    </div>
+                                  </Card>
+                                ))}
+                                {/* pagination controls */}
+                                <div className="flex items-center justify-center gap-3 pt-2">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={appsPage <= 1}
+                                    onClick={() => {
+                                      setAppsPage((prev) => Math.max(1, prev - 1));
+                                      appsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }}
+                                    className="rounded-xl"
+                                  >
+                                    이전
+                                  </Button>
+                                  <span className="text-sm text-gray-600">
+                                    {appsPage} / {Math.max(1, Math.ceil(applications.length / appsPageSize))}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={appsPage >= Math.ceil(applications.length / appsPageSize)}
+                                    onClick={() => {
+                                      const total = Math.max(1, Math.ceil(applications.length / appsPageSize));
+                                      setAppsPage((prev) => Math.min(total, prev + 1));
+                                      appsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                    }}
+                                    className="rounded-xl"
+                                  >
+                                    다음
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </>
                       )}
 
                       <div className="flex justify-end space-x-4 pt-8">
-                        <Button variant="outline" className="rounded-xl">
-                          취소
-                        </Button>
-                        <Button type="submit" className="rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600">
-                          저장
-                        </Button>
-                      </div>
-                    </form>
-                  </div>
-                  {/* 기존 코드 삽입 끝 */}
-
-                  {/* 추가된 새 프로필 관리 UI */}
-                  <div className="p-8">
-                    <div className="flex items-center space-x-3 mb-8">
-                      <div className="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl">
-                        <i className="ri-user-3-line text-white text-xl"></i>
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-bold text-gray-900">프로필 관리</h2>
-                        <p className="text-gray-600">계정 정보를 관리하세요</p>
-                      </div>
-                    </div>
-
-                    <form onSubmit={handleProfileUpdate} className="space-y-8">
-                      {/* 프로필 사진 업로드 */}
-                      <div className="text-center">
-                        <div className="relative inline-block">
-                          {selectedImage ? (
-                            <img
-                              src={selectedImage}
-                              alt="Profile"
-                              className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl"
-                            />
-                          ) : (
-                            <div className="w-32 h-32 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-xl">
-                              {profileData.name.charAt(0)}
-                            </div>
-                          )}
-                          <label className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors shadow-lg border-2 border-indigo-100">
-                            <i className="ri-camera-line text-indigo-600 text-lg"></i>
-                            <input type="file" className="hidden" accept="image/*" onChange={handleImageUpload} />
-                          </label>
-                        </div>
-                        <p className="text-sm text-gray-500 mt-3">프로필 사진을 업로드하세요</p>
-                      </div>
-
-                      {/* 나머지 프로필 폼 내용은 동일 */}
-                      {userType === 'client' ? (
-                        <>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Input
-                              label="회사명"
-                              value={profileData.companyName || ''}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, companyName: e.target.value }))}
-                              className="rounded-xl"
-                            />
-                            <Select
-                              label="회사 규모"
-                              options={[
-                                { value: '스타트업', label: '스타트업 (1-10명)' },
-                                { value: '중소기업', label: '중소기업 (11-50명)' },
-                                { value: '중견기업', label: '중견기업 (51-300명)' },
-                                { value: '대기업', label: '대기업 (300명 이상)' },
-                              ]}
-                              value={profileData.companySize || ''}
-                              onChange={(value) => setProfileData((prev) => ({ ...prev, companySize: value }))}
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">회사 소개</label>
-                            <textarea
-                              rows={4}
-                              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                              value={profileData.companyDescription || ''}
-                              onChange={(e) =>
-                                setProfileData((prev) => ({ ...prev, companyDescription: e.target.value }))
-                              }
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Input
-                              label="연락처"
-                              value={profileData.contact || ''}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, contact: e.target.value }))}
-                              className="rounded-xl"
-                            />
-                            <Input
-                              label="이메일"
-                              type="email"
-                              value={profileData.email}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, email: e.target.value }))}
-                              className="rounded-xl"
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Input
-                              label="대표자명"
-                              value={profileData.representative || ''}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, representative: e.target.value }))}
-                              className="rounded-xl"
-                            />
-                            <Input
-                              label="사업자등록번호"
-                              value={profileData.businessNumber || ''}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, businessNumber: e.target.value }))}
-                              className="rounded-xl"
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Input
-                              label="이름"
-                              value={profileData.name}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, name: e.target.value }))}
-                              className="rounded-xl"
-                            />
-                            <Input
-                              label="이메일"
-                              type="email"
-                              value={profileData.email}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, email: e.target.value }))}
-                              className="rounded-xl"
-                            />
-                          </div>
-
-                          <Input
-                            label="경력"
-                            value={profileData.experience || ''}
-                            onChange={(e) => setProfileData((prev) => ({ ...prev, experience: e.target.value }))}
-                            className="rounded-xl"
-                          />
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">기술 스택</label>
-                            <div className="flex flex-wrap gap-2 p-4 border border-gray-200 rounded-xl bg-gray-50">
-                              {(profileData.skills || []).map((skill: string, index: number) => (
-                                <span
-                                  key={index}
-                                  className="px-3 py-1 bg-white text-indigo-700 rounded-full text-sm border border-indigo-200 shadow-sm flex items-center"
-                                >
-                                  {skill}
-                                  <button className="ml-2 text-indigo-400 hover:text-indigo-600 cursor-pointer">×</button>
-                                </span>
-                              ))}
-                              <input
-                                type="text"
-                                placeholder="새 기술 스택 추가..."
-                                className="border-none outline-none text-sm bg-transparent"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">관심 분야</label>
-                            <div className="flex flex-wrap gap-2 p-4 border border-gray-200 rounded-xl bg-gray-50">
-                              {(profileData.interests || []).map((interest: string, index: number) => (
-                                <span
-                                  key={index}
-                                  className="px-3 py-1 bg-white text-gray-700 rounded-full text-sm border border-gray-200 shadow-sm flex items-center"
-                                >
-                                  {interest}
-                                  <button className="ml-2 text-gray-400 hover:text-gray-600 cursor-pointer">×</button>
-                                </span>
-                              ))}
-                              <input
-                                type="text"
-                                placeholder="새 관심 분야 추가..."
-                                className="border-none outline-none text-sm bg-transparent"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">자기소개</label>
-                            <textarea
-                              rows={4}
-                              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-                              value={profileData.introduction || ''}
-                              onChange={(e) => setProfileData((prev) => ({ ...prev, introduction: e.target.value }))}
-                            />
-                          </div>
-
-                          {/* 파일 업로드 섹션 */}
-                          <div className="space-y-4">
-                            <h3 className="text-lg font-semibold text-gray-900">문서 관리</h3>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div className="border-2 border-dashed border-indigo-200 rounded-xl p-6 text-center bg-indigo-50/50">
-                                <i className="ri-file-text-line text-3xl text-indigo-400 mb-3"></i>
-                                <p className="text-sm text-gray-700 mb-3 font-medium">이력서</p>
-                                <Button variant="outline" size="sm" className="rounded-xl">
-                                  업로드
-                                </Button>
-                                <div className="mt-3">
-                                  <label className="flex items-center justify-center text-xs text-gray-500">
-                                    <input type="checkbox" className="mr-1" />
-                                    비공개
-                                  </label>
-                                </div>
-                              </div>
-
-                              <div className="border-2 border-dashed border-green-200 rounded-xl p-6 text-center bg-green-50/50">
-                                <i className="ri-article-line text-3xl text-green-400 mb-3"></i>
-                                <p className="text-sm text-gray-700 mb-3 font-medium">자기소개서</p>
-                                <Button variant="outline" size="sm" className="rounded-xl">
-                                  업로드
-                                </Button>
-                                <div className="mt-3">
-                                  <label className="flex items-center justify-center text-xs text-gray-500">
-                                    <input type="checkbox" className="mr-1" />
-                                    공개
-                                  </label>
-                                </div>
-                              </div>
-
-                              <div className="border-2 border-dashed border-purple-200 rounded-xl p-6 text-center bg-purple-50/50">
-                                <i className="ri-folder-line text-3xl text-purple-400 mb-3"></i>
-                                <p className="text-sm text-gray-700 mb-3 font-medium">포트폴리오</p>
-                                <Button variant="outline" size="sm" className="rounded-xl">
-                                  업로드
-                                </Button>
-                                <div className="mt-3">
-                                  <label className="flex items-center justify-center text-xs text-gray-500">
-                                    <input type="checkbox" className="mr-1" />
-                                    공개
-                                  </label>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </>
-                      )}
-
-                      <div className="flex justify-end space-x-4 pt-8">
-                        <Button variant="outline" className="rounded-xl">
+                        <Button variant="outline" type="button" className="rounded-xl">
                           취소
                         </Button>
                         <Button type="submit" className="rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600">

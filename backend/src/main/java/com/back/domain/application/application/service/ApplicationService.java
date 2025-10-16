@@ -7,13 +7,12 @@ import com.back.domain.application.application.repository.ApplicationRepository;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.project.project.entity.Project;
 import com.back.global.exception.ServiceException;
+import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -35,7 +34,7 @@ public class ApplicationService {
     }
 
     public Application findById(long id) {
-        return applicationRepository.findById(id).orElseThrow(
+        return applicationRepository.findByIdWithDetail(id).orElseThrow(
                 () -> new ServiceException("401-1", "해당 지원서가 존재하지 않습니다.")
         );
     }
@@ -62,5 +61,9 @@ public class ApplicationService {
 
     public Page<Application> findAllByFreeLancer(Freelancer freelancer, Pageable pageable) {
         return applicationRepository.findAllByFreelancer(freelancer, pageable);
+    }
+
+    public Optional<Application> findByProjectAndStatus(Project project, ApplicationStatus status) {
+        return applicationRepository.findByProjectAndStatus(project, status);
     }
 }

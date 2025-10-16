@@ -1,5 +1,6 @@
 package com.back.domain.application.application.controller;
 
+import com.back.domain.application.application.constant.ApplicationStatus;
 import com.back.domain.application.application.dto.ApplicationDto;
 import com.back.domain.application.application.dto.ApplicationModifyReqBody;
 import com.back.domain.application.application.dto.ApplicationSummaryDto;
@@ -25,7 +26,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/v1/projects/{projectId}/applications")
@@ -34,7 +42,6 @@ public class ApiV1ApplicationController {
     private final ApplicationService applicationService;
     private final ProjectService ProjectService;
     private final MemberService memberService;
-    private final FreelancerService freelancerService;
 
     // 등록
     @PostMapping
@@ -44,7 +51,7 @@ public class ApiV1ApplicationController {
             @PathVariable long projectId,
             @Valid @RequestBody ApplicationWriteReqBody reqBody,
             @AuthenticationPrincipal CustomUserDetails user
-            ) {
+    ) {
         Member member = memberService.findById(user.getId());
         Freelancer freelancer = member.getFreelancer();
         if (freelancer == null) {
@@ -73,7 +80,7 @@ public class ApiV1ApplicationController {
             @PathVariable long id,
             @Valid @RequestBody ApplicationModifyReqBody reqBody,
             @AuthenticationPrincipal CustomUserDetails user
-            ) {
+    ) {
         // 권한 체크
         Member member = memberService.findById(user.getId());
         Client client = member.getClient();
@@ -87,8 +94,12 @@ public class ApiV1ApplicationController {
 
         Application application = applicationService.findById(id);
 
-        applicationService.update(application, reqBody.status());
+        ApplicationStatus status = reqBody.status();
+        applicationService.update(application, status);
 
+        if (status == ApplicationStatus.ACCEPT) {
+            project.addParticipant(application.getFreelancer());
+        }
 
         return new ApiResponse<>(
                 "200-1",
@@ -131,7 +142,7 @@ public class ApiV1ApplicationController {
                 "200-1",
                 "%d번 지원서가 단건 조회되었습니다.".formatted(id),
                 new ApplicationDto(application)
-                );
+        );
     }
 
     // 클라이언트가 프로젝트의 지원 목록 보기

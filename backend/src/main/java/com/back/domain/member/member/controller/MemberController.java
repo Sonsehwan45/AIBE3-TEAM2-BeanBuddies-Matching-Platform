@@ -6,6 +6,10 @@ import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.common.interest.service.InterestService;
 import com.back.domain.common.skill.service.SkillService;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
+import com.back.domain.member.favorite.dto.FavoriteFreelancerReq;
+import com.back.domain.member.favorite.dto.FavoriteProjectReq;
+import com.back.domain.member.favorite.dto.FreelancerSummaryDto;
+import com.back.domain.member.favorite.service.FavoriteService;
 import com.back.domain.member.member.constant.Role;
 import com.back.domain.member.member.dto.*;
 import com.back.domain.member.member.entity.Member;
@@ -46,6 +50,7 @@ public class MemberController {
     private final HeaderHelper headerHelper;
     private final CookieHelper cookieHelper;
     private final AuthService authService;
+    private final FavoriteService favoriteService;
 
     @Transactional
     @PostMapping
@@ -171,6 +176,15 @@ public class MemberController {
         return new ApiResponse<>("200-9", "내가 등록한 프로젝트 목록 조회 성공", projectSummaries);
     }
 
+    @GetMapping("/me/participated-projects")
+    public ApiResponse<List<ProjectSummaryDto>> getMyParticipatedProjects(@AuthenticationPrincipal CustomUserDetails user) {
+        Member member = memberService.findById(user.getId());
+
+        List<ProjectSummaryDto> data = projectService.findParticipatedProjectsById(member);
+
+        return new ApiResponse<>("200-9", "내가 참여한 프로젝트 목록 조회 성공", data);
+    }
+
     @GetMapping("/me/applications")
     public ApiResponse<List<ApplicationSummaryDto>> getMyApplications(@AuthenticationPrincipal CustomUserDetails user) {
         Member member = memberService.findById(user.getId());
@@ -187,6 +201,67 @@ public class MemberController {
                 .collect(Collectors.toList());
 
         return new ApiResponse<>("200-10", "내가 지원한 프로젝트 목록 조회 성공", applicationSummaries);
+    }
+
+    // 즐겨찾기 - 프로젝트 목록 조회
+    @GetMapping("/me/favorites/projects")
+    public ApiResponse<List<ProjectSummaryDto>> getMyFavoriteProjects(@AuthenticationPrincipal CustomUserDetails user) {
+        Member member = memberService.findById(user.getId());
+        List<ProjectSummaryDto> favorites = favoriteService.findProjectFavorites(member).stream()
+                .map(pf -> {
+                    Project project = pf.getProject();
+                    return new ProjectSummaryDto(project, skillService.findByProjectId(project.getId()), interestService.findByProjectId(project.getId()));
+                })
+                .collect(Collectors.toList());
+
+        return new ApiResponse<>("200-20", "즐겨찾기한 프로젝트 목록 조회 성공", favorites);
+    }
+
+    // 즐겨찾기 - 프로젝트 추가
+    @PostMapping("/me/favorites/projects")
+    public ApiResponse<Void> addFavoriteProject(@AuthenticationPrincipal CustomUserDetails user,
+                                                @Valid @RequestBody FavoriteProjectReq req) {
+        Member member = memberService.findById(user.getId());
+        favoriteService.addProjectFavorite(member, req.projectId());
+        return new ApiResponse<>("200-21", "프로젝트 즐겨찾기 추가 성공");
+    }
+
+    // 즐겨찾기 - 프로젝트 삭제
+    @DeleteMapping("/me/favorites/projects/{projectId}")
+    public ApiResponse<Void> removeFavoriteProject(@AuthenticationPrincipal CustomUserDetails user,
+                                                   @PathVariable Long projectId) {
+        Member member = memberService.findById(user.getId());
+        favoriteService.removeProjectFavorite(member, projectId);
+        return new ApiResponse<>("200-22", "프로젝트 즐겨찾기 삭제 성공");
+    }
+
+    // 즐겨찾기 - 프리랜서 목록 조회
+    @GetMapping("/me/favorites/freelancers")
+    public ApiResponse<List<FreelancerSummaryDto>> getMyFavoriteFreelancers(@AuthenticationPrincipal CustomUserDetails user) {
+        Member member = memberService.findById(user.getId());
+        List<FreelancerSummaryDto> favorites = favoriteService.findFreelancerFavorites(member).stream()
+                .map(ff -> new FreelancerSummaryDto(ff.getFreelancer()))
+                .collect(Collectors.toList());
+
+        return new ApiResponse<>("200-23", "즐겨찾기한 프리랜서 목록 조회 성공", favorites);
+    }
+
+    // 즐겨찾기 - 프리랜서 추가
+    @PostMapping("/me/favorites/freelancers")
+    public ApiResponse<Void> addFavoriteFreelancer(@AuthenticationPrincipal CustomUserDetails user,
+                                                   @Valid @RequestBody FavoriteFreelancerReq req) {
+        Member member = memberService.findById(user.getId());
+        favoriteService.addFreelancerFavorite(member, req.userId());
+        return new ApiResponse<>("200-24", "프리랜서 즐겨찾기 추가 성공");
+    }
+
+    // 즐겨찾기 - 프리랜서 삭제
+    @DeleteMapping("/me/favorites/freelancers/{userId}")
+    public ApiResponse<Void> removeFavoriteFreelancer(@AuthenticationPrincipal CustomUserDetails user,
+                                                      @PathVariable Long userId) {
+        Member member = memberService.findById(user.getId());
+        favoriteService.removeFreelancerFavorite(member, userId);
+        return new ApiResponse<>("200-25", "프리랜서 즐겨찾기 삭제 성공");
     }
 
     @PatchMapping("/me/withdraw")

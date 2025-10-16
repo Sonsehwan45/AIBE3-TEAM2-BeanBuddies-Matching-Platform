@@ -1,4 +1,5 @@
 import type { RouteObject } from "react-router-dom";
+import type { ReactNode } from "react";
 import NotFound from "../pages/NotFound";
 import ChangePassword from "../pages/auth/change-password/page";
 import DeleteAccount from "../pages/auth/delete-account/page";
@@ -27,7 +28,13 @@ interface RouteProps {
   setUserType?: (type: "client" | "freelancer") => void;
 }
 
-const routes: RouteObject[] = [
+// Allow element to be a ReactNode or a factory that receives RouteProps
+export type AppRoute = Omit<RouteObject, "element" | "children"> & {
+  element: ReactNode | ((props: RouteProps) => ReactNode);
+  children?: AppRoute[];
+};
+
+const routes: AppRoute[] = [
   {
     path: "/",
     element: <Home />,
@@ -50,13 +57,11 @@ const routes: RouteObject[] = [
   },
   {
     path: "/projects",
-    element: ({ userType }: RouteProps) => <Projects userType={userType} />,
+    element: <Projects />,
   },
   {
     path: "/projects/:id",
-    element: ({ userType }: RouteProps) => (
-      <ProjectDetail userType={userType} />
-    ),
+    element: <ProjectDetail />,
   },
   {
     path: "/freelancers",
