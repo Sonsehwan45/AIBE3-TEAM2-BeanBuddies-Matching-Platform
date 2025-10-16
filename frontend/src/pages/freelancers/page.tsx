@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../../components/base/Button';
 import Select from '../../components/base/Select';
+import { useAuth } from '../../context/AuthContext';
 
 interface FreelancersProps {
   userType?: 'client' | 'freelancer';
@@ -23,6 +24,7 @@ interface FreelancersProps {
 }
 
 export default function Freelancers({ userType = 'client' }: FreelancersProps) {
+  const { token } = useAuth();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedExperience, setSelectedExperience] = useState('');
@@ -50,6 +52,31 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
       .GET("/api/v1/interests")
       .then(({ data }) => setInterests(data?.data ?? []));
   }, []);
+
+  // 관심 프리랜서 목록 불러오기
+  useEffect(() => {
+    const fetchFavorites = async () => {
+      if (!token) return;
+
+      try {
+        const { data: favoritesResponse } = await client.GET("/api/v1/members/me/favorites/freelancers", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (favoritesResponse?.data) {
+          const favoriteIds = (favoritesResponse.data as any[]).map((fav: any) => fav.id);
+          setFavorites(favoriteIds);
+          console.log('✅ 관심 프리랜서 목록 로드:', favoriteIds);
+        }
+      } catch (error) {
+        console.error('❌ 관심 프리랜서 목록 조회 실패:', error);
+      }
+    };
+
+    fetchFavorites();
+  }, [token]);
 
   // 프리랜서 목록 불러오기
   const fetchFreelancers = async () => {
@@ -177,12 +204,56 @@ export default function Freelancers({ userType = 'client' }: FreelancersProps) {
     { value: 'careerTotalYears', label: '경력순' }
   ];
 
-  const toggleFavorite = (freelancerId: number) => {
-    setFavorites(prev =>
-      prev.includes(freelancerId)
-        ? prev.filter(id => id !== freelancerId)
-        : [...prev, freelancerId]
-    );
+  const toggleFavorite = async (freelancerId: number) => {
+    if (!token) {
+      alert('⚠️ 로그인이 필요합니다.');
+      return;
+    }
+
+    const isFavorite = favorites.includes(freelancerId);
+
+    try {
+      if (isFavorite) {
+        // 관심 프리랜서 삭제
+        const response = await client.DELETE("/api/v1/members/me/favorites/freelancers/{userId}", {
+          params: {
+            path: {
+              userId: freelancerId
+            }
+          },
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.error) {
+          throw new Error('관심 프리랜서 삭제 실패');
+        }
+
+        setFavorites(prev => prev.filter(id => id !== freelancerId));
+        console.log('✅ 관심 프리랜서 삭제:', freelancerId);
+      } else {
+        // 관심 프리랜서 등록
+        const response = await client.POST("/api/v1/members/me/favorites/freelancers", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: {
+            userId: freelancerId
+          }
+        });
+
+        if (response.error) {
+          throw new Error('관심 프리랜서 등록 실패');
+        }
+
+        setFavorites(prev => [...prev, freelancerId]);
+        console.log('✅ 관심 프리랜서 등록:', freelancerId);
+      }
+    } catch (error) {
+      console.error('❌ 관심 프리랜서 처리 실패:', error);
+      alert('⚠️ 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+    }
   };
 
   const addSkillFilter = (skill: { id?: number; name?: string }) => {

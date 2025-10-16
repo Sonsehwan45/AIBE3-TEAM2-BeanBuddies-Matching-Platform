@@ -25,6 +25,10 @@ public class ApplicationService {
     }
 
     public Application create(ApplicationWriteReqBody reqBody, Freelancer freelancer, Project project) {
+        boolean exists = applicationRepository.findByFreelancerAndProject(freelancer, project).isPresent();
+        if (exists) {
+            throw new ServiceException("409-2", "이미 해당 프로젝트에 지원한 상태입니다.");
+        }
         Application application = new Application(reqBody, freelancer, project);
 
         return applicationRepository.save(application);
@@ -35,7 +39,7 @@ public class ApplicationService {
     }
 
     public Application findById(long id) {
-        return applicationRepository.findById(id).orElseThrow(
+        return applicationRepository.findByIdWithDetail(id).orElseThrow(
                 () -> new ServiceException("401-1", "해당 지원서가 존재하지 않습니다.")
         );
     }
@@ -62,5 +66,9 @@ public class ApplicationService {
 
     public Page<Application> findAllByFreeLancer(Freelancer freelancer, Pageable pageable) {
         return applicationRepository.findAllByFreelancer(freelancer, pageable);
+    }
+
+    public Optional<Application> findByProjectAndStatus(Project project, ApplicationStatus status) {
+        return applicationRepository.findByProjectAndStatus(project, status);
     }
 }

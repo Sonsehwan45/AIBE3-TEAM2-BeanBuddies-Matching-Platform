@@ -12,10 +12,14 @@ import com.back.domain.member.member.dto.FreelancerUpdateDto;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.repository.MemberRepository;
 import com.back.domain.project.project.constant.ProjectStatus;
+import com.back.domain.project.project.entity.Project;
+import com.back.domain.project.project.service.ProjectService;
 import com.back.domain.proposal.proposal.constant.ProposalStatus;
 import com.back.global.exception.ServiceException;
 import com.back.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import com.back.domain.common.skill.entity.Skill;
+import com.back.domain.common.skill.repository.SkillRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +36,8 @@ public class MemberService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final ApplicationService applicationService;
+    private final ProjectService projectService;
+    private final SkillRepository skillRepository;
 
     private boolean initFlag = false;
 
@@ -96,7 +102,22 @@ public class MemberService {
 
         Freelancer freelancer = member.getFreelancer();
         freelancer.updateInfo(dto.getJob(), dto.getFreelancerEmail(), dto.getComment(), dto.getCareer());
-        // TODO: skills and interests update logic
+        // skills 업데이트: 우선순위 - skillIds > skills(이름)
+        if (dto.getSkillIds() != null) {
+            List<Long> ids = dto.getSkillIds();
+            List<Skill> findSkills = skillRepository.findAllById(ids);
+            if (findSkills.size() != ids.size()) {
+                throw new ServiceException("400-6", "유효하지 않은 스킬 ID가 포함되어 있습니다.");
+            }
+            freelancer.updateSkills(findSkills);
+        } else if (dto.getSkills() != null) {
+            // 이름 기반 처리: 이름으로 스킬 엔티티 조회
+            List<Skill> findSkills = dto.getSkills().stream()
+                    .map(name -> skillRepository.findByName(name)
+                            .orElseThrow(() -> new ServiceException("404-2", "스킬을 찾을 수 없습니다: " + name)))
+                    .toList();
+            freelancer.updateSkills(findSkills);
+        }
 
         memberRepository.save(member);
     }
@@ -238,15 +259,70 @@ public class MemberService {
         return tempPassword.toString();
     }
 
+    @Transactional(readOnly = true)
     public Member getProfile(Long userId, CustomUserDetails user) {
         Member member = findById(userId);
 
         if (member.getProfileScope() == ProfileScope.PUBLIC) {
+            // initialize associations for DTO serialization outside transaction
+            if (member.isClient() && member.getClient() != null) {
+                member.getClient().getCompanyEmail();
+                member.getClient().getCompanyPhone();
+                member.getClient().getCompanySize();
+                member.getClient().getCompanyDescription();
+                member.getClient().getRepresentative();
+                member.getClient().getBusinessNo();
+                member.getClient().getProjects().size();
+            }
+            if (member.isFreelancer() && member.getFreelancer() != null) {
+                member.getFreelancer().getJob();
+                member.getFreelancer().getCareer();
+                member.getFreelancer().getFreelancerEmail();
+                member.getFreelancer().getComment();
+                member.getFreelancer().getRatingAvg();
+                if (member.getFreelancer().getSkills() != null) {
+                    member.getFreelancer().getSkills().forEach(fs -> {
+                        if (fs.getSkill() != null) fs.getSkill().getName();
+                    });
+                }
+                if (member.getFreelancer().getInterests() != null) {
+                    member.getFreelancer().getInterests().forEach(fi -> {
+                        if (fi.getInterest() != null) fi.getInterest().getName();
+                    });
+                }
+            }
             return member;
         }
 
         // 자신의 프로필은 항상 접근 가능
         if (user != null && Objects.equals(user.getId(), member.getId())) {
+            // initialize associations similarly
+            if (member.isClient() && member.getClient() != null) {
+                member.getClient().getCompanyEmail();
+                member.getClient().getCompanyPhone();
+                member.getClient().getCompanySize();
+                member.getClient().getCompanyDescription();
+                member.getClient().getRepresentative();
+                member.getClient().getBusinessNo();
+                member.getClient().getProjects().size();
+            }
+            if (member.isFreelancer() && member.getFreelancer() != null) {
+                member.getFreelancer().getJob();
+                member.getFreelancer().getCareer();
+                member.getFreelancer().getFreelancerEmail();
+                member.getFreelancer().getComment();
+                member.getFreelancer().getRatingAvg();
+                if (member.getFreelancer().getSkills() != null) {
+                    member.getFreelancer().getSkills().forEach(fs -> {
+                        if (fs.getSkill() != null) fs.getSkill().getName();
+                    });
+                }
+                if (member.getFreelancer().getInterests() != null) {
+                    member.getFreelancer().getInterests().forEach(fi -> {
+                        if (fi.getInterest() != null) fi.getInterest().getName();
+                    });
+                }
+            }
             return member;
         }
 
@@ -263,6 +339,33 @@ public class MemberService {
                         .anyMatch(app -> app.getProject().getClient().getMember().getId().equals(requestMember.getId()));
 
                 if (hasApplied) {
+                    // initialize associations before returning
+                    if (member.isClient() && member.getClient() != null) {
+                        member.getClient().getCompanyEmail();
+                        member.getClient().getCompanyPhone();
+                        member.getClient().getCompanySize();
+                        member.getClient().getCompanyDescription();
+                        member.getClient().getRepresentative();
+                        member.getClient().getBusinessNo();
+                        member.getClient().getProjects().size();
+                    }
+                    if (member.isFreelancer() && member.getFreelancer() != null) {
+                        member.getFreelancer().getJob();
+                        member.getFreelancer().getCareer();
+                        member.getFreelancer().getFreelancerEmail();
+                        member.getFreelancer().getComment();
+                        member.getFreelancer().getRatingAvg();
+                        if (member.getFreelancer().getSkills() != null) {
+                            member.getFreelancer().getSkills().forEach(fs -> {
+                                if (fs.getSkill() != null) fs.getSkill().getName();
+                            });
+                        }
+                        if (member.getFreelancer().getInterests() != null) {
+                            member.getFreelancer().getInterests().forEach(fi -> {
+                                if (fi.getInterest() != null) fi.getInterest().getName();
+                            });
+                        }
+                    }
                     return member;
                 }
             }
@@ -335,5 +438,38 @@ public class MemberService {
 
         //DB 저장
         memberRepository.save(member);
+    }
+
+    //완료된 프로젝트의 협업 상대방 프로필 조회
+    @Transactional(readOnly = true)
+    public Member getCollaboratorProfile(Long projectId, Member currentUser){
+        //프로젝트 정보 조회
+        Project project = projectService.findById(projectId);
+
+        //프로젝트가 완료 상태인지 확인
+        if(project.getStatus() != ProjectStatus.COMPLETED){
+            throw new ServiceException("400", "완료된 프로젝트에 대해서만 협업 상대방을 조회할 수 있습니다");
+        }
+
+        //프로젝트에 수락된 지원서 조회
+        Application acceptedApplication = applicationService.findByProjectAndStatus(project, ApplicationStatus.ACCEPT)
+                .orElseThrow(() -> new ServiceException("404", "프로젝트에 매칭된 프리랜서 정보를 찾을 수 없습니다."));
+
+        Freelancer freelancer = acceptedApplication.getFreelancer();
+        Client client = acceptedApplication.getClient();
+
+        //현재 로그인한 유저의 역할에 따라 상대방 Member 객체 반환
+        if(currentUser.isFreelancer() && currentUser.getId().equals(freelancer.getId())){
+            // 로그인한 유저가 이 프로젝트를 수행한 프리랜서가 맞다면, 클라이언트 정보를 반환
+            return client.getMember();
+        }
+        else if (currentUser.isClient() && currentUser.getId().equals(client.getId())) {
+            // 로그인한 유저가 이 프로젝트를 등록한 클라이언트가 맞다면, 프리랜서 정보를 반환
+            return freelancer.getMember();
+        }
+        else {
+            // 둘 다 아니라면 권한 없음
+            throw new ServiceException("403", "해당 프로젝트의 협업 상대방 정보를 조회할 권한이 없습니다.");
+        }
     }
 }

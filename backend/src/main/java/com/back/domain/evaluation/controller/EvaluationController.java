@@ -47,6 +47,16 @@ public class EvaluationController {
         return new ApiResponse<>("200", "평가가 성공적으로 수정되었습니다.",  responseData);
     }
 
+    // 특정 ID의 평가 목록 조회(권한은 SecurityConfig 에서 처리)
+    @GetMapping("/{id}")
+    public ApiResponse<EvaluationsWithCountResponse> getEvaluations(
+            @PathVariable Long id
+    ) {
+        EvaluationsWithCountResponse responseData = evaluationService.getMyEvaluations(id);
+
+        return new ApiResponse<>("200", "ID : %d 유저의 평가 목록을 성공적으로 조회했습니다.".formatted(id), responseData);
+    }
+
     // 내가 받은 평가 목록 조회 (역할에 따라 분기)
     @GetMapping("/me")
     public ApiResponse<EvaluationsWithCountResponse> getEvaluations(
@@ -56,5 +66,16 @@ public class EvaluationController {
         EvaluationsWithCountResponse responseData = evaluationService.getEvaluations(currentUserId);
 
         return new ApiResponse<>("200", "받은 평가 목록을 성공적으로 조회했습니다.", responseData);
+    }
+
+    // 내가 받은 평가 목록 조회 (역할에 따라 분기)
+    @GetMapping("/written-by-me")
+    public ApiResponse<EvaluationsWithCountResponse> getWrittenEvaluations(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        Long currentUserId = userDetails.getId();
+        EvaluationsWithCountResponse responseData = evaluationService.getWrittenEvaluations(currentUserId);
+
+        return new ApiResponse<>("200", "작성한 평가 목록을 성공적으로 조회했습니다.", responseData);
     }
 }

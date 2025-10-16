@@ -5,6 +5,7 @@ import com.back.domain.common.skill.entity.Skill;
 import com.back.domain.freelancer.join.entity.FreelancerInterest;
 import com.back.domain.freelancer.join.entity.FreelancerSkill;
 import com.back.domain.member.member.entity.Member;
+import com.back.domain.project.participant.entity.ProjectParticipant;
 import com.back.domain.proposal.proposal.entity.Proposal;
 import com.back.standard.converter.JsonConverter;
 import jakarta.persistence.*;
@@ -43,7 +44,6 @@ public class Freelancer {
     private Integer careerTotalYears;
 
     @Column(name = "rating_avg")
-    //읽기전용?
     private double ratingAvg;
 
     @OneToMany(mappedBy = "freelancer", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -58,6 +58,9 @@ public class Freelancer {
 
     @OneToMany(mappedBy = "freelancer", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Proposal> proposals = new ArrayList<>();
+
+    @OneToMany(mappedBy = "freelancer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProjectParticipant> myProjects = new ArrayList<>();
 
     public Freelancer(Member member) {
         this.member = member;

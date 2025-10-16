@@ -10,6 +10,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Getter
 @Setter
@@ -57,12 +58,21 @@ public class ProfileResponseDto {
                     .freelancerEmail(member.getFreelancer().getFreelancerEmail())
                     .comment(member.getFreelancer().getComment())
                     .ratingAvg(member.getFreelancer().getRatingAvg());
-                    //.skills(member.getFreelancer().getFreelancerSkills().stream()
-                    //        .map(fs -> fs.getSkill().getSkillName())
-                    //        .collect(Collectors.toList()))
-                    //.interests(member.getFreelancer().getFreelancerInterests().stream()
-                    //        .map(fi -> fi.getInterest().getInterestName())
-                    //        .collect(Collectors.toList()));
+
+            // skills
+            if (member.getFreelancer().getSkills() != null && !member.getFreelancer().getSkills().isEmpty()) {
+                builder.skills(member.getFreelancer().getSkills().stream()
+                        .map(fs -> fs.getSkill().getName())
+                        .collect(Collectors.toList()));
+            }
+
+            // interests
+            if (member.getFreelancer().getInterests() != null && !member.getFreelancer().getInterests().isEmpty()) {
+                builder.interests(member.getFreelancer().getInterests().stream()
+                        .map(fi -> fi.getInterest().getName())
+                        .collect(Collectors.toList()));
+            }
+
         } else if (member.getRole() == Role.CLIENT && member.getClient() != null) {
             builder.companySize(member.getClient().getCompanySize())
                     .companyDescription(member.getClient().getCompanyDescription())

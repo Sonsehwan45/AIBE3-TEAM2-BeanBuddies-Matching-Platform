@@ -1,5 +1,6 @@
 package com.back.domain.application.application.controller;
 
+import com.back.domain.application.application.constant.ApplicationStatus;
 import com.back.domain.application.application.dto.ApplicationDto;
 import com.back.domain.application.application.dto.ApplicationModifyReqBody;
 import com.back.domain.application.application.dto.ApplicationSummaryDto;
@@ -8,7 +9,6 @@ import com.back.domain.application.application.entity.Application;
 import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
-import com.back.domain.freelancer.freelancer.service.FreelancerService;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.entity.Project;
@@ -34,7 +34,6 @@ public class ApiV1ApplicationController {
     private final ApplicationService applicationService;
     private final ProjectService ProjectService;
     private final MemberService memberService;
-    private final FreelancerService freelancerService;
 
     // 등록
     @PostMapping
@@ -44,7 +43,7 @@ public class ApiV1ApplicationController {
             @PathVariable long projectId,
             @Valid @RequestBody ApplicationWriteReqBody reqBody,
             @AuthenticationPrincipal CustomUserDetails user
-            ) {
+    ) {
         Member member = memberService.findById(user.getId());
         Freelancer freelancer = member.getFreelancer();
         if (freelancer == null) {
@@ -73,7 +72,7 @@ public class ApiV1ApplicationController {
             @PathVariable long id,
             @Valid @RequestBody ApplicationModifyReqBody reqBody,
             @AuthenticationPrincipal CustomUserDetails user
-            ) {
+    ) {
         // 권한 체크
         Member member = memberService.findById(user.getId());
         Client client = member.getClient();
@@ -87,8 +86,15 @@ public class ApiV1ApplicationController {
 
         Application application = applicationService.findById(id);
 
-        applicationService.update(application, reqBody.status());
+        ApplicationStatus status = reqBody.status();
+        applicationService.update(application, status);
 
+        if (status == ApplicationStatus.ACCEPT) {
+            project.addParticipant(application.getFreelancer());
+        }
+        if (status == ApplicationStatus.DENIED) {
+            project.removeParticipant(application.getFreelancer());
+        }
 
         return new ApiResponse<>(
                 "200-1",
@@ -114,6 +120,9 @@ public class ApiV1ApplicationController {
         if (!application.getFreelancer().equals(freelancer)) {
             throw new ServiceException("403-1", "권한이 없습니다.");
         }
+        if (application.getStatus() == ApplicationStatus.ACCEPT) {
+            throw new ServiceException("403-2", "수락된 지원서는 삭제할 수 없습니다.");
+        }
 
         applicationService.delete(application);
 
@@ -131,7 +140,7 @@ public class ApiV1ApplicationController {
                 "200-1",
                 "%d번 지원서가 단건 조회되었습니다.".formatted(id),
                 new ApplicationDto(application)
-                );
+        );
     }
 
     // 클라이언트가 프로젝트의 지원 목록 보기

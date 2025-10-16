@@ -1,11 +1,13 @@
 package com.back.domain.application.application.repository;
 
+import com.back.domain.application.application.constant.ApplicationStatus;
 import com.back.domain.application.application.entity.Application;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
 import com.back.domain.project.project.entity.Project;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -20,4 +22,19 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
 
     Page<Application> findAllByFreelancer(Freelancer freelancer, Pageable pageable);
     Page<Application> findAllByProject(Project project, Pageable pageable);
+
+    Optional<Application> findByProjectAndStatus(Project project, ApplicationStatus status);
+
+    @Query("""
+            SELECT a FROM Application a
+            JOIN FETCH a.project p
+            JOIN FETCH a.freelancer f
+            JOIN FETCH f.member fm
+            JOIN FETCH p.client c
+            JOIN FETCH c.member cm
+            WHERE a.id = :id
+    """)
+    Optional<Application> findByIdWithDetail(long id);
+
+    Optional<Application> findByFreelancerAndProject(Freelancer freelancer, Project project);
 }

@@ -2,6 +2,8 @@ package com.back.domain.project.project.entity;
 
 import com.back.domain.application.application.entity.Application;
 import com.back.domain.client.client.entity.Client;
+import com.back.domain.freelancer.freelancer.entity.Freelancer;
+import com.back.domain.project.participant.entity.ProjectParticipant;
 import com.back.domain.project.project.constant.ProjectStatus;
 import com.back.domain.proposal.proposal.entity.Proposal;
 import com.back.global.jpa.entity.BaseEntity;
@@ -49,6 +51,9 @@ public class Project extends BaseEntity {
 
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Proposal> proposals = new ArrayList<>();
+
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ProjectParticipant> projectParticipants = new ArrayList<>();
     
     public Project(
             Client client,
@@ -99,5 +104,21 @@ public class Project extends BaseEntity {
 
     public void updateStatus(ProjectStatus projectStatus) {
         this.status = projectStatus;
+    }
+
+    public void addParticipant(Freelancer participant) {
+        boolean alreadyAdded = this.projectParticipants.stream()
+                .anyMatch(pp -> pp.getFreelancer().equals(participant));
+
+        if (!alreadyAdded) {
+            ProjectParticipant projectParticipant = new ProjectParticipant(this, participant);
+            this.projectParticipants.add(projectParticipant);
+            participant.getMyProjects().add(projectParticipant);
+        }
+    }
+
+    public void removeParticipant(Freelancer participant) {
+        this.projectParticipants.removeIf(pp -> pp.getFreelancer().equals(participant));
+        participant.getMyProjects().removeIf(pp -> pp.getProject().equals(this));
     }
 }

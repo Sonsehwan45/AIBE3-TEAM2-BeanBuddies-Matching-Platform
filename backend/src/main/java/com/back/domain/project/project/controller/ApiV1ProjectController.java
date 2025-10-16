@@ -5,6 +5,7 @@ import com.back.domain.common.interest.dto.InterestDto;
 import com.back.domain.common.interest.service.InterestService;
 import com.back.domain.common.skill.dto.SkillDto;
 import com.back.domain.common.skill.service.SkillService;
+import com.back.domain.member.member.dto.ProfileResponseDto;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.dto.*;
@@ -173,5 +174,24 @@ public class ApiV1ProjectController {
     ) {
         Page<ProjectSummaryDto> page = projectService.search(searchDto, pageable);
         return new ApiResponse<>("200-1", "조회 성공", page);
+    }
+
+    @GetMapping("/{projectId}/collaborator")
+    public ApiResponse<ProfileResponseDto> getCollaborator(
+            @PathVariable long projectId,
+            @AuthenticationPrincipal CustomUserDetails user
+    ) {
+        //현재 로그인한 사용자 정보 조회
+        Member currentUser = memberService.findById(user.getId());
+
+        //서비스 로직을 호출하여 협업 상대방 Member 정보 조회
+        Member collaborator = memberService.getCollaboratorProfile(projectId, currentUser);
+
+        //Member 객체를 ProfileResponseDto로 변환하여 응답
+        return new ApiResponse<>(
+                "200",
+                "협업 상대방 정보 조회를 성공했습니다.",
+                ProfileResponseDto.of(collaborator)
+        );
     }
 }

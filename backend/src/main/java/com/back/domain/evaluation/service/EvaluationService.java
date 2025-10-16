@@ -149,7 +149,7 @@ public class EvaluationService {
 
     //프리랜서 총 평점 계산
     private void updateFreelancerRatingAvg(Long freelancerId) {
-        List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerId(freelancerId);
+        List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerIdDetails(freelancerId);
 
         double average = evaluations.stream()
                 .mapToInt(FreelancerEvaluation::getRatingSatisfaction)
@@ -177,7 +177,7 @@ public class EvaluationService {
         client.updateRatingAvg(average);
     }
 
-    //자신의 평가 리스트를 반환
+    //자신이 받은 평가 리스트를 반환
     @Transactional(readOnly = true)
     public EvaluationsWithCountResponse getEvaluations(Long userId) {
         Member member = memberRepository.findById(userId)
@@ -192,7 +192,7 @@ public class EvaluationService {
                     .map(EvaluationResponse::from)
                     .collect(Collectors.toList());
         } else if (member.getRole() == Role.FREELANCER) {
-            List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerId(userId);
+            List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerIdDetails(userId);
             evaluationResponses = evaluations.stream()
                     .map(EvaluationResponse::from)
                     .collect(Collectors.toList());
@@ -201,6 +201,52 @@ public class EvaluationService {
         }
 
         // 최종적으로 개수(evaluationResponses.size())와 목록을 DTO에 담아 반환
+        return new EvaluationsWithCountResponse(evaluationResponses.size(), evaluationResponses);
+    }
+
+
+    //자신이 작성한 평가 리스트 반환
+    @Transactional(readOnly = true)
+    public EvaluationsWithCountResponse getWrittenEvaluations(Long userId){
+        Member member = memberRepository.findById(userId)
+                .orElseThrow(() -> new ServiceException("404", "사용자를 찾을 수 없습니다."));
+
+        //반환할 평가 리스트를 저장할 변수 선언
+        List<EvaluationResponse> evaluationResponses;
+
+        //역할에 따라 분기
+        if(member.getRole() == Role.CLIENT){
+            //클라이언트가 자신이 작성한 평가 목록 조회
+            List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByClientId(userId);
+
+            evaluationResponses = evaluations.stream()
+                    .map(EvaluationResponse::from)
+                    .collect(Collectors.toList());
+        }
+        else if (member.getRole() == Role.FREELANCER){
+            //프리랜서가 자신이 작성한 평가 목록 조회
+            List<ClientEvaluation> evaluations = clientEvaluationRepository.findByFreelancerId(userId);
+
+            evaluationResponses = evaluations.stream()
+                    .map(EvaluationResponse::from)
+                    .collect(Collectors.toList());
+        }
+        else{
+            evaluationResponses = Collections.emptyList();
+        }
+        return new EvaluationsWithCountResponse(evaluationResponses.size(), evaluationResponses);
+    }
+
+    public EvaluationsWithCountResponse getMyEvaluations(Long freelancerId) {
+        Freelancer freelancer = freelancerRepository.findById(freelancerId)
+                .orElseThrow(() -> new ServiceException("404", "프리랜서를 찾을 수 없습니다."));
+
+        List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerIdDetails(freelancerId);
+
+        List<EvaluationResponse> evaluationResponses = evaluations.stream()
+                .map(EvaluationResponse::from)
+                .collect(Collectors.toList());
+
         return new EvaluationsWithCountResponse(evaluationResponses.size(), evaluationResponses);
     }
 }
