@@ -3,10 +3,11 @@ import { useAuth } from "@/context/AuthContext"; // <- logout 가져오기
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../../components/base/Button";
 import Input from "../../../components/base/Input";
-import { client } from "../../../lib/backend/client";
+import { useApiClient } from "@/lib/backend/apiClient";
 import Modal from "../../../components/base/Modal";
 
 export default function DeleteAccount() {
+  const client = useApiClient();
   const { token, clearAuth } = useAuth(); // 로그아웃 함수 가져오기
   const navigate = useNavigate();
 
@@ -32,9 +33,6 @@ export default function DeleteAccount() {
     try {
       const res = await client.PATCH("/api/v1/members/me/withdraw", {
         body: { password },
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         throwHttpErrors: false,
       });
 

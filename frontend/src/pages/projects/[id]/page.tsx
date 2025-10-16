@@ -2,7 +2,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Button from "../../../components/base/Button";
-import client from "../../../global/backend/client";
+import { useApiClient } from "@/lib/backend/apiClient";
 
 interface Project {
   id: number;
@@ -65,6 +65,7 @@ interface PageInfo {
 }
 
 export default function ProjectDetail() {
+  const client = useApiClient();
   const { user, token, isLoggedIn } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -166,9 +167,6 @@ export default function ProjectDetail() {
 
     try {
       const response = await client.DELETE("/api/v1/projects/{id}", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         params: { path: { id: project.id } },
       });
       if (response.error) throw response.error;
