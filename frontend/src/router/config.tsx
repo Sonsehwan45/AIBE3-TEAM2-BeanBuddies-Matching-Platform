@@ -79,9 +79,7 @@ const routes: AppRoute[] = [
   },
   {
     path: "/recommendations",
-    element: ({ userType }: RouteProps) => (
-      <Recommendations userType={userType} />
-    ),
+    element: <Recommendations />,
   },
   {
     path: "/mypage",

@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProfileResponseDto {
     // Common Member fields
+    private Long id;
     private String username;
     private String name;
     private String email;
@@ -45,6 +46,7 @@ public class ProfileResponseDto {
 
     public static ProfileResponseDto of(Member member) {
         ProfileResponseDtoBuilder builder = ProfileResponseDto.builder()
+                .id(member.getId())
                 .username(member.getUsername())
                 .name(member.getName())
                 .email(member.getEmail())
