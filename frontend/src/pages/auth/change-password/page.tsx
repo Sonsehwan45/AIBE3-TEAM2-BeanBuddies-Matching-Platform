@@ -3,10 +3,11 @@ import { useAuth } from "@/context/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../../components/base/Button";
 import Input from "../../../components/base/Input";
-import { client } from "../../../lib/backend/client";
+import { useApiClient } from "../../../lib/backend/apiClient";
 import toast from "react-hot-toast";
 
 export default function ChangePassword() {
+  const client = useApiClient();
   const { token } = useAuth(); // 로그인 시 저장된 토큰
 
   const navigate = useNavigate();
@@ -37,9 +38,6 @@ export default function ChangePassword() {
     try {
       const res = await client.PATCH("/api/v1/members/password", {
         body: formData,
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         throwHttpErrors: false,
       });
 

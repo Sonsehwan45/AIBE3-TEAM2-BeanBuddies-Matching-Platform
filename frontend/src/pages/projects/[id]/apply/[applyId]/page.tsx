@@ -1,5 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
-import { client } from "@/lib/backend/client";
+import { useApiClient } from "@/lib/backend/apiClient";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -21,6 +21,7 @@ interface ApplicationDetailData {
 }
 
 export default function ApplicationDetail() {
+  const client = useApiClient();
   const { user, token, isLoggedIn } = useAuth();
   const { id, applyId } = useParams<{ id: string; applyId: string }>();
   const navigate = useNavigate();
@@ -80,9 +81,6 @@ export default function ApplicationDetail() {
         const response = await client.PATCH(
           "/api/v1/projects/{projectId}/applications/{id}",
           {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
             params: {
               path: {
                 projectId: application.projectId,
@@ -120,9 +118,6 @@ export default function ApplicationDetail() {
       const response = await client.DELETE(
         "/api/v1/projects/{projectId}/applications/{id}",
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
           params: {
             path: {
               projectId: application.projectId,

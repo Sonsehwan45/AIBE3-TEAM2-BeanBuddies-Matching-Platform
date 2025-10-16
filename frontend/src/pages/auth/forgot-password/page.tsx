@@ -3,9 +3,10 @@ import { Link, useNavigate } from "react-router-dom";
 import Button from "../../../components/base/Button";
 import Input from "../../../components/base/Input";
 import toast from "react-hot-toast";
-import { client } from "../../../lib/backend/client";
+import { useApiClient } from "../../../lib/backend/apiClient";
 
 export default function ForgotPassword() {
+  const client = useApiClient();
   const navigate = useNavigate();
 
   const [step, setStep] = useState<"info" | "verification" | "reset">("info");

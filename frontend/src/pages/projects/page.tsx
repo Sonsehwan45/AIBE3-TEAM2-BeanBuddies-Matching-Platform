@@ -4,9 +4,11 @@ import { Link } from "react-router-dom";
 import Button from "../../components/base/Button";
 import Input from "../../components/base/Input";
 import Select from "../../components/base/Select";
-import { client } from "../../lib/backend/client";
+import { useApiClient } from "../../lib/backend/apiClient";
 
 export default function Projects() {
+  const client = useApiClient();
+
   const { user, token, isLoggedIn } = useAuth();
   const [keyword, setKeyword] = useState("");
   const [keywordType, setKeywordType] = useState("");
@@ -138,9 +140,6 @@ export default function Projects() {
       const response = await client.POST(
         "/api/v1/members/me/favorites/projects",
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
           body: {
             projectId: projectId, // ✅ 매개변수 그대로 사용
           },

@@ -2,13 +2,14 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../../components/base/Button";
 import Input from "../../../components/base/Input";
-import { client } from "../../../lib/backend/client";
+import { useApiClient } from "@/lib/backend/apiClient";
 import { useAuth } from "@/context/AuthContext";
 import toast from "react-hot-toast";
 
 export default function Login() {
   const navigate = useNavigate();
   const { setToken, setUser } = useAuth();
+  const client = useApiClient();
 
   const [formData, setFormData] = useState({
     username: "",
@@ -34,8 +35,6 @@ export default function Login() {
 
       if (res.response.ok && res.data) {
         // 성공
-        const token = res.response.headers.get("Authorization");
-        if (token) setToken(token.replace("Bearer ", ""));
         if (res.data.data) setUser(res.data.data);
 
         toast.success(res.data.msg || "로그인 성공!", { duration: 3000 });

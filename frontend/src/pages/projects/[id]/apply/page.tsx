@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Button from "../../../../components/base/Button";
 import Input from "../../../../components/base/Input";
-import { client } from "../../../../lib/backend/client";
+import { useApiClient } from "../../../../lib/backend/apiClient";
 
 interface Project {
   id: number;
@@ -32,6 +32,7 @@ interface Project {
 }
 
 export default function ProjectApply() {
+  const client = useApiClient();
   const { user, token, isLoggedIn } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -117,9 +118,6 @@ export default function ProjectApply() {
       const response = await client.POST(
         "/api/v1/projects/{projectId}/applications",
         {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ 토큰 포함
-          },
           params: { path: { projectId: project.id } },
           body: {
             estimatedPay: Number(formData.estimatedPay),

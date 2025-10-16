@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { client } from "../../../../lib/backend/client";
+import { useApiClient } from "../../../../lib/backend/apiClient";
 
 interface Skill {
   id: number;
@@ -16,6 +16,7 @@ interface Interest {
 }
 
 export default function ProjectsEditPage() {
+  const client = useApiClient();
   const { user, token, isLoggedIn } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -163,9 +164,6 @@ export default function ProjectsEditPage() {
 
     try {
       const response = await client.PATCH(`/api/v1/projects/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         body,
       });
 

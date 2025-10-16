@@ -3,7 +3,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { client } from "../../../lib/backend/client";
+import { useApiClient } from "../../../lib/backend/apiClient";
 
 interface Skill {
   id: number;
@@ -16,6 +16,7 @@ interface Interest {
 }
 
 export default function ProjectsCreatePage() {
+  const client = useApiClient();
   const { user, token, isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -185,9 +186,6 @@ export default function ProjectsCreatePage() {
     // 요청
     client
       .POST("/api/v1/projects", {
-        headers: {
-          Authorization: `Bearer ${token}`, // ✅ 토큰 포함
-        },
         body,
       })
       .then((res: any) => {
