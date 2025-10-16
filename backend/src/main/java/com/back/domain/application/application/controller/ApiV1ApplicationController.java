@@ -120,6 +120,9 @@ public class ApiV1ApplicationController {
         if (!application.getFreelancer().equals(freelancer)) {
             throw new ServiceException("403-1", "권한이 없습니다.");
         }
+        if (application.getStatus() == ApplicationStatus.ACCEPT) {
+            throw new ServiceException("403-2", "수락된 지원서는 삭제할 수 없습니다.");
+        }
 
         applicationService.delete(application);
 
