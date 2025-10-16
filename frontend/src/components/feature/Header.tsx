@@ -89,35 +89,21 @@ export default function Header({ userType, onUserTypeChange }: HeaderProps) {
             {/* 로그인 되어 있으면 */}
             {token && user ? (
               <>
-                {onUserTypeChange && role && (
+                {role && (
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">역할:</span>
-                    <div className="flex bg-gray-100 rounded-full p-1">
-                      <button
-                        onClick={() => onUserTypeChange('client')}
-                        className={`px-3 py-1 rounded-full text-xs whitespace-nowrap cursor-pointer transition-colors ${
-                          role === 'client'
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        클라이언트
-                      </button>
-                      <button
-                        onClick={() => onUserTypeChange('freelancer')}
-                        className={`px-3 py-1 rounded-full text-xs whitespace-nowrap cursor-pointer transition-colors ${
-                          role === 'freelancer'
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-600 hover:text-gray-900'
-                        }`}
-                      >
-                        프리랜서
-                      </button>
+                    <div
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        role === 'client'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-green-600 text-white'
+                      }`}
+                    >
+                      {role === 'client' ? '클라이언트' : '프리랜서'}
                     </div>
                   </div>
-                )}
+                )}  
                 <span className="text-sm text-gray-700">
-                  환영합니다, {user.name}님 ({role})
+                  환영합니다, {user.name}님
                 </span>
 
                 <Button variant="outline" size="sm" onClick={handleLogout}>
