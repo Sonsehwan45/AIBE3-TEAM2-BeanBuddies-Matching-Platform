@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../../components/base/Button';
 import Card from '../../components/base/Card';
@@ -8,7 +8,7 @@ import Input from '../../components/base/Input';
 import Select from '../../components/base/Select';
 import { client } from '@/lib/backend/client';
 import { useAuth } from '@/context/AuthContext';
-import { mockProjects, mockFreelancers, mockFeedback } from '@/mocks/users';
+import { mockFeedback } from '@/mocks/users';
 
 interface BaseProfile {
   username: string;
@@ -80,7 +80,7 @@ interface MyPageProps {
 
 export default function MyPage({ userType = 'client' }: MyPageProps) {
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user, token } = useAuth();
   const [activeTab, setActiveTab] = useState<'profile' | 'projects' | 'bookmarks' | 'feedback'>(
     'profile',
   );
@@ -127,21 +127,25 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
   const [allSkills, setAllSkills] = useState<{ id: number; name: string }[]>([]);
   const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([]);
   // projects 탭 필터 상태
-  const [projectStatusFilter, setProjectStatusFilter] = useState<'all' | 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CLOSED'>('IN_PROGRESS');
+  const [projectStatusFilter, setProjectStatusFilter] = useState<'all' | 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CLOSED'>('all');
   const [applicationStatusFilter, setApplicationStatusFilter] = useState<'all' | 'WAIT' | 'ACCEPT' | 'DENIED'>('all');
+  // Projects tab: search/sort/pagination
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortKeyClient, setSortKeyClient] = useState<'date' | 'price' | 'title'>('date');
+  const [sortDirClient, setSortDirClient] = useState<'asc' | 'desc'>('desc');
+  const [sortKeyFreelancer, setSortKeyFreelancer] = useState<'date' | 'pay' | 'title'>('date');
+  const [sortDirFreelancer, setSortDirFreelancer] = useState<'asc' | 'desc'>('desc');
+  const [pageClient, setPageClient] = useState(1);
+  const [pageSizeClient, setPageSizeClient] = useState(5);
+  const [pageFreelancer, setPageFreelancer] = useState(1);
+  const [pageSizeFreelancer, setPageSizeFreelancer] = useState(5);
 
   // applications/projects for profile tab
   const [applications, setApplications] = useState<MyApplicationItem[]>([]);
   const [appsLoading, setAppsLoading] = useState(false);
   const [projects, setProjects] = useState<MyProjectItem[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
-  // pagination for profile tab lists
-  const [appsPage, setAppsPage] = useState(1);
-  const [appsPageSize] = useState(5);
-  const [projectsPage, setProjectsPage] = useState(1);
-  const [projectsPageSize] = useState(5);
-  const appsSectionRef = useRef<HTMLDivElement>(null);
-  const projectsSectionRef = useRef<HTMLDivElement>(null);
+  // profile-tab paginations removed; lists live in Projects tab
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -251,16 +255,27 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
     fetchSkills();
   }, []);
 
-  // 목록 길이 변경 시 페이지 보정
-  useEffect(() => {
-    const total = Math.max(1, Math.ceil(applications.length / appsPageSize));
-    if (appsPage > total) setAppsPage(total);
-  }, [applications, appsPage, appsPageSize]);
+  // pagination removed from profile tab
 
+  // Page correction for client projects list
   useEffect(() => {
-    const total = Math.max(1, Math.ceil(projects.length / projectsPageSize));
-    if (projectsPage > total) setProjectsPage(total);
-  }, [projects, projectsPage, projectsPageSize]);
+    if ((profileData as any)?.role !== 'CLIENT') return;
+    const filtered = projectStatusFilter === 'all' ? projects : projects.filter((p) => p.status === projectStatusFilter);
+    const q = searchQuery.trim().toLowerCase();
+    const searched = q ? filtered.filter((p) => p.title.toLowerCase().includes(q) || p.summary.toLowerCase().includes(q)) : filtered;
+    const totalPages = Math.max(1, Math.ceil(searched.length / pageSizeClient));
+    if (pageClient > totalPages) setPageClient(totalPages);
+  }, [projects, projectStatusFilter, searchQuery, pageSizeClient, pageClient, (profileData as any)?.role]);
+
+  // Page correction for freelancer applications list
+  useEffect(() => {
+    if ((profileData as any)?.role !== 'FREELANCER') return;
+    const filtered = applicationStatusFilter === 'all' ? applications : applications.filter((a) => a.status === applicationStatusFilter);
+    const q = searchQuery.trim().toLowerCase();
+    const searched = q ? filtered.filter((a) => a.projectTitle.toLowerCase().includes(q)) : filtered;
+    const totalPages = Math.max(1, Math.ceil(searched.length / pageSizeFreelancer));
+    if (pageFreelancer > totalPages) setPageFreelancer(totalPages);
+  }, [applications, applicationStatusFilter, searchQuery, pageSizeFreelancer, pageFreelancer, (profileData as any)?.role]);
 
   // 클라이언트만: 내가 등록한 프로젝트 목록 조회
   useEffect(() => {
@@ -399,16 +414,16 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
   }, [profileData.role, profileData.skills, allSkills]);
 
   const tabs =
-    userType === 'client'
+    profileData.role === 'CLIENT'
       ? [
           { id: 'profile', label: '프로필 관리', icon: 'ri-user-3-line' },
-          { id: 'projects', label: '프로젝트 관리', icon: 'ri-briefcase-4-line' },
+          { id: 'projects', label: '등록 프로젝트', icon: 'ri-briefcase-4-line' },
           { id: 'bookmarks', label: '관심 프리랜서', icon: 'ri-heart-3-line' },
           { id: 'feedback', label: '피드백 관리', icon: 'ri-star-line' },
         ]
       : [
           { id: 'profile', label: '프로필 관리', icon: 'ri-user-3-line' },
-          { id: 'projects', label: '지원 현황', icon: 'ri-briefcase-4-line' },
+          { id: 'projects', label: '지원 프로젝트', icon: 'ri-briefcase-4-line' },
           { id: 'bookmarks', label: '관심 프로젝트', icon: 'ri-heart-3-line' },
           { id: 'feedback', label: '피드백 관리', icon: 'ri-star-line' },
         ];
@@ -442,28 +457,52 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
         .split('; ')
         .find(row => row.startsWith('accessToken='))
         ?.split('=')[1];
-
-      const { data, error } = await client.PATCH('/api/v1/members/me/profile', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        },
-        body: updateData
-      });
-
-      if (error || !data) {
-        throw error || new Error('프로필 수정에 실패했습니다.');
+      let ok = false;
+      if (profileData.role === 'FREELANCER') {
+        // 프리랜서: PUT /api/v1/freelancers/{id}
+        const freelancerId = user?.id;
+        if (!freelancerId) throw new Error('사용자 ID를 찾을 수 없습니다. 다시 로그인해주세요.');
+        const { data, error } = await client.PUT('/api/v1/freelancers/{id}', {
+          params: { path: { id: freelancerId } },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: {
+            job: (updateData as any).job,
+            freelancerEmail: (updateData as any).freelancerEmail,
+            comment: (updateData as any).comment,
+            career: (updateData as any).career,
+            skillIds: (updateData as any).skillIds,
+          }
+        });
+        if (error || !data) throw error || new Error('프리랜서 정보 수정 실패');
+        // ApiV1FreelancerController는 resultCode "200"
+        ok = data.resultCode === '200';
+      } else {
+        // 클라이언트: 기존 me/profile PATCH 유지
+        const { data, error } = await client.PATCH('/api/v1/members/me/profile', {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: updateData
+        });
+        if (error || !data) throw error || new Error('프로필 수정에 실패했습니다.');
+        ok = data.resultCode === '200-8';
       }
 
-      if (data.resultCode === '200-8') {
+      if (ok) {
         alert('프로필이 성공적으로 업데이트되었습니다!');
+      } else {
+        alert('프로필 수정 응답을 확인하지 못했습니다. 잠시 후 다시 시도해주세요.');
       }
     } catch (error: any) {
       if (error?.data?.resultCode === '401-1') {
         alert('로그인이 필요한 서비스입니다.');
         navigate('/login');
       } else {
-        alert('프로필 수정에 실패했습니다.');
+        alert(error?.message || '프로필 수정에 실패했습니다.');
       }
     }
   };
@@ -482,13 +521,204 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
   // 프로젝트 즐겨찾기/북마크 용 데이터는 아래에서 직접 사용합니다.
 
   // 북마크된 프리랜서/프로젝트 (임시 데이터)
-  const bookmarkedFreelancers = mockFreelancers.slice(0, 3);
-  const bookmarkedProjects = mockProjects.slice(0, 3);
+  // 관심 항목 이전 목데이터 사용 제거 (API 연동으로 대체)
 
-  const removeBookmark = (id: number, type: 'freelancer' | 'project') => {
-    console.log(`${type} ${id} 북마크 해제`);
-    alert('북마크가 해제되었습니다.');
+  // Bookmarks (연동)
+  const [favFreelancers, setFavFreelancers] = useState<any[]>([]);
+  const [favSearch, setFavSearch] = useState('');
+  const [favSortKey, setFavSortKey] = useState<'rating' | 'name'>('rating');
+  const [favSortDir, setFavSortDir] = useState<'asc' | 'desc'>('desc');
+  const [favPage, setFavPage] = useState(1);
+  const [favPageSize, setFavPageSize] = useState(5);
+  const [favLoading, setFavLoading] = useState(false);
+  const [favError, setFavError] = useState<string | null>(null);
+
+  // 관심 프리랜서 상세 (지연 로딩/캐시)
+  const [favFreelancerDetailOpen, setFavFreelancerDetailOpen] = useState<Record<number, boolean>>({});
+  const [favFreelancerDetail, setFavFreelancerDetail] = useState<Record<number, any>>({});
+  const [favFreelancerDetailLoading, setFavFreelancerDetailLoading] = useState<Record<number, boolean>>({});
+  const [favFreelancerDetailError, setFavFreelancerDetailError] = useState<Record<number, string | null>>({});
+
+  const toggleFavFreelancerDetail = async (memberId: number) => {
+    setFavFreelancerDetailOpen((prev) => ({ ...prev, [memberId]: !prev[memberId] }));
+    const willOpen = !favFreelancerDetailOpen[memberId];
+    if (!willOpen) return; // 닫는 경우는 로드 안 함
+    if (favFreelancerDetail[memberId]) return; // 이미 로드됨
+    if (!token) return;
+    try {
+      setFavFreelancerDetailLoading((prev) => ({ ...prev, [memberId]: true }));
+      setFavFreelancerDetailError((prev) => ({ ...prev, [memberId]: null }));
+      const { data, error } = await client.GET('/api/v1/members/{userId}/profile', {
+        params: { path: { userId: memberId } },
+        headers: { Authorization: `Bearer ${token}` },
+      } as any);
+      if (error) throw (error as any);
+      const prof = (data as any)?.data || {};
+      setFavFreelancerDetail((prev) => ({ ...prev, [memberId]: prof }));
+    } catch (e: any) {
+      const msg = e?.data?.msg || e?.message || '프로필 조회 실패';
+      setFavFreelancerDetailError((prev) => ({ ...prev, [memberId]: msg }));
+    } finally {
+      setFavFreelancerDetailLoading((prev) => ({ ...prev, [memberId]: false }));
+    }
   };
+
+  // 관심 프리랜서 목록 조회
+  useEffect(() => {
+    let cancelled = false;
+    const fetchFavorites = async () => {
+      if (!token) return;
+      setFavLoading(true);
+      setFavError(null);
+      try {
+        const { data, error } = await client.GET('/api/v1/members/me/favorites/freelancers', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (error) {
+          const code = (error as any)?.data?.resultCode;
+          if (code === '401-1') {
+            navigate('/login');
+            return;
+          }
+          setFavError((error as any)?.data?.msg || '관심 프리랜서 조회 실패');
+          setFavFreelancers([]);
+          return;
+        }
+
+        const list = ((data as any)?.data || []).map((f: any) => ({
+          id: f.id, // freelancerId
+          memberId: f.memberId,
+          name: f.name,
+          profileImgUrl: f.profileImgUrl,
+          job: f.job,
+          experience: f.job || '', // 기존 UI 호환
+          averageRating: f.ratingAvg ?? 0,
+          skills: [], // API에 없으므로 비움
+        }));
+        if (!cancelled) setFavFreelancers(list);
+      } catch (e: any) {
+        if (!cancelled) setFavError(e?.message || '관심 프리랜서 조회 중 오류');
+      } finally {
+        if (!cancelled) setFavLoading(false);
+      }
+    };
+    fetchFavorites();
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  // 페이지 보정: 검색/데이터/페이지크기 변경 시 현재 페이지가 총 페이지를 넘지 않도록 보정
+  useEffect(() => {
+    const q = favSearch.trim().toLowerCase();
+    const searched = q
+      ? favFreelancers.filter((f) =>
+          f.name.toLowerCase().includes(q) || (f.experience || '').toLowerCase().includes(q)
+        )
+      : favFreelancers;
+    const totalPages = Math.max(1, Math.ceil(searched.length / favPageSize));
+    if (favPage > totalPages) setFavPage(totalPages);
+  }, [favFreelancers, favSearch, favPageSize]);
+
+  const removeBookmark = async (id: number, type: 'freelancer' | 'project') => {
+    if (!token) return;
+    if (type === 'freelancer') {
+      // id는 freelancer의 memberId
+      const prev = favFreelancers;
+  setFavFreelancers((p) => p.filter((f: any) => f.memberId !== id));
+      try {
+        const { error } = await client.DELETE(`/api/v1/members/me/favorites/freelancers/{userId}`, {
+          params: { path: { userId: id } },
+          headers: { Authorization: `Bearer ${token}` },
+        } as any);
+        if (error) throw error;
+      } catch (e: any) {
+        // 롤백
+        setFavFreelancers(prev);
+        alert(e?.data?.msg || '북마크 해제 실패');
+      }
+    } else {
+      const prev = favProjects;
+      setFavProjects((p) => p.filter((pr: any) => pr.id !== id));
+      try {
+        const { error } = await client.DELETE(`/api/v1/members/me/favorites/projects/{projectId}`, {
+          params: { path: { projectId: id } },
+          headers: { Authorization: `Bearer ${token}` },
+        } as any);
+        if (error) throw error;
+      } catch (e: any) {
+        setFavProjects(prev);
+        alert(e?.data?.msg || '프로젝트 북마크 해제 실패');
+      }
+    }
+  };
+
+  // 관심 프로젝트 목록 조회 (프리랜서)
+  const [favProjects, setFavProjects] = useState<any[]>([]);
+  const [favProjLoading, setFavProjLoading] = useState(false);
+  const [favProjError, setFavProjError] = useState<string | null>(null);
+  const [favProjSearch, setFavProjSearch] = useState('');
+  const [favProjSortKey, setFavProjSortKey] = useState<'deadline' | 'budget' | 'title'>('deadline');
+  const [favProjSortDir, setFavProjSortDir] = useState<'asc' | 'desc'>('desc');
+  const [favProjPage, setFavProjPage] = useState(1);
+  const [favProjPageSize, setFavProjPageSize] = useState(5);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchFavProjects = async () => {
+      if (!token) return;
+      setFavProjLoading(true);
+      setFavProjError(null);
+      try {
+        const { data, error } = await client.GET('/api/v1/members/me/favorites/projects', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (error) {
+          const code = (error as any)?.data?.resultCode;
+          if (code === '401-1') {
+            navigate('/login');
+            return;
+          }
+          setFavProjError((error as any)?.data?.msg || '관심 프로젝트 조회 실패');
+          setFavProjects([]);
+          return;
+        }
+        const list = ((data as any)?.data || []).map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          description: p.summary ?? '',
+          clientName: p.ownerName ?? '',
+          status: p.status ?? '',
+          budget: p.price ?? 0,
+          duration: p.duration ?? '',
+          deadline: p.deadline ?? '',
+          skills: (p.skills || []).map((s: any) => s.name as string) as string[],
+        }));
+        if (!cancelled) setFavProjects(list);
+      } catch (e: any) {
+        if (!cancelled) setFavProjError(e?.message || '관심 프로젝트 조회 중 오류');
+      } finally {
+        if (!cancelled) setFavProjLoading(false);
+      }
+    };
+    fetchFavProjects();
+    return () => { cancelled = true; };
+  }, [token]);
+
+  // 프로젝트 북마크 페이지 보정
+  useEffect(() => {
+    const q = favProjSearch.trim().toLowerCase();
+    const searched = q
+      ? favProjects.filter((p) =>
+          p.title.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)
+        )
+      : favProjects;
+    const totalPages = Math.max(1, Math.ceil(searched.length / favProjPageSize));
+    if (favProjPage > totalPages) setFavProjPage(totalPages);
+  }, [favProjects, favProjSearch, favProjPageSize]);
 
   
 
@@ -521,10 +751,7 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                   <i className="ri-briefcase-line mr-2"></i>
                   {userType === 'client' ? '클라이언트' : '프리랜서'}
                 </p>
-                <div className="flex items-center">
-                  <i className="ri-star-fill text-yellow-400 mr-1"></i>
-                  <span className="font-bold text-lg text-gray-900">{(profileData as any).ratingAvg ?? (profileData as any).averageRating ?? 0}</span>
-                </div>
+                {/* 평균 평점 표시 제거 */}
               </div>
             </div>
           </div>
@@ -723,74 +950,7 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                             />
                           </div>
 
-                          {/* 내가 등록한 프로젝트 목록 (클라이언트 전용) */}
-                          <div className="mt-10" ref={projectsSectionRef}>
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">내가 등록한 프로젝트</h3>
-                            {projectsLoading ? (
-                              <div className="text-sm text-gray-500">불러오는 중...</div>
-                            ) : projects.length === 0 ? (
-                              <div className="text-sm text-gray-500">등록한 프로젝트가 없습니다.</div>
-                            ) : (
-                              <div className="space-y-3">
-                                {projects
-                                  .slice((projectsPage - 1) * projectsPageSize, projectsPage * projectsPageSize)
-                                  .map((p) => (
-                                  <Card key={p.id} className="p-4">
-                                    <div className="flex items-start justify-between gap-4">
-                                      <div className="min-w-0">
-                                        <div className="flex items-center gap-2">
-                                          <Link to={`/projects/${p.id}`} className="text-base font-semibold text-gray-900 hover:underline truncate">
-                                            {p.title}
-                                          </Link>
-                                          <Badge variant={(p.status === 'OPEN' ? 'success' : 'secondary')} size="sm">{p.status}</Badge>
-                                        </div>
-                                        <div className="mt-1 text-sm text-gray-600 line-clamp-2">{p.summary}</div>
-                                        <div className="mt-1 text-sm text-gray-600">예산: {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(p.price)} · 기간: {p.duration} · 마감: {p.deadline}</div>
-                                        <div className="mt-1 text-xs text-gray-500">
-                                          스킬: {p.skills?.map(s => s.name).join(', ') || '-'}
-                                        </div>
-                                        <div className="mt-0.5 text-xs text-gray-500">
-                                          관심사: {p.interests?.map(i => i.name).join(', ') || '-'}
-                                        </div>
-                                      </div>
-                                      <div className="text-xs text-gray-500 whitespace-nowrap">{new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(p.createDate))}</div>
-                                    </div>
-                                  </Card>
-                                ))}
-                                {/* pagination controls */}
-                                <div className="flex items-center justify-center gap-3 pt-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    disabled={projectsPage <= 1}
-                                    onClick={() => {
-                                      setProjectsPage((prev) => Math.max(1, prev - 1));
-                                      projectsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                    }}
-                                    className="rounded-xl"
-                                  >
-                                    이전
-                                  </Button>
-                                  <span className="text-sm text-gray-600">
-                                    {projectsPage} / {Math.max(1, Math.ceil(projects.length / projectsPageSize))}
-                                  </span>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    disabled={projectsPage >= Math.ceil(projects.length / projectsPageSize)}
-                                    onClick={() => {
-                                      const total = Math.max(1, Math.ceil(projects.length / projectsPageSize));
-                                      setProjectsPage((prev) => Math.min(total, prev + 1));
-                                      projectsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                    }}
-                                    className="rounded-xl"
-                                  >
-                                    다음
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                          {/* 내 프로젝트 목록은 '프로젝트 관리' 탭에서 확인하세요. */}
                         </>
                       ) : (
                         <>
@@ -875,7 +1035,7 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                                 }}
                                 className="mt-2"
                               >
-                                + 기술 추가
+                                + 경력 추가
                               </Button>
                             </div>
                           </div>
@@ -966,69 +1126,7 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                             </div>
                           </div>
 
-                          {/* 내가 지원한 프로젝트 목록 (프리랜서 전용) */}
-                          <div className="mt-10" ref={appsSectionRef}>
-                            <h3 className="text-lg font-semibold text-gray-800 mb-4">내 지원 현황</h3>
-                            {appsLoading ? (
-                              <div className="text-sm text-gray-500">불러오는 중...</div>
-                            ) : applications.length === 0 ? (
-                              <div className="text-sm text-gray-500">지원한 프로젝트가 없습니다.</div>
-                            ) : (
-                              <div className="space-y-3">
-                                {applications
-                                  .slice((appsPage - 1) * appsPageSize, appsPage * appsPageSize)
-                                  .map((app) => (
-                                  <Card key={app.id} className="p-4">
-                                    <div className="flex items-start justify-between gap-4">
-                                      <div>
-                                        <div className="flex items-center gap-2">
-                                          <Link to={`/projects/${app.projectId}/apply/${app.id}`} className="text-base font-semibold text-gray-900 hover:underline">
-                                            {app.projectTitle}
-                                          </Link>
-                                          <Badge variant={(app.status === 'WAIT' ? 'warning' : app.status === 'ACCEPT' ? 'success' : 'danger')} size="sm">{app.status}</Badge>
-                                        </div>
-                                        <div className="mt-1 text-sm text-gray-600">예상 급여: {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(app.estimatedPay)}</div>
-                                        <div className="mt-0.5 text-sm text-gray-600">예상 기간: {app.expectedDuration}</div>
-                                        <div className="mt-0.5 text-sm text-gray-600">근무 계획: {app.workPlan}</div>
-                                      </div>
-                                      <div className="text-xs text-gray-500 whitespace-nowrap">{new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(app.createDate))}</div>
-                                    </div>
-                                  </Card>
-                                ))}
-                                {/* pagination controls */}
-                                <div className="flex items-center justify-center gap-3 pt-2">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    disabled={appsPage <= 1}
-                                    onClick={() => {
-                                      setAppsPage((prev) => Math.max(1, prev - 1));
-                                      appsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                    }}
-                                    className="rounded-xl"
-                                  >
-                                    이전
-                                  </Button>
-                                  <span className="text-sm text-gray-600">
-                                    {appsPage} / {Math.max(1, Math.ceil(applications.length / appsPageSize))}
-                                  </span>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    disabled={appsPage >= Math.ceil(applications.length / appsPageSize)}
-                                    onClick={() => {
-                                      const total = Math.max(1, Math.ceil(applications.length / appsPageSize));
-                                      setAppsPage((prev) => Math.min(total, prev + 1));
-                                      appsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                    }}
-                                    className="rounded-xl"
-                                  >
-                                    다음
-                                  </Button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
+                          {/* 내 지원 현황은 '프로젝트 관리' 탭에서 확인하세요. */}
                         </>
                       )}
 
@@ -1054,15 +1152,15 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                     </div>
                     <div>
                       <h2 className="text-2xl font-bold text-gray-900">
-                        {userType === 'client' ? '프로젝트 관리' : '지원 현황'}
+                        {profileData.role === 'CLIENT' ? '프로젝트 관리' : '지원 현황'}
                       </h2>
                       <p className="text-gray-600">
-                        {userType === 'client' ? '내가 등록한 프로젝트를 확인하고 상태별로 살펴보세요.' : '내가 지원한 프로젝트를 상태별로 확인해보세요.'}
+                        {profileData.role === 'CLIENT' ? '내가 등록한 프로젝트를 확인하고 상태별로 살펴보세요.' : '내가 지원한 프로젝트를 상태별로 확인해보세요.'}
                       </p>
                     </div>
                   </div>
 
-                  {userType === 'client' ? (
+                  {profileData.role === 'CLIENT' ? (
                     <>
                       {/* 상태 필터 */}
                       <div className="flex flex-wrap gap-2 mb-4">
@@ -1086,41 +1184,139 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                         ))}
                       </div>
 
-                      {/* 목록 */}
-                      <div className="space-y-3">
-                        {(projectStatusFilter === 'all'
-                          ? projects
-                          : projects.filter((p) => p.status === projectStatusFilter)
-                        ).map((p) => (
-                          <Card key={p.id} className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <Link to={`/projects/${p.id}`} className="text-base font-semibold text-gray-900 hover:underline truncate">
-                                    {p.title}
-                                  </Link>
-                                  <Badge
-                                    variant={p.status === 'OPEN' ? 'success' : p.status === 'IN_PROGRESS' ? 'warning' : p.status === 'COMPLETED' ? 'primary' : 'secondary'}
-                                    size="sm"
-                                  >
-                                    {p.status === 'OPEN' ? '모집중' : p.status === 'IN_PROGRESS' ? '진행중' : p.status === 'COMPLETED' ? '완료' : '마감'}
-                                  </Badge>
-                                </div>
-                                <div className="mt-1 text-sm text-gray-600 line-clamp-2">{p.summary}</div>
-                                <div className="mt-1 text-sm text-gray-600">예산: {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(p.price)} · 기간: {p.duration} · 마감: {p.deadline}</div>
-                                <div className="mt-1 text-xs text-gray-500">스킬: {p.skills?.map((s) => s.name).join(', ') || '-'}</div>
-                                <div className="mt-0.5 text-xs text-gray-500">관심사: {p.interests?.map((i) => i.name).join(', ') || '-'}</div>
-                              </div>
-                              <div className="text-xs text-gray-500 whitespace-nowrap">
-                                {new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(p.createDate))}
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                        {(
-                          (projectStatusFilter === 'all' ? projects : projects.filter((p) => p.status === projectStatusFilter)).length === 0
-                        ) && <div className="text-sm text-gray-500">표시할 프로젝트가 없습니다.</div>}
+                      {/* 검색/정렬/페이지 크기 */}
+                      <div className="flex flex-wrap items-end gap-3 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">검색</label>
+                          <Input
+                            name="search"
+                            placeholder="제목/요약 검색"
+                            value={searchQuery}
+                            onChange={(e) => { setSearchQuery(e.target.value); setPageClient(1); }}
+                            className="rounded-xl w-56"
+                          />
+                        </div>
+                        <div className="w-44">
+                          <Select
+                            label="정렬"
+                            value={`${sortKeyClient}:${sortDirClient}`}
+                            onChange={(val) => {
+                              const [k, d] = (val as string).split(':') as [typeof sortKeyClient, typeof sortDirClient];
+                              setSortKeyClient(k);
+                              setSortDirClient(d);
+                            }}
+                            options={[
+                              { label: '최신순', value: 'date:desc' },
+                              { label: '오래된순', value: 'date:asc' },
+                              { label: '가격높은순', value: 'price:desc' },
+                              { label: '가격낮은순', value: 'price:asc' },
+                              { label: '제목 오름차순', value: 'title:asc' },
+                              { label: '제목 내림차순', value: 'title:desc' },
+                            ]}
+                          />
+                        </div>
+                        <div className="w-40">
+                          <Select
+                            label="페이지 크기"
+                            value={String(pageSizeClient)}
+                            onChange={(val) => { setPageSizeClient(parseInt(val)); setPageClient(1); }}
+                            options={[
+                              { label: '5개', value: '5' },
+                              { label: '10개', value: '10' },
+                              { label: '20개', value: '20' },
+                            ]}
+                          />
+                        </div>
                       </div>
+
+                      {/* 목록 */}
+                      {projectsLoading ? (
+                        <div className="text-sm text-gray-500">불러오는 중...</div>
+                      ) : (
+                        <div className="space-y-3">
+                          {(() => {
+                            const filtered = projectStatusFilter === 'all' ? projects : projects.filter((p) => p.status === projectStatusFilter);
+                            const q = searchQuery.trim().toLowerCase();
+                            const searched = q ? filtered.filter((p) => p.title.toLowerCase().includes(q) || p.summary.toLowerCase().includes(q)) : filtered;
+                            const sorted = [...searched].sort((a, b) => {
+                              const dir = sortDirClient === 'asc' ? 1 : -1;
+                              if (sortKeyClient === 'date') return (new Date(a.createDate).getTime() - new Date(b.createDate).getTime()) * dir;
+                              if (sortKeyClient === 'price') return (a.price - b.price) * dir;
+                              return a.title.localeCompare(b.title) * dir;
+                            });
+                            const start = (pageClient - 1) * pageSizeClient;
+                            return sorted.slice(start, start + pageSizeClient);
+                          })().map((p) => (
+                            <Card key={p.id} className="p-4">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <Link to={`/projects/${p.id}`} className="text-base font-semibold text-gray-900 hover:underline truncate">
+                                      {p.title}
+                                    </Link>
+                                    <Badge
+                                      variant={p.status === 'OPEN' ? 'success' : p.status === 'IN_PROGRESS' ? 'warning' : p.status === 'COMPLETED' ? 'primary' : 'secondary'}
+                                      size="sm"
+                                    >
+                                      {p.status === 'OPEN' ? '모집중' : p.status === 'IN_PROGRESS' ? '진행중' : p.status === 'COMPLETED' ? '완료' : '마감'}
+                                    </Badge>
+                                  </div>
+                                  <div className="mt-1 text-sm text-gray-600 line-clamp-2">{p.summary}</div>
+                                  <div className="mt-1 text-sm text-gray-600">예산: {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(p.price)} · 기간: {p.duration} · 마감: {p.deadline}</div>
+                                  <div className="mt-1 text-xs text-gray-500">스킬: {p.skills?.map((s) => s.name).join(', ') || '-'}</div>
+                                  <div className="mt-0.5 text-xs text-gray-500">관심사: {p.interests?.map((i) => i.name).join(', ') || '-'}</div>
+                                </div>
+                                <div className="flex flex-col items-end gap-2 whitespace-nowrap">
+                                  <div className="text-xs text-gray-500">
+                                    {new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(p.createDate))}
+                                  </div>
+                                  <Link to={`/projects/${p.id}`}>
+                                    <Button size="sm" variant="outline" className="rounded-xl">지원서 목록</Button>
+                                  </Link>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                          {(
+                            (projectStatusFilter === 'all' ? projects : projects.filter((p) => p.status === projectStatusFilter)).length === 0
+                          ) && <div className="text-sm text-gray-500">표시할 프로젝트가 없습니다.</div>}
+                          {/* pagination controls */}
+                          <div className="flex items-center justify-center gap-3 pt-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              disabled={pageClient <= 1}
+                              onClick={() => setPageClient((prev) => Math.max(1, prev - 1))}
+                              className="rounded-xl"
+                            >
+                              이전
+                            </Button>
+                            <span className="text-sm text-gray-600">
+                              {(() => {
+                                const filtered = projectStatusFilter === 'all' ? projects : projects.filter((p) => p.status === projectStatusFilter);
+                                const q = searchQuery.trim().toLowerCase();
+                                const searched = q ? filtered.filter((p) => p.title.toLowerCase().includes(q) || p.summary.toLowerCase().includes(q)) : filtered;
+                                const totalPages = Math.max(1, Math.ceil(searched.length / pageSizeClient));
+                                return `${pageClient} / ${totalPages}`;
+                              })()}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                const filtered = projectStatusFilter === 'all' ? projects : projects.filter((p) => p.status === projectStatusFilter);
+                                const q = searchQuery.trim().toLowerCase();
+                                const searched = q ? filtered.filter((p) => p.title.toLowerCase().includes(q) || p.summary.toLowerCase().includes(q)) : filtered;
+                                const totalPages = Math.max(1, Math.ceil(searched.length / pageSizeClient));
+                                setPageClient((prev) => Math.min(totalPages, prev + 1));
+                              }}
+                              className="rounded-xl"
+                            >
+                              다음
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </>
                   ) : (
                     // 프리랜서 지원 현황
@@ -1146,33 +1342,131 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                         ))}
                       </div>
 
-                      {/* 목록 */}
-                      <div className="space-y-3">
-                        {(applicationStatusFilter === 'all'
-                          ? applications
-                          : applications.filter((a) => a.status === applicationStatusFilter)
-                        ).map((app) => (
-                          <Card key={app.id} className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <Link to={`/projects/${app.projectId}/apply/${app.id}`} className="text-base font-semibold text-gray-900 hover:underline">
-                                    {app.projectTitle}
-                                  </Link>
-                                  <Badge variant={app.status === 'WAIT' ? 'warning' : app.status === 'ACCEPT' ? 'success' : 'danger'} size="sm">{app.status}</Badge>
-                                </div>
-                                <div className="mt-1 text-sm text-gray-600">예상 급여: {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(app.estimatedPay)}</div>
-                                <div className="mt-0.5 text-sm text-gray-600">예상 기간: {app.expectedDuration}</div>
-                                <div className="mt-0.5 text-sm text-gray-600">근무 계획: {app.workPlan}</div>
-                              </div>
-                              <div className="text-xs text-gray-500 whitespace-nowrap">{new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(app.createDate))}</div>
-                            </div>
-                          </Card>
-                        ))}
-                        {(
-                          (applicationStatusFilter === 'all' ? applications : applications.filter((a) => a.status === applicationStatusFilter)).length === 0
-                        ) && <div className="text-sm text-gray-500">표시할 지원 내역이 없습니다.</div>}
+                      {/* 검색/정렬/페이지 크기 */}
+                      <div className="flex flex-wrap items-end gap-3 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">검색</label>
+                          <Input
+                            name="search"
+                            placeholder="프로젝트 제목 검색"
+                            value={searchQuery}
+                            onChange={(e) => { setSearchQuery(e.target.value); setPageFreelancer(1); }}
+                            className="rounded-xl w-56"
+                          />
+                        </div>
+                        <div className="w-44">
+                          <Select
+                            label="정렬"
+                            value={`${sortKeyFreelancer}:${sortDirFreelancer}`}
+                            onChange={(val) => {
+                              const [k, d] = (val as string).split(':') as [typeof sortKeyFreelancer, typeof sortDirFreelancer];
+                              setSortKeyFreelancer(k);
+                              setSortDirFreelancer(d);
+                            }}
+                            options={[
+                              { label: '최신순', value: 'date:desc' },
+                              { label: '오래된순', value: 'date:asc' },
+                              { label: '금액높은순', value: 'pay:desc' },
+                              { label: '금액낮은순', value: 'pay:asc' },
+                              { label: '제목 오름차순', value: 'title:asc' },
+                              { label: '제목 내림차순', value: 'title:desc' },
+                            ]}
+                          />
+                        </div>
+                        <div className="w-40">
+                          <Select
+                            label="페이지 크기"
+                            value={String(pageSizeFreelancer)}
+                            onChange={(val) => { setPageSizeFreelancer(parseInt(val)); setPageFreelancer(1); }}
+                            options={[
+                              { label: '5개', value: '5' },
+                              { label: '10개', value: '10' },
+                              { label: '20개', value: '20' },
+                            ]}
+                          />
+                        </div>
                       </div>
+
+                      {/* 목록 */}
+                      {appsLoading ? (
+                        <div className="text-sm text-gray-500">불러오는 중...</div>
+                      ) : (
+                        <div className="space-y-3">
+                          {(() => {
+                            const filtered = applicationStatusFilter === 'all' ? applications : applications.filter((a) => a.status === applicationStatusFilter);
+                            const q = searchQuery.trim().toLowerCase();
+                            const searched = q ? filtered.filter((a) => a.projectTitle.toLowerCase().includes(q)) : filtered;
+                            const sorted = [...searched].sort((a, b) => {
+                              const dir = sortDirFreelancer === 'asc' ? 1 : -1;
+                              if (sortKeyFreelancer === 'date') return (new Date(a.createDate).getTime() - new Date(b.createDate).getTime()) * dir;
+                              if (sortKeyFreelancer === 'pay') return (a.estimatedPay - b.estimatedPay) * dir;
+                              return a.projectTitle.localeCompare(b.projectTitle) * dir;
+                            });
+                            const start = (pageFreelancer - 1) * pageSizeFreelancer;
+                            return sorted.slice(start, start + pageSizeFreelancer);
+                          })().map((app) => (
+                            <Card key={app.id} className="p-4">
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <Link to={`/projects/${app.projectId}`} className="text-base font-semibold text-gray-900 hover:underline">
+                                      {app.projectTitle}
+                                    </Link>
+                                    <Badge variant={app.status === 'WAIT' ? 'warning' : app.status === 'ACCEPT' ? 'success' : 'danger'} size="sm">{app.status}</Badge>
+                                  </div>
+                                  <div className="mt-1 text-sm text-gray-600">예상 급여: {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(app.estimatedPay)}</div>
+                                  <div className="mt-0.5 text-sm text-gray-600">예상 기간: {app.expectedDuration}</div>
+                                  <div className="mt-0.5 text-sm text-gray-600">근무 계획: {app.workPlan}</div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="text-xs text-gray-500 whitespace-nowrap">{new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(app.createDate))}</div>
+                                  <Link to={`/projects/${app.projectId}/apply/${app.id}`}>
+                                    <Button size="sm" variant="outline" className="rounded-xl">지원서 보기</Button>
+                                  </Link>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                          {(
+                            (applicationStatusFilter === 'all' ? applications : applications.filter((a) => a.status === applicationStatusFilter)).length === 0
+                          ) && <div className="text-sm text-gray-500">표시할 지원 내역이 없습니다.</div>}
+                          {/* pagination controls */}
+                          <div className="flex items-center justify-center gap-3 pt-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              disabled={pageFreelancer <= 1}
+                              onClick={() => setPageFreelancer((prev) => Math.max(1, prev - 1))}
+                              className="rounded-xl"
+                            >
+                              이전
+                            </Button>
+                            <span className="text-sm text-gray-600">
+                              {(() => {
+                                const filtered = applicationStatusFilter === 'all' ? applications : applications.filter((a) => a.status === applicationStatusFilter);
+                                const q = searchQuery.trim().toLowerCase();
+                                const searched = q ? filtered.filter((a) => a.projectTitle.toLowerCase().includes(q)) : filtered;
+                                const totalPages = Math.max(1, Math.ceil(searched.length / pageSizeFreelancer));
+                                return `${pageFreelancer} / ${totalPages}`;
+                              })()}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => {
+                                const filtered = applicationStatusFilter === 'all' ? applications : applications.filter((a) => a.status === applicationStatusFilter);
+                                const q = searchQuery.trim().toLowerCase();
+                                const searched = q ? filtered.filter((a) => a.projectTitle.toLowerCase().includes(q)) : filtered;
+                                const totalPages = Math.max(1, Math.ceil(searched.length / pageSizeFreelancer));
+                                setPageFreelancer((prev) => Math.min(totalPages, prev + 1));
+                              }}
+                              className="rounded-xl"
+                            >
+                              다음
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -1182,26 +1476,99 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
               {activeTab === 'bookmarks' && (
                 <div className="p-6">
                   <h2 className="text-xl font-semibold text-gray-900 mb-6">
-                    {userType === 'client' ? '관심 프리랜서' : '관심 프로젝트'}
+                    {profileData.role === 'CLIENT' ? '관심 프리랜서' : '관심 프로젝트'}
                   </h2>
 
-                  {userType === 'client' ? (
+                  {profileData.role === 'CLIENT' ? (
                     // 클라이언트 - 관심 프리랜서
                     <div className="space-y-4">
-                      {bookmarkedFreelancers.map((freelancer) => (
+                      {/* 검색/정렬/페이지 크기 */}
+                      <div className="flex flex-wrap items-end gap-3 mb-2">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">검색</label>
+                          <Input
+                            name="favSearch"
+                            placeholder="이름/경력 검색"
+                            value={favSearch}
+                            onChange={(e) => { setFavSearch(e.target.value); setFavPage(1); }}
+                            className="rounded-xl w-56"
+                          />
+                        </div>
+                        <div className="w-44">
+                          <Select
+                            label="정렬"
+                            value={`${favSortKey}:${favSortDir}`}
+                            onChange={(val) => {
+                              const [k, d] = (val as string).split(':') as [typeof favSortKey, typeof favSortDir];
+                              setFavSortKey(k);
+                              setFavSortDir(d);
+                            }}
+                            options={[
+                              { label: '평점 높은순', value: 'rating:desc' },
+                              { label: '평점 낮은순', value: 'rating:asc' },
+                              { label: '이름 오름차순', value: 'name:asc' },
+                              { label: '이름 내림차순', value: 'name:desc' },
+                            ]}
+                          />
+                        </div>
+                        <div className="w-40">
+                          <Select
+                            label="페이지 크기"
+                            value={String(favPageSize)}
+                            onChange={(val) => { setFavPageSize(parseInt(val)); setFavPage(1); }}
+                            options={[
+                              { label: '5개', value: '5' },
+                              { label: '10개', value: '10' },
+                              { label: '20개', value: '20' },
+                            ]}
+                          />
+                        </div>
+                      </div>
+
+                      {favError && (
+                        <div className="text-sm text-red-600">{favError}</div>
+                      )}
+                      {favLoading && (
+                        <div className="text-sm text-gray-500">관심 프리랜서를 불러오는 중…</div>
+                      )}
+
+                      {(() => {
+                        const q = favSearch.trim().toLowerCase();
+                        const searched = q
+                          ? favFreelancers.filter((f) =>
+                              f.name.toLowerCase().includes(q) ||
+                              (f.experience || '').toLowerCase().includes(q)
+                            )
+                          : favFreelancers;
+                        const sorted = [...searched].sort((a, b) => {
+                          const dir = favSortDir === 'asc' ? 1 : -1;
+                          if (favSortKey === 'rating') {
+                            return ((a.averageRating ?? 0) - (b.averageRating ?? 0)) * dir;
+                          }
+                          return a.name.localeCompare(b.name) * dir;
+                        });
+                        const start = (favPage - 1) * favPageSize;
+                        const visible = sorted.slice(start, start + favPageSize);
+                        return visible;
+                      })().map((freelancer) => (
                         <div key={freelancer.id} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-4">
-                              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
-                                {freelancer.name.charAt(0)}
-                              </div>
+                              {freelancer.profileImgUrl ? (
+                                <img
+                                  src={freelancer.profileImgUrl}
+                                  alt={freelancer.name}
+                                  className="w-12 h-12 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                                  {freelancer.name.charAt(0)}
+                                </div>
+                              )}
                               <div>
                                 <h4 className="font-semibold text-gray-900">{freelancer.name}</h4>
                                 <p className="text-sm text-gray-600">{freelancer.experience}</p>
-                                <div className="flex items-center mt-1">
-                                  <i className="ri-star-fill text-yellow-400 mr-1"></i>
-                                  <span className="text-sm">{freelancer.averageRating}</span>
-                                </div>
+                                {/* 평균 평점 표시 제거 */}
                               </div>
                             </div>
                             <div className="flex space-x-2">
@@ -1220,25 +1587,126 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => removeBookmark(freelancer.id, 'freelancer')}
+                                onClick={() => toggleFavFreelancerDetail(freelancer.memberId)}
+                              >
+                                <i className="ri-information-line mr-1"></i> 자세히
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeBookmark(freelancer.memberId, 'freelancer')}
                               >
                                 <i className="ri-heart-fill text-red-500"></i>
                               </Button>
                             </div>
                           </div>
-                          <div className="mt-3">
-                            <div className="flex flex-wrap gap-1">
-                              {freelancer.skills.slice(0, 4).map((skill) => (
-                                <span key={skill} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
-                                  {skill}
-                                </span>
-                              ))}
+                          {favFreelancerDetailOpen[freelancer.memberId] && (
+                            <div className="mt-4 border-t pt-3">
+                              {favFreelancerDetailLoading[freelancer.memberId] && (
+                                <div className="text-sm text-gray-500">상세 정보를 불러오는 중…</div>
+                              )}
+                              {favFreelancerDetailError[freelancer.memberId] && (
+                                <div className="text-sm text-red-600">{favFreelancerDetailError[freelancer.memberId]}</div>
+                              )}
+                              {!favFreelancerDetailLoading[freelancer.memberId] && !favFreelancerDetailError[freelancer.memberId] && favFreelancerDetail[freelancer.memberId] && (
+                                <div className="space-y-3">
+                                  {(() => {
+                                    const detail = favFreelancerDetail[freelancer.memberId] || {};
+                                    const skills: string[] = Array.isArray(detail.skills) ? detail.skills : [];
+                                    const interests: string[] = Array.isArray(detail.interests) ? detail.interests : [];
+                                    const comment: string = detail.comment || '';
+                                    const careerObj: Record<string, number> = detail.career || {};
+                                    const totalMonths = Object.values(careerObj).reduce((acc: number, m: any) => acc + (Number(m) || 0), 0);
+                                    const years = Math.floor(totalMonths / 12);
+                                    const months = totalMonths % 12;
+                                    return (
+                                      <>
+                                        {skills.length > 0 && (
+                                          <div>
+                                            <div className="text-sm font-medium text-gray-700 mb-1">기술 스택</div>
+                                            <div className="flex flex-wrap gap-1">
+                                              {skills.slice(0, 10).map((s: string) => (
+                                                <span key={s} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">{s}</span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                        {interests.length > 0 && (
+                                          <div>
+                                            <div className="text-sm font-medium text-gray-700 mb-1">관심 분야</div>
+                                            <div className="flex flex-wrap gap-1">
+                                              {interests.slice(0, 10).map((it: string) => (
+                                                <span key={it} className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs">{it}</span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                        {(years > 0 || months > 0) && (
+                                          <div className="text-sm text-gray-700">
+                                            총 경력: {years > 0 ? `${years}년 ` : ''}{months > 0 ? `${months}개월` : ''}
+                                          </div>
+                                        )}
+                                        {comment && (
+                                          <div>
+                                            <div className="text-sm font-medium text-gray-700 mb-1">소개</div>
+                                            <p className="text-sm text-gray-600 whitespace-pre-wrap">{comment}</p>
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+                                </div>
+                              )}
                             </div>
-                          </div>
+                          )}
                         </div>
                       ))}
 
-                      {bookmarkedFreelancers.length === 0 && (
+                      {/* pagination */}
+                      <div className="flex items-center justify-center gap-3 pt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={favPage <= 1}
+                          onClick={() => setFavPage((prev) => Math.max(1, prev - 1))}
+                          className="rounded-xl"
+                        >
+                          이전
+                        </Button>
+                        <span className="text-sm text-gray-600">
+                          {(() => {
+                            const q = favSearch.trim().toLowerCase();
+                            const searched = q
+                              ? favFreelancers.filter((f) =>
+                                  f.name.toLowerCase().includes(q) ||
+                                  (f.experience || '').toLowerCase().includes(q)
+                                )
+                              : favFreelancers;
+                            const totalPages = Math.max(1, Math.ceil(searched.length / favPageSize));
+                            return `${favPage} / ${totalPages}`;
+                          })()}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            const q = favSearch.trim().toLowerCase();
+                            const searched = q
+                              ? favFreelancers.filter((f) =>
+                                  f.name.toLowerCase().includes(q) ||
+                                  (f.experience || '').toLowerCase().includes(q)
+                                )
+                              : favFreelancers;
+                            const totalPages = Math.max(1, Math.ceil(searched.length / favPageSize));
+                            setFavPage((prev) => Math.min(totalPages, prev + 1));
+                          }}
+                          className="rounded-xl"
+                        >
+                          다음
+                        </Button>
+                      </div>
+
+                      {favFreelancers.length === 0 && (
                         <div className="text-center py-8 text-gray-500">
                           <i className="ri-heart-line text-4xl mb-2"></i>
                           <p>관심 프리랜서가 없습니다.</p>
@@ -1253,7 +1721,78 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                   ) : (
                     // 프리랜서 - 관심 프로젝트
                     <div className="space-y-4">
-                      {bookmarkedProjects.map((project) => (
+                      {/* 검색/정렬/페이지 크기 */}
+                      <div className="flex flex-wrap items-end gap-3 mb-2">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">검색</label>
+                          <Input
+                            name="favProjSearch"
+                            placeholder="제목/요약 검색"
+                            value={favProjSearch}
+                            onChange={(e) => { setFavProjSearch(e.target.value); setFavProjPage(1); }}
+                            className="rounded-xl w-56"
+                          />
+                        </div>
+                        <div className="w-56">
+                          <Select
+                            label="정렬"
+                            value={`${favProjSortKey}:${favProjSortDir}`}
+                            onChange={(val) => {
+                              const [k, d] = (val as string).split(':') as [typeof favProjSortKey, typeof favProjSortDir];
+                              setFavProjSortKey(k);
+                              setFavProjSortDir(d);
+                            }}
+                            options={[
+                              { label: '마감 최신순', value: 'deadline:desc' },
+                              { label: '마감 오래된순', value: 'deadline:asc' },
+                              { label: '예산 높은순', value: 'budget:desc' },
+                              { label: '예산 낮은순', value: 'budget:asc' },
+                              { label: '제목 오름차순', value: 'title:asc' },
+                              { label: '제목 내림차순', value: 'title:desc' },
+                            ]}
+                          />
+                        </div>
+                        <div className="w-40">
+                          <Select
+                            label="페이지 크기"
+                            value={String(favProjPageSize)}
+                            onChange={(val) => { setFavProjPageSize(parseInt(val)); setFavProjPage(1); }}
+                            options={[
+                              { label: '5개', value: '5' },
+                              { label: '10개', value: '10' },
+                              { label: '20개', value: '20' },
+                            ]}
+                          />
+                        </div>
+                      </div>
+
+                      {favProjError && (
+                        <div className="text-sm text-red-600">{favProjError}</div>
+                      )}
+                      {favProjLoading && (
+                        <div className="text-sm text-gray-500">관심 프로젝트를 불러오는 중…</div>
+                      )}
+
+                      {(() => {
+                        const q = favProjSearch.trim().toLowerCase();
+                        const searched = q
+                          ? favProjects.filter((p) =>
+                              p.title.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)
+                            )
+                          : favProjects;
+                        const sorted = [...searched].sort((a, b) => {
+                          const dir = favProjSortDir === 'asc' ? 1 : -1;
+                          if (favProjSortKey === 'budget') {
+                            return ((a.budget ?? 0) - (b.budget ?? 0)) * dir;
+                          }
+                          if (favProjSortKey === 'deadline') {
+                            return (new Date(a.deadline).getTime() - new Date(b.deadline).getTime()) * dir;
+                          }
+                          return a.title.localeCompare(b.title) * dir;
+                        });
+                        const start = (favProjPage - 1) * favProjPageSize;
+                        return sorted.slice(start, start + favProjPageSize);
+                      })().map((project: any) => (
                         <div key={project.id} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex justify-between items-start mb-3">
                             <div>
@@ -1264,9 +1803,9 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                             <div className="flex items-center space-x-2">
                               <span
                                 className={`px-2 py-1 rounded text-xs font-medium ${
-                                  project.status === '모집중'
+                                  project.status === 'OPEN'
                                     ? 'bg-green-100 text-green-800'
-                                    : project.status === '진행중'
+                                    : project.status === 'IN_PROGRESS'
                                     ? 'bg-blue-100 text-blue-800'
                                     : 'bg-gray-100 text-gray-800'
                                 }`}
@@ -1292,17 +1831,12 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                                   상세보기
                                 </Button>
                               </Link>
-                              {project.status === '모집중' && (
-                                <Link to={`/projects/${project.id}/apply`}>
-                                  <Button size="sm">지원하기</Button>
-                                </Link>
-                              )}
                             </div>
                           </div>
 
                           <div className="mt-3">
                             <div className="flex flex-wrap gap-1">
-                              {project.skills.slice(0, 4).map((skill) => (
+                              {project.skills.slice(0, 4).map((skill: string) => (
                                 <span key={skill} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
                                   {skill}
                                 </span>
@@ -1312,7 +1846,49 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                         </div>
                       ))}
 
-                      {bookmarkedProjects.length === 0 && (
+                      {/* pagination */}
+                      <div className="flex items-center justify-center gap-3 pt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          disabled={favProjPage <= 1}
+                          onClick={() => setFavProjPage((prev) => Math.max(1, prev - 1))}
+                          className="rounded-xl"
+                        >
+                          이전
+                        </Button>
+                        <span className="text-sm text-gray-600">
+                          {(() => {
+                            const q = favProjSearch.trim().toLowerCase();
+                            const searched = q
+                              ? favProjects.filter((p) =>
+                                  p.title.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)
+                                )
+                              : favProjects;
+                            const totalPages = Math.max(1, Math.ceil(searched.length / favProjPageSize));
+                            return `${favProjPage} / ${totalPages}`;
+                          })()}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            const q = favProjSearch.trim().toLowerCase();
+                            const searched = q
+                              ? favProjects.filter((p) =>
+                                  p.title.toLowerCase().includes(q) || (p.description || '').toLowerCase().includes(q)
+                                )
+                              : favProjects;
+                            const totalPages = Math.max(1, Math.ceil(searched.length / favProjPageSize));
+                            setFavProjPage((prev) => Math.min(totalPages, prev + 1));
+                          }}
+                          className="rounded-xl"
+                        >
+                          다음
+                        </Button>
+                      </div>
+
+                      {favProjects.length === 0 && !favProjLoading && (
                         <div className="text-center py-8 text-gray-500">
                           <i className="ri-heart-line text-4xl mb-2"></i>
                           <p>관심 프로젝트가 없습니다.</p>
@@ -1335,12 +1911,6 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
 
                   <div className="space-y-6">
                     <div className="bg-blue-50 rounded-lg p-4">
-                      <div className="flex items-center mb-2">
-                        <i className="ri-star-fill text-yellow-400 text-xl mr-2"></i>
-                        <span className="text-lg font-semibold text-gray-900">
-                          평균 평점: {(profileData as any).ratingAvg ?? (profileData as any).averageRating ?? 0}
-                        </span>
-                      </div>
                       <p className="text-sm text-gray-600">
                         총{' '}
                         {mockFeedback.filter((f) =>
