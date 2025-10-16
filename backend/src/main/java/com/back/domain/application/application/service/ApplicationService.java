@@ -62,4 +62,8 @@ public class ApplicationService {
     public Page<Application> findAllByFreeLancer(Freelancer freelancer, Pageable pageable) {
         return applicationRepository.findAllByFreelancer(freelancer, pageable);
     }
+
+    public Optional<Application> findByProjectAndStatus(Project project, ApplicationStatus status) {
+        return applicationRepository.findByProjectAndStatus(project, status);
+    }
 }
