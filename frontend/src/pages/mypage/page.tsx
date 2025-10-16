@@ -18,6 +18,9 @@ interface BaseProfile {
   ratingAvg: number;
   email: string;
   profileScope?: 'PUBLIC' | 'PRIVATE';
+  // 공통 제공 필드 (백엔드 ProfileResponseDto 기준)
+  skills?: string[];
+  interests?: string[];
 }
 
 interface FreelancerProfile extends BaseProfile {
@@ -78,7 +81,7 @@ interface MyPageProps {
 export default function MyPage({ userType = 'client' }: MyPageProps) {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
-  const [activeTab, setActiveTab] = useState<'profile' | 'bookmarks' | 'feedback'>(
+  const [activeTab, setActiveTab] = useState<'profile' | 'projects' | 'bookmarks' | 'feedback'>(
     'profile',
   );
   
@@ -91,6 +94,8 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
     ratingAvg: 0,
     email: '',
     profileScope: 'PUBLIC',
+    skills: [],
+    interests: [],
     job: '',
     career: {},
     freelancerEmail: '',
@@ -118,6 +123,12 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
     userType === 'freelancer' ? defaultFreelancerProfile : defaultClientProfile
   );
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  // skills 편집 상태
+  const [allSkills, setAllSkills] = useState<{ id: number; name: string }[]>([]);
+  const [selectedSkillIds, setSelectedSkillIds] = useState<number[]>([]);
+  // projects 탭 필터 상태
+  const [projectStatusFilter, setProjectStatusFilter] = useState<'all' | 'OPEN' | 'IN_PROGRESS' | 'COMPLETED' | 'CLOSED'>('IN_PROGRESS');
+  const [applicationStatusFilter, setApplicationStatusFilter] = useState<'all' | 'WAIT' | 'ACCEPT' | 'DENIED'>('all');
 
   // applications/projects for profile tab
   const [applications, setApplications] = useState<MyApplicationItem[]>([]);
@@ -218,6 +229,28 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
     fetchMyApplications();
   }, [isLoggedIn, profileData.role, navigate]);
 
+  // 스킬 전체 목록 로드
+  useEffect(() => {
+    const fetchSkills = async () => {
+      try {
+        const { data, error } = await client.GET('/api/v1/skills');
+        if (error) {
+          console.warn('스킬 목록 조회 에러:', error);
+          return;
+        }
+        if (data && Array.isArray((data as any).data)) {
+          const list = ((data as any).data as any[])
+            .map((s) => ({ id: s.id as number, name: s.name as string }))
+            .filter((s) => s.id != null && s.name);
+          setAllSkills(list);
+        }
+      } catch (e) {
+        console.warn('스킬 목록 조회 실패:', e);
+      }
+    };
+    fetchSkills();
+  }, []);
+
   // 목록 길이 변경 시 페이지 보정
   useEffect(() => {
     const total = Math.max(1, Math.ceil(applications.length / appsPageSize));
@@ -315,6 +348,9 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
           setProfileData(prev => ({
             ...prev,
             ...responseData,
+            // 명시적으로 기본값 보정
+            skills: (responseData as any)?.skills || [],
+            interests: (responseData as any)?.interests || [],
             profileScope: (responseData as any)?.profileScope || 'PUBLIC',
             ...(responseData.role === 'CLIENT'
               ? {
@@ -352,15 +388,27 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
     }
   }, [isLoggedIn, navigate]);
 
+  // 프로필 skills(이름) -> selectedSkillIds(아이디) 초기 동기화
+  useEffect(() => {
+    if (profileData.role === 'FREELANCER' && Array.isArray(profileData.skills) && allSkills.length > 0) {
+      const mapped = profileData.skills
+        .map((name) => allSkills.find((s) => s.name === name)?.id)
+        .filter((id): id is number => typeof id === 'number');
+      setSelectedSkillIds(mapped);
+    }
+  }, [profileData.role, profileData.skills, allSkills]);
+
   const tabs =
     userType === 'client'
       ? [
           { id: 'profile', label: '프로필 관리', icon: 'ri-user-3-line' },
+          { id: 'projects', label: '프로젝트 관리', icon: 'ri-briefcase-4-line' },
           { id: 'bookmarks', label: '관심 프리랜서', icon: 'ri-heart-3-line' },
           { id: 'feedback', label: '피드백 관리', icon: 'ri-star-line' },
         ]
       : [
           { id: 'profile', label: '프로필 관리', icon: 'ri-user-3-line' },
+          { id: 'projects', label: '지원 현황', icon: 'ri-briefcase-4-line' },
           { id: 'bookmarks', label: '관심 프로젝트', icon: 'ri-heart-3-line' },
           { id: 'feedback', label: '피드백 관리', icon: 'ri-star-line' },
         ];
@@ -385,7 +433,9 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
         job: (profileData as FreelancerProfile).job || '',
         freelancerEmail: (profileData as FreelancerProfile).freelancerEmail || '',
         comment: (profileData as FreelancerProfile).comment || '',
-        career: (profileData as FreelancerProfile).career || {}
+        career: (profileData as FreelancerProfile).career || {},
+        // skills 편집: 선택된 스킬 아이디 전송
+        skillIds: selectedSkillIds
       };
 
       const accessToken = document.cookie
@@ -612,6 +662,20 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                             />
                           </div>
 
+                          {/* (선택) 기술 스택 표시 */}
+                          {Array.isArray(profileData.skills) && profileData.skills.length > 0 && (
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">기술 스택</label>
+                              <div className="flex flex-wrap gap-2">
+                                {profileData.skills.map((skill, idx) => (
+                                  <span key={`${skill}-${idx}`} className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">회사 소개</label>
                             <textarea
@@ -761,7 +825,7 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                           </div>
 
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">기술 스택 및 경력</label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">경력</label>
                             <div className="grid grid-cols-1 gap-4">
                               {Object.entries((profileData as FreelancerProfile).career || {}).map(([skill, months]) => (
                                 <div key={skill} className="flex items-center gap-4">
@@ -816,6 +880,67 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                             </div>
                           </div>
 
+                          {/* 기술 스택 (편집) */}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">기술 스택</label>
+                            <div className="space-y-3">
+                              {/* 선택된 스킬 표시 */}
+                              <div>
+                                <div className="text-xs text-gray-600 mb-1">선택된 스킬: {selectedSkillIds.length}개</div>
+                                {selectedSkillIds.length > 0 ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    {allSkills
+                                      .filter((s) => selectedSkillIds.includes(s.id))
+                                      .map((s) => (
+                                        <span
+                                          key={`sel-${s.id}`}
+                                          className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs cursor-pointer"
+                                          onClick={() => setSelectedSkillIds((prev) => prev.filter((id) => id !== s.id))}
+                                          title="클릭하여 제거"
+                                        >
+                                          {s.name}
+                                          <i className="ri-close-line"></i>
+                                        </span>
+                                      ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-500">아직 선택된 스킬이 없습니다.</p>
+                                )}
+                              </div>
+
+                              {/* 전체 스킬 토글 목록 */}
+                              <div className="flex flex-wrap gap-2 max-h-52 overflow-auto border border-gray-200 rounded-xl p-3">
+                                {allSkills.length > 0 ? (
+                                  allSkills.map((skill) => {
+                                    const active = selectedSkillIds.includes(skill.id);
+                                    return (
+                                      <button
+                                        type="button"
+                                        key={skill.id}
+                                        onClick={() =>
+                                          setSelectedSkillIds((prev) =>
+                                            prev.includes(skill.id)
+                                              ? prev.filter((id) => id !== skill.id)
+                                              : [...prev, skill.id]
+                                          )
+                                        }
+                                        className={`px-2 py-1 rounded text-xs border transition-colors ${
+                                          active
+                                            ? 'bg-indigo-600 text-white border-indigo-600'
+                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                        }`}
+                                      >
+                                        {skill.name}
+                                      </button>
+                                    );
+                                  })
+                                ) : (
+                                  <div className="text-sm text-gray-500">스킬 목록을 불러오는 중이거나, 스킬이 없습니다.</div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">업무용 이메일</label>
@@ -857,7 +982,7 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                                     <div className="flex items-start justify-between gap-4">
                                       <div>
                                         <div className="flex items-center gap-2">
-                                          <Link to={`/projects/${app.projectId}`} className="text-base font-semibold text-gray-900 hover:underline">
+                                          <Link to={`/projects/${app.projectId}/apply/${app.id}`} className="text-base font-semibold text-gray-900 hover:underline">
                                             {app.projectTitle}
                                           </Link>
                                           <Badge variant={(app.status === 'WAIT' ? 'warning' : app.status === 'ACCEPT' ? 'success' : 'danger')} size="sm">{app.status}</Badge>
@@ -920,7 +1045,138 @@ export default function MyPage({ userType = 'client' }: MyPageProps) {
                 </>
               )}
 
-              {/* 프로젝트 관리 탭 제거됨 */}
+              {/* 프로젝트 관리 */}
+              {activeTab === 'projects' && (
+                <div className="p-8">
+                  <div className="flex items-center space-x-3 mb-6">
+                    <div className="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl">
+                      <i className="ri-briefcase-4-line text-white text-xl"></i>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-900">
+                        {userType === 'client' ? '프로젝트 관리' : '지원 현황'}
+                      </h2>
+                      <p className="text-gray-600">
+                        {userType === 'client' ? '내가 등록한 프로젝트를 확인하고 상태별로 살펴보세요.' : '내가 지원한 프로젝트를 상태별로 확인해보세요.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {userType === 'client' ? (
+                    <>
+                      {/* 상태 필터 */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {[
+                          { key: 'all', label: '전체' },
+                          { key: 'OPEN', label: '모집중' },
+                          { key: 'IN_PROGRESS', label: '진행중' },
+                          { key: 'COMPLETED', label: '완료' },
+                          { key: 'CLOSED', label: '마감' },
+                        ].map(({ key, label }) => (
+                          <Button
+                            key={key}
+                            type="button"
+                            variant={projectStatusFilter === (key as any) ? 'primary' : 'outline'}
+                            size="sm"
+                            className="rounded-xl"
+                            onClick={() => setProjectStatusFilter(key as any)}
+                          >
+                            {label}
+                          </Button>
+                        ))}
+                      </div>
+
+                      {/* 목록 */}
+                      <div className="space-y-3">
+                        {(projectStatusFilter === 'all'
+                          ? projects
+                          : projects.filter((p) => p.status === projectStatusFilter)
+                        ).map((p) => (
+                          <Card key={p.id} className="p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <Link to={`/projects/${p.id}`} className="text-base font-semibold text-gray-900 hover:underline truncate">
+                                    {p.title}
+                                  </Link>
+                                  <Badge
+                                    variant={p.status === 'OPEN' ? 'success' : p.status === 'IN_PROGRESS' ? 'warning' : p.status === 'COMPLETED' ? 'primary' : 'secondary'}
+                                    size="sm"
+                                  >
+                                    {p.status === 'OPEN' ? '모집중' : p.status === 'IN_PROGRESS' ? '진행중' : p.status === 'COMPLETED' ? '완료' : '마감'}
+                                  </Badge>
+                                </div>
+                                <div className="mt-1 text-sm text-gray-600 line-clamp-2">{p.summary}</div>
+                                <div className="mt-1 text-sm text-gray-600">예산: {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(p.price)} · 기간: {p.duration} · 마감: {p.deadline}</div>
+                                <div className="mt-1 text-xs text-gray-500">스킬: {p.skills?.map((s) => s.name).join(', ') || '-'}</div>
+                                <div className="mt-0.5 text-xs text-gray-500">관심사: {p.interests?.map((i) => i.name).join(', ') || '-'}</div>
+                              </div>
+                              <div className="text-xs text-gray-500 whitespace-nowrap">
+                                {new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(p.createDate))}
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                        {(
+                          (projectStatusFilter === 'all' ? projects : projects.filter((p) => p.status === projectStatusFilter)).length === 0
+                        ) && <div className="text-sm text-gray-500">표시할 프로젝트가 없습니다.</div>}
+                      </div>
+                    </>
+                  ) : (
+                    // 프리랜서 지원 현황
+                    <>
+                      {/* 상태 필터 */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {[
+                          { key: 'all', label: '전체' },
+                          { key: 'WAIT', label: '대기중' },
+                          { key: 'ACCEPT', label: '승인됨' },
+                          { key: 'DENIED', label: '거절됨' },
+                        ].map(({ key, label }) => (
+                          <Button
+                            key={key}
+                            type="button"
+                            variant={applicationStatusFilter === (key as any) ? 'primary' : 'outline'}
+                            size="sm"
+                            className="rounded-xl"
+                            onClick={() => setApplicationStatusFilter(key as any)}
+                          >
+                            {label}
+                          </Button>
+                        ))}
+                      </div>
+
+                      {/* 목록 */}
+                      <div className="space-y-3">
+                        {(applicationStatusFilter === 'all'
+                          ? applications
+                          : applications.filter((a) => a.status === applicationStatusFilter)
+                        ).map((app) => (
+                          <Card key={app.id} className="p-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <Link to={`/projects/${app.projectId}/apply/${app.id}`} className="text-base font-semibold text-gray-900 hover:underline">
+                                    {app.projectTitle}
+                                  </Link>
+                                  <Badge variant={app.status === 'WAIT' ? 'warning' : app.status === 'ACCEPT' ? 'success' : 'danger'} size="sm">{app.status}</Badge>
+                                </div>
+                                <div className="mt-1 text-sm text-gray-600">예상 급여: {new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(app.estimatedPay)}</div>
+                                <div className="mt-0.5 text-sm text-gray-600">예상 기간: {app.expectedDuration}</div>
+                                <div className="mt-0.5 text-sm text-gray-600">근무 계획: {app.workPlan}</div>
+                              </div>
+                              <div className="text-xs text-gray-500 whitespace-nowrap">{new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(app.createDate))}</div>
+                            </div>
+                          </Card>
+                        ))}
+                        {(
+                          (applicationStatusFilter === 'all' ? applications : applications.filter((a) => a.status === applicationStatusFilter)).length === 0
+                        ) && <div className="text-sm text-gray-500">표시할 지원 내역이 없습니다.</div>}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
 
               {/* 북마크 관리 */}
               {activeTab === 'bookmarks' && (

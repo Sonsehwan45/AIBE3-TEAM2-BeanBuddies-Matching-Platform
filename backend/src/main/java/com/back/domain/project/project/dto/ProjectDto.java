@@ -2,6 +2,7 @@ package com.back.domain.project.project.dto;
 
 import com.back.domain.common.interest.dto.InterestDto;
 import com.back.domain.common.skill.dto.SkillDto;
+import com.back.domain.project.participant.entity.ProjectParticipant;
 import com.back.domain.project.project.constant.ProjectStatus;
 import com.back.domain.project.project.entity.Project;
 
@@ -26,7 +27,8 @@ public record ProjectDto(
         long ownerId,
         String ownerName,
         List<SkillDto> skills,
-        List<InterestDto> interests
+        List<InterestDto> interests,
+        List<ProjectParticipant> participants
 ) {
     public ProjectDto (Project project, List<SkillDto> skills, List<InterestDto> interests) {
         this(
@@ -46,7 +48,8 @@ public record ProjectDto(
                 project.getClient().getId(),
                 project.getClient().getMember().getName(),
                 skills,
-                interests
+                interests,
+                project.getProjectParticipants()
         );
     }
 }

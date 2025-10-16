@@ -18,6 +18,8 @@ import com.back.domain.proposal.proposal.constant.ProposalStatus;
 import com.back.global.exception.ServiceException;
 import com.back.global.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import com.back.domain.common.skill.entity.Skill;
+import com.back.domain.common.skill.repository.SkillRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +37,7 @@ public class MemberService {
     private final EmailService emailService;
     private final ApplicationService applicationService;
     private final ProjectService projectService;
+    private final SkillRepository skillRepository;
 
     private boolean initFlag = false;
 
@@ -99,7 +102,22 @@ public class MemberService {
 
         Freelancer freelancer = member.getFreelancer();
         freelancer.updateInfo(dto.getJob(), dto.getFreelancerEmail(), dto.getComment(), dto.getCareer());
-        // TODO: skills and interests update logic
+        // skills 업데이트: 우선순위 - skillIds > skills(이름)
+        if (dto.getSkillIds() != null) {
+            List<Long> ids = dto.getSkillIds();
+            List<Skill> findSkills = skillRepository.findAllById(ids);
+            if (findSkills.size() != ids.size()) {
+                throw new ServiceException("400-6", "유효하지 않은 스킬 ID가 포함되어 있습니다.");
+            }
+            freelancer.updateSkills(findSkills);
+        } else if (dto.getSkills() != null) {
+            // 이름 기반 처리: 이름으로 스킬 엔티티 조회
+            List<Skill> findSkills = dto.getSkills().stream()
+                    .map(name -> skillRepository.findByName(name)
+                            .orElseThrow(() -> new ServiceException("404-2", "스킬을 찾을 수 없습니다: " + name)))
+                    .toList();
+            freelancer.updateSkills(findSkills);
+        }
 
         memberRepository.save(member);
     }
