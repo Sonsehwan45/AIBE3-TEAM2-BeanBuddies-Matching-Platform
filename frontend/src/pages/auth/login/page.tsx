@@ -206,7 +206,10 @@ export default function Login() {
                 onClick={() => handleSocialLogin("Naver")}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
               >
-                <i className="ri-naver-fill text-green-500 text-lg"></i>
+                <div className="flex items-center justify-center text-green-600 font-extrabold text-base -translate-y-0.47">
+                  N
+                </div>
+
                 <span className="ml-2">Naver</span>
               </button>
             </div>

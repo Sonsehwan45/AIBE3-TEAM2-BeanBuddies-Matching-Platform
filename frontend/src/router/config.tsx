@@ -20,11 +20,6 @@ import ProjectCreate from "../pages/projects/create/page";
 import Projects from "../pages/projects/page";
 import Recommendations from "../pages/recommendations/page";
 
-//테스트 용 페이지
-import MyInfo from "../pages/test/page";
-import SocialLinkTest from "../pages/auth/social-test/page";
-import MyPageSocial from "@/pages/mypage/social/page";
-
 interface RouteProps {
   userType?: "client" | "freelancer";
   setUserType?: (type: "client" | "freelancer") => void;
@@ -96,18 +91,6 @@ const routes: AppRoute[] = [
   {
     path: "/projects/create",
     element: <ProjectCreate />,
-  },
-  {
-    path: "/test/my-info",
-    element: <MyInfo />, // 로그인 토큰 테스트 페이지
-  },
-  {
-    path: "/auth/social-test",
-    element: <SocialLinkTest />, // 소셜 로그인 연동, 테스트 페이지
-  },
-  {
-    path: "/mypage/social",
-    element: <MyPageSocial />, // 소셜 계정 연결 관리 페이지
   },
   {
     path: "/projects/:id/edit",

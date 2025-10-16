@@ -4,6 +4,7 @@ import Button from "../../../components/base/Button";
 import Modal from "../../../components/base/Modal";
 import { useApiClient } from "@/lib/backend/apiClient";
 import { useAuth } from "@/context/AuthContext";
+import toast from "react-hot-toast";
 
 export default function MyPageSocial() {
   const client = useApiClient();
@@ -11,9 +12,9 @@ export default function MyPageSocial() {
 
   // 연결 상태 관리
   const [socialAccounts, setSocialAccounts] = useState({
-    google: { connected: false, email: null, connectedAt: null },
-    kakao: { connected: false, email: null, connectedAt: null },
-    naver: { connected: false, email: null, connectedAt: null },
+    google: { connected: false, connectedAt: null },
+    kakao: { connected: false, connectedAt: null },
+    naver: { connected: false, connectedAt: null },
   });
 
   // 모달 상태
@@ -48,16 +49,15 @@ export default function MyPageSocial() {
           const provider = acc.provider.toLowerCase(); // KAKAO → kakao, NAVER → naver
           if (updated[provider]) {
             updated[provider].connected = true;
-            updated[provider].email = `${provider}@linked.com`; // TODO: 실제 이메일 API에서 가져오면 좋음
-            updated[provider].connectedAt = new Date()
-              .toISOString()
-              .split("T")[0];
+            updated[provider].connectedAt = acc.connectedAt
+              ? acc.connectedAt.split("T")[0]
+              : null;
           }
         });
 
         setSocialAccounts(updated);
       } catch (err) {
-        console.error("소셜 계정 조회 실패", err);
+        toast.error("소셜 연결 상태를 불러오는 중 오류가 발생했습니다.");
       }
     };
 
@@ -88,23 +88,21 @@ export default function MyPageSocial() {
                 ...prev,
                 [provider]: {
                   connected: false,
-                  email: null,
                   connectedAt: null,
                 },
               }));
-              showModal(
-                "연결 해제 완료",
-                `${provider.toUpperCase()} 계정 연결이 해제되었습니다.`
-              );
+              const msg =
+                res.data?.msg ||
+                `${provider.toUpperCase()} 연동 해제에 성공했습니다.`;
+              toast.success(msg, { duration: 3000 });
             } else {
               const msg =
                 res.error?.msg ||
-                `${provider.toUpperCase()} 연결 해제에 실패했습니다.`;
-              showModal("연결 해제 실패", msg);
+                `${provider.toUpperCase()} 연동 해제에 실패했습니다.`;
+              showModal("연동 해제 실패", msg);
             }
           } catch (err) {
-            console.error(err);
-            showModal("오류", "서버 오류가 발생했습니다.");
+            toast.error("서버 오류가 발생했습니다.", { duration: 3000 });
           }
         }
       );
@@ -126,7 +124,7 @@ export default function MyPageSocial() {
     }
   };
 
-  // ✅ 공통 UI 렌더 함수
+  // 공통 UI 렌더 함수
   const renderSocialCard = (provider: "google" | "kakao" | "naver") => {
     const info = {
       google: { color: "red", icon: "ri-google-fill" },
@@ -143,7 +141,15 @@ export default function MyPageSocial() {
             <div
               className={`w-12 h-12 bg-${info.color}-50 rounded-xl flex items-center justify-center`}
             >
-              <i className={`${info.icon} text-${info.color}-500 text-2xl`}></i>
+              {provider === "naver" ? (
+                <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-green-700 text-2xl font-extrabold">
+                  N
+                </div>
+              ) : (
+                <i
+                  className={`${info.icon} text-${info.color}-500 text-2xl`}
+                ></i>
+              )}
             </div>
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
@@ -151,7 +157,6 @@ export default function MyPageSocial() {
               </h3>
               {account.connected ? (
                 <div className="space-y-1">
-                  <p className="text-sm text-gray-600">{account.email}</p>
                   <p className="text-xs text-gray-500">
                     연결일: {account.connectedAt}
                   </p>
@@ -184,7 +189,7 @@ export default function MyPageSocial() {
 
   return (
     <div className="p-8">
-      {/* ✅ 모달 */}
+      {/* 모달 */}
       <Modal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
