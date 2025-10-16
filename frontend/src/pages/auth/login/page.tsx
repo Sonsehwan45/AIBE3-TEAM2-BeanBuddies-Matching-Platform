@@ -95,8 +95,8 @@ export default function Login() {
         toast.error("Google 로그인은 아직 준비 중이에요 😅");
         return;
       case "Naver":
-        toast.error("Naver 로그인은 아직 준비 중이에요 😅");
-        return;
+        url = "http://localhost:8080/api/v1/auth/oauth/naver/login";
+        break;
       default:
         toast.error("지원하지 않는 로그인 방식입니다.");
         return;

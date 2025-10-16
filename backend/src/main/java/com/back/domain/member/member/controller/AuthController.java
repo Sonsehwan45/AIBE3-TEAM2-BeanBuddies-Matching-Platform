@@ -7,6 +7,7 @@ import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.AuthService;
 import com.back.domain.member.member.service.KakaoService;
 import com.back.domain.member.member.service.MemberSocialService;
+import com.back.domain.member.member.service.NaverService;
 import com.back.global.response.ApiResponse;
 import com.back.global.web.CookieHelper;
 import com.back.global.web.HeaderHelper;
@@ -26,6 +27,7 @@ public class AuthController {
     private final AuthService authService;
     private final MemberSocialService memberSocialService;
     private final KakaoService kakaoService;
+    private final NaverService naverService;
     private final CookieHelper cookieHelper;
     private final HeaderHelper headerHelper;
 
@@ -105,6 +107,57 @@ public class AuthController {
         String profileImg = member.getProfileImgUrl();
 
         //헤더/쿠키 세팅
+        String accessToken = (String) loginResult.get("accessToken");
+        String refreshToken = (String) loginResult.get("refreshToken");
+        cookieHelper.setCookie("refreshToken", refreshToken);
+
+        String redirectUrl = String.format(
+                "http://localhost:3000/login#accessToken=%s&id=%d&name=%s&role=%s&status=%s&profileImg=%s",
+                accessToken,
+                id,
+                encodeValue(name),
+                encodeValue(role),
+                encodeValue(status),
+                encodeValue(profileImg)
+        );
+
+        response.sendRedirect(redirectUrl);
+    }
+
+    @GetMapping("/oauth/naver/login")
+    public void redirectToNaverLogin(HttpServletResponse response) throws IOException {
+        String clientId = naverService.getClientId();
+        String redirectUri = naverService.getLoginRedirectUri();
+
+        // 네이버 로그인 URL
+        String url = "https://nid.naver.com/oauth2.0/authorize" +
+                "?response_type=code" +
+                "&client_id=" + clientId +
+                "&redirect_uri=" + redirectUri +
+                "&state=" + "someRandomState" + // CSRF 방지용 랜덤 문자열
+                "&prompt=login"; // 항상 로그인 화면
+
+        response.sendRedirect(url);
+    }
+
+    @GetMapping("/oauth/naver/login/callback")
+    public void naverLoginCallback(
+            @RequestParam String code,
+            @RequestParam String state,
+            HttpServletResponse response
+    ) throws IOException {
+
+        String providerId = memberSocialService.getProviderIdFromLoginCode(SocialProvider.NAVER, code);
+        Map<String, Object> loginResult = authService.loginWithSocial(SocialProvider.NAVER, providerId);
+
+        Member member = (Member) loginResult.get("member");
+        Long id = member.getId();
+        String name = member.getName();
+        String role = member.getRole().name();
+        String status = member.getStatus().name();
+        String profileImg = member.getProfileImgUrl();
+
+        // 토큰 발급
         String accessToken = (String) loginResult.get("accessToken");
         String refreshToken = (String) loginResult.get("refreshToken");
         cookieHelper.setCookie("refreshToken", refreshToken);

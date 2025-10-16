@@ -55,6 +55,7 @@ public class MemberController {
     private final FavoriteService favoriteService;
     private final MemberSocialService memberSocialService;
     private final KakaoService kakaoService;
+    private final NaverService naverService;
 
     @Transactional
     @PostMapping
@@ -289,6 +290,7 @@ public class MemberController {
     }
 
     //소셜 관련
+    //카카오
     @GetMapping("/oauth/kakao/link")
     public void redirectToKakaoLink(
             @RequestParam String id,
@@ -323,6 +325,39 @@ public class MemberController {
         //TODO : 테스트 후 변경 필요
         response.sendRedirect("http://localhost:3000/mypage/social");
     }
+
+    //네이버
+    @GetMapping("/oauth/naver/link")
+    public void redirectToNaverLink(
+            @RequestParam String id,
+            HttpServletResponse response
+    ) throws IOException {
+        String clientId = naverService.getClientId();
+        String redirectUri = naverService.getLinkRedirectUri();
+
+        String url = "https://nid.naver.com/oauth2.0/authorize" +
+                "?response_type=code" +
+                "&client_id=" + clientId +
+                "&redirect_uri=" + redirectUri +
+                "&state=" + id; //네이버는 화면 강제 어려움
+
+        response.sendRedirect(url);
+    }
+
+    @GetMapping("/oauth/naver/link/callback")
+    public void naverLinkCallback(
+            @RequestParam String code,
+            @RequestParam String state,
+            HttpServletResponse response
+    ) throws IOException {
+        Long memberId = Long.parseLong(state);
+
+        String providerId = memberSocialService.getProviderIdFromLinkCode(SocialProvider.NAVER, code);
+        memberSocialService.linkSocialAccount(memberId, SocialProvider.NAVER, providerId);
+
+        response.sendRedirect("http://localhost:3000/mypage/social");
+    }
+
 
     // 연동된 소셜 계정 조회
     @GetMapping("/me/social")

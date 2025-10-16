@@ -33,7 +33,7 @@ export default function MyPageSocial() {
     setModalAction(() => onConfirm || (() => setModalOpen(false)));
   };
 
-  // ✅ 연결 상태 조회
+  // 연결 상태 조회
   useEffect(() => {
     const fetchLinkedAccounts = async () => {
       try {
@@ -45,10 +45,10 @@ export default function MyPageSocial() {
         const linked = res.data.data; // [{provider: "KAKAO", providerId: "..."}]
         const updated = { ...socialAccounts };
         linked.forEach((acc: any) => {
-          const provider = acc.provider.toLowerCase();
+          const provider = acc.provider.toLowerCase(); // KAKAO → kakao, NAVER → naver
           if (updated[provider]) {
             updated[provider].connected = true;
-            updated[provider].email = `${provider}@linked.com`;
+            updated[provider].email = `${provider}@linked.com`; // TODO: 실제 이메일 API에서 가져오면 좋음
             updated[provider].connectedAt = new Date()
               .toISOString()
               .split("T")[0];
@@ -64,13 +64,13 @@ export default function MyPageSocial() {
     fetchLinkedAccounts();
   }, []);
 
-  // ✅ 소셜 연결/해제
+  // 소셜 연결/해제
   const handleSocialConnect = async (
     provider: "google" | "kakao" | "naver"
   ) => {
     const target = socialAccounts[provider];
 
-    // 🔹 연결 해제
+    // 연결 해제
     if (target.connected) {
       showModal(
         `${provider.toUpperCase()} 계정 해제`,
@@ -109,10 +109,12 @@ export default function MyPageSocial() {
         }
       );
     }
-    // 🔹 새로 연결
+    // 새로 연결
     else {
       if (provider === "kakao") {
         window.location.href = `http://localhost:8080/api/v1/members/oauth/kakao/link?id=${user?.id}`;
+      } else if (provider === "naver") {
+        window.location.href = `http://localhost:8080/api/v1/members/oauth/naver/link?id=${user?.id}`;
       } else {
         showModal(
           "준비 중",
