@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../../components/base/Button";
-import client from "../../global/backend/client";
+import { useApiClient } from "../../lib/backend/apiClient";
 import { mockFreelancers } from "../../mocks/users";
 
 export default function Home() {
+  const client = useApiClient();
   const [latestProjects, setLatestProjects] = useState<any[]>([]);
   const featuredFreelancers = mockFreelancers.slice(0, 2);
 

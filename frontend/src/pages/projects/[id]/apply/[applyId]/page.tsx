@@ -1,5 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
-import client from "@/global/backend/client";
+import { useApiClient } from "@/lib/backend/apiClient";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
@@ -21,6 +21,7 @@ interface ApplicationDetailData {
 }
 
 export default function ApplicationDetail() {
+  const client = useApiClient();
   const { user, token, isLoggedIn } = useAuth();
   const { id, applyId } = useParams<{ id: string; applyId: string }>();
   const navigate = useNavigate();

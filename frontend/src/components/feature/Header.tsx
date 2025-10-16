@@ -1,6 +1,6 @@
 
 import { useAuth } from '@/context/AuthContext';
-import { client } from "@/lib/backend/client";
+import { useApiClient } from "@/lib/backend/apiClient";
 import { useState } from 'react';
 import toast from "react-hot-toast";
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -12,6 +12,7 @@ interface HeaderProps {
 }
 
 export default function Header({ userType, onUserTypeChange }: HeaderProps) {
+  const client = useApiClient();
   const navigate = useNavigate();
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -28,9 +29,6 @@ export default function Header({ userType, onUserTypeChange }: HeaderProps) {
     try {
       const res = await client.POST("/api/v1/auth/logout", 
         {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
         throwHttpErrors: false,
       });
 
