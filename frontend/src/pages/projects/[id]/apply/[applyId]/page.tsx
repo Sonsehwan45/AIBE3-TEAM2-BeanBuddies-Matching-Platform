@@ -1,5 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
-import client from "@/global/backend/client";
+import { client } from "@/lib/backend/client";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 

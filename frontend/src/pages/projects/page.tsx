@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import Button from "../../components/base/Button";
 import Input from "../../components/base/Input";
 import Select from "../../components/base/Select";
-import client from "../../global/backend/client";
+import { client } from "../../lib/backend/client";
 
 export default function Projects() {
   const { user, token, isLoggedIn } = useAuth();

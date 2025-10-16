@@ -2,7 +2,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Button from "../../../components/base/Button";
-import client from "../../../global/backend/client";
+import { client } from "../../../lib/backend/client";
 
 interface Project {
   id: number;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { client } from "@/lib/backend/client";
+import { useClient } from "@/lib/backend/client";
 import Button from "../../components/base/Button";
 
 export default function MyInfo() {

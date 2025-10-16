@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../../components/base/Button";
-import client from "../../global/backend/client";
+import { client } from "../../lib/backend/client";
 import { mockFreelancers } from "../../mocks/users";
 
 export default function Home() {
