@@ -205,4 +205,25 @@ public class ProjectService {
     public List<Project> findAllByMemberId(Long memberId) {
         return projectRepository.findAllByClientMemberIdOrderByIdDesc(memberId);
     }
+
+    @Transactional(readOnly = true)
+    public List<ProjectSummaryDto> findParticipatedProjectsById(Member member) {
+        if (!member.isFreelancer()) {
+            throw new ServiceException("403-1", "프리랜서만 접근할 수 있는 기능입니다.");
+        }
+
+        List<Project> myProjects = projectRepository.findParticipatedProjectsById(member.getId());
+
+        return myProjects.stream().map(project ->
+                new ProjectSummaryDto(
+                        project,
+                        project.getProjectSkills().stream()
+                                .map(ps -> new SkillDto(ps.getSkill()))
+                                .toList(),
+                        project.getProjectInterests().stream()
+                                .map(pi -> new InterestDto(pi.getInterest()))
+                                .toList()
+                )
+        ).toList();
+    }
 }

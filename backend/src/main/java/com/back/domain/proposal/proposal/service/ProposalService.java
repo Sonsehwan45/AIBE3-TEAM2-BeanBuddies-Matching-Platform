@@ -11,6 +11,7 @@ import com.back.domain.proposal.proposal.entity.Proposal;
 import com.back.domain.proposal.proposal.repository.ProposalRepository;
 import com.back.global.exception.ServiceException;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -104,6 +105,10 @@ public class ProposalService {
 
         proposal.updateStatus(state);
 
+        if (state == ProposalStatus.ACCEPT) {
+            project.addParticipant(proposal.getFreelancer());
+        }
+
         return new ProposalDto(proposal);
     }
 
@@ -126,5 +131,18 @@ public class ProposalService {
     // 테스트를 위한 메소드
     public long count() {
         return proposalRepository.count();
+    }
+
+    public List<ProposalDto> findAllByMember(Member member) {
+        List<Proposal> proposals = new ArrayList<>();
+
+        if (member.isClient()) {
+            proposals = proposalRepository.findByClientIdWithDetails(member.getId());
+        }
+        if (member.isFreelancer()) {
+            proposals = proposalRepository.findByFreelancerIdWithDetails(member.getId());
+        }
+
+        return proposals.stream().map(ProposalDto::new).toList();
     }
 }
