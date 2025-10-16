@@ -8,8 +8,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
+@Getter
+@NoArgsConstructor
 public class FreelancerInterest {
 
     @EmbeddedId
@@ -24,4 +28,13 @@ public class FreelancerInterest {
     @ManyToOne
     @JoinColumn(name = "interest_id")
     private Interest interest;
+
+    // 명시적 getter 추가 (정적 분석/컴파일러 이슈 방지)
+    public Interest getInterest() {
+        return this.interest;
+    }
+
+    public Freelancer getFreelancer() {
+        return this.freelancer;
+    }
 }

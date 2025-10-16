@@ -61,6 +61,7 @@ public class BaseInitData {
             self.addProject();
             self.addApplication();
             self.updateFreelancerInfo();
+            self.updateClientInfo();
             self.addProposal();
             self.synchronization();
         };
@@ -322,6 +323,12 @@ public class BaseInitData {
 
         freelancerService.updateFreelancer(freelancerId5, "프론트엔드", "test@test.com", "안녕하세요",
                 null, List.of());
+    }
+
+    @Transactional
+    public void updateClientInfo() {
+        Long clientId = memberService.findByUsername("client1").get().getClient().getId();
+        clientService.updateClient(clientId,"STARTUP", "회사소개", "대표명", "123-1231311", "010-0233-1234", "ex@ex.com");
     }
 
     @Transactional
