@@ -170,6 +170,15 @@ public class MemberController {
         return new ApiResponse<>("200-9", "내가 등록한 프로젝트 목록 조회 성공", projectSummaries);
     }
 
+    @GetMapping("/me/participated-projects")
+    public ApiResponse<List<ProjectSummaryDto>> getMyParticipatedProjects(@AuthenticationPrincipal CustomUserDetails user) {
+        Member member = memberService.findById(user.getId());
+
+        List<ProjectSummaryDto> data = projectService.findParticipatedProjectsById(member);
+
+        return new ApiResponse<>("200-9", "내가 참여한 프로젝트 목록 조회 성공", data);
+    }
+
     @GetMapping("/me/applications")
     public ApiResponse<List<ApplicationSummaryDto>> getMyApplications(@AuthenticationPrincipal CustomUserDetails user) {
         Member member = memberService.findById(user.getId());

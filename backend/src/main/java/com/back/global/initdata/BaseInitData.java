@@ -299,7 +299,11 @@ public class BaseInitData {
 
     @Transactional
     public void updateFreelancerInfo() {
-        Long freelancerId1 = memberService.findByUsername("freelancer1").get().getFreelancer().getId();
+        Freelancer freelancer1 = memberService.findByUsername("freelancer1").get().getFreelancer();
+        if (freelancer1.getJob() != null) {
+            return;
+        }
+        Long freelancerId1 = freelancer1.getId();
         Long freelancerId2 = memberService.findByUsername("freelancer2").get().getFreelancer().getId();
         Long freelancerId3 = memberService.findByUsername("freelancer3").get().getFreelancer().getId();
         Long freelancerId4 = memberService.findByUsername("freelancer4").get().getFreelancer().getId();
@@ -341,6 +345,10 @@ public class BaseInitData {
         List<Long> projectIds = List.of(1L, 2L, 3L, 4L, 5L, 6L, 7L);
         List<Integer> ratingsList = List.of(5, 4, 3, 2, 1, 1, 2, 2, 3, 4, 4, 5, 2, 3, 1, 4, 5);
         List<Long> evaluatorIds = List.of(2L, 3L);
+
+        if (memberService.findByUsername("freelancer6").get().getFreelancer().getJob() != null) {
+            return;
+        }
 
         for (int i = 6; i <= 50; i++) {
             Long freelancerId = memberService.findByUsername("freelancer" + i).get().getFreelancer().getId();
