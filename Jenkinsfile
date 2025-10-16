@@ -7,6 +7,9 @@ pipeline {
         DOCKERHUB_USERNAME = 'yhcho14' // 본인의 Docker Hub 사용자 이름으로 변경
         BACKEND_APP_NAME = 'beanbuddies-matching-platform'
         FRONTEND_APP_NAME = 'beanbuddies-frontend'
+        // 프런트엔드 빌드 시 사용할 API 엔드포인트 (Vite는 VITE_ 접두사만 클라이언트에 노출)
+        // 브랜치/스테이지에 따라 값 변경 가능. 필요시 Jenkins 전역 env/폴더별 env로 override
+        VITE_API_BASE_URL = 'https://api.yhcho.com'
     }
 
     tools {
@@ -25,7 +28,8 @@ pipeline {
             steps {
                 dir('frontend') {
                     sh 'npm install'
-                    sh 'npm run build'
+                    // Vite는 빌드 타임에 VITE_ 변수를 번들에 인라인합니다.
+                    sh 'VITE_API_BASE_URL=${VITE_API_BASE_URL} npm run build'
                 }
             }
         }
@@ -37,7 +41,8 @@ pipeline {
             }
             steps {
                 script {
-                    def appImage = docker.build("${DOCKERHUB_USERNAME}/${FRONTEND_APP_NAME}:${env.BUILD_NUMBER}", './frontend')
+                    // Docker 이미지 빌드 시에도 build-arg로 전달하여 Dockerfile ARG -> ENV로 주입
+                    def appImage = docker.build("${DOCKERHUB_USERNAME}/${FRONTEND_APP_NAME}:${env.BUILD_NUMBER}", "--build-arg VITE_API_BASE_URL=${VITE_API_BASE_URL} ./frontend")
                     docker.withRegistry('https://registry.hub.docker.com', 'yhcho-dockerhub') {
                         appImage.push()
                     }
