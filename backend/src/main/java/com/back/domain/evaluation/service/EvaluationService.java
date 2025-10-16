@@ -149,7 +149,7 @@ public class EvaluationService {
 
     //프리랜서 총 평점 계산
     private void updateFreelancerRatingAvg(Long freelancerId) {
-        List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerId(freelancerId);
+        List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerIdDetails(freelancerId);
 
         double average = evaluations.stream()
                 .mapToInt(FreelancerEvaluation::getRatingSatisfaction)
@@ -192,7 +192,7 @@ public class EvaluationService {
                     .map(EvaluationResponse::from)
                     .collect(Collectors.toList());
         } else if (member.getRole() == Role.FREELANCER) {
-            List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerId(userId);
+            List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerIdDetails(userId);
             evaluationResponses = evaluations.stream()
                     .map(EvaluationResponse::from)
                     .collect(Collectors.toList());
@@ -234,6 +234,19 @@ public class EvaluationService {
         else{
             evaluationResponses = Collections.emptyList();
         }
+        return new EvaluationsWithCountResponse(evaluationResponses.size(), evaluationResponses);
+    }
+
+    public EvaluationsWithCountResponse getMyEvaluations(Long freelancerId) {
+        Freelancer freelancer = freelancerRepository.findById(freelancerId)
+                .orElseThrow(() -> new ServiceException("404", "프리랜서를 찾을 수 없습니다."));
+
+        List<FreelancerEvaluation> evaluations = freelancerEvaluationRepository.findByFreelancerIdDetails(freelancerId);
+
+        List<EvaluationResponse> evaluationResponses = evaluations.stream()
+                .map(EvaluationResponse::from)
+                .collect(Collectors.toList());
+
         return new EvaluationsWithCountResponse(evaluationResponses.size(), evaluationResponses);
     }
 }
