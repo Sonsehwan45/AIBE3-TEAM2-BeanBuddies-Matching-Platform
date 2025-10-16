@@ -1,6 +1,7 @@
 package com.back.global.initdata;
 
 import com.back.domain.application.application.dto.ApplicationWriteReqBody;
+import com.back.domain.application.application.entity.Application;
 import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.client.client.service.ClientService;
@@ -58,10 +59,10 @@ public class BaseInitData {
             self.addMember();
             self.addSkillAndInterest();
             self.addProject();
-            //self.addApplication();
+            self.addApplication();
             self.updateFreelancerInfo();
             self.updateClientInfo();
-            //self.addProposal();
+            self.addProposal();
             self.synchronization();
         };
     }
@@ -279,93 +280,78 @@ public class BaseInitData {
         } catch (Exception ignore) {}
     }
 
-    // ========================= Applications (safe) =========================
     @Transactional
     public void addApplication() {
         if (applicationService.count() > 0) return;
 
-        // 프리랜서 3명 확보
-        List<Freelancer> fl = new ArrayList<>();
-        for (int i = 1; i <= 40; i++) {
-            String uname = String.format("freelancer%d", i);
-            memberService.findByUsername(uname).ifPresent(m -> {
-                if (m.getFreelancer() != null) {
-                    try { fl.add(freelancerService.findById(m.getFreelancer().getId())); } catch (Exception ignore) {}
-                }
-            });
-            if (fl.size() >= 3) break;
-        }
-        if (fl.isEmpty()) return;
-        Freelancer f1 = fl.get(0);
-        Freelancer f2 = fl.size() > 1 ? fl.get(1) : f1;
-        Freelancer f3 = fl.size() > 2 ? fl.get(2) : f1;
+        // 프리랜서 회원 조회
+        Member freelancerMember1 = memberService.findByUsername("freelancer1").get();
+        Freelancer freelancer1 = freelancerService.findById(freelancerMember1.getId());
+        Member freelancerMember2 = memberService.findByUsername("freelancer2").get();
+        Freelancer freelancer2 = freelancerService.findById(freelancerMember2.getId());
+        Member freelancerMember3 = memberService.findByUsername("freelancer3").get();
+        Freelancer freelancer3 = freelancerService.findById(freelancerMember3.getId());
+        // 프로젝트 조회
+        Project project1 = projectService.findById(1);
+        Project project2 = projectService.findById(2);
+        Project project3 = projectService.findById(3);
+        Project project4 = projectService.findById(4);
 
-        // 프로젝트 6개 확보
-        List<Project> projects = new ArrayList<>();
-        for (long pid = 1; pid <= 500; pid++) {
-            try {
-                projects.add(projectService.findById(pid));
-            } catch (Exception ignore) {}
-            if (projects.size() >= 6) break;
-        }
-        if (projects.isEmpty()) return;
+        Application application1 = applicationService.create(
+                new ApplicationWriteReqBody(
+                        BigDecimal.valueOf(1_000_000),
+                        "1개월",
+                        "주 5일, 원격 근무",
+                        "추가 자료 없음"
+                ),
+                freelancer1,
+                project1
+        );
 
-        Project p1 = projects.get(0);
-        Project p2 = projects.size() > 1 ? projects.get(1) : p1;
-        Project p3 = projects.size() > 2 ? projects.get(2) : p1;
+        Application application2 = applicationService.create(
+                new ApplicationWriteReqBody(
+                        BigDecimal.valueOf(2_000_000),
+                        "2개월",
+                        "주 3일, 출근 근무",
+                        "디자인 자료 필요"
+                ),
+                freelancer1,
+                project2
+        );
 
-        // 샘플 지원서
-        safeApply(f1, p1, new ApplicationWriteReqBody(
-                BigDecimal.valueOf(1_800_000), "2개월", "주 5일, 원격", "추가 자료 없음"));
-        safeApply(f1, p2, new ApplicationWriteReqBody(
-                BigDecimal.valueOf(2_200_000), "3개월", "주 3일, 출근", "디자인 자료 검토 필요"));
-        safeApply(f2, p3, new ApplicationWriteReqBody(
-                BigDecimal.valueOf(2_700_000), "4개월", "주 4일, 혼합", "기술 문서 요청"));
+        Application application3 = applicationService.create(
+                new ApplicationWriteReqBody(
+                        BigDecimal.valueOf(2_500_000),
+                        "3개월",
+                        "주 4일, 혼합 근무",
+                        "기술 자료 요청"
+                ),
+                freelancer1,
+                project3
+        );
 
-        // f3가 마지막 프로젝트에 여러 건
-        Project last = projects.get(projects.size()-1);
-        for (int i = 1; i <= 10; i++) {
-            safeApply(f3, last, new ApplicationWriteReqBody(
-                    BigDecimal.valueOf(900_000L + (i * 100_000L)),
-                    (i % 6 + 1) + "개월",
-                    (i % 2 == 0) ? "주 5일, 원격" : "주 3일, 출근",
-                    "추가 자료 없음"
-            ));
-        }
+        applicationService.create(
+                new ApplicationWriteReqBody(
+                        BigDecimal.valueOf(2_500_000),
+                        "3개월",
+                        "주 4일, 혼합 근무",
+                        "기술 자료 요청"
+                ),
+                freelancer3,
+                project4
+        );
+
     }
-    private void safeApply(Freelancer f, Project p, ApplicationWriteReqBody body) {
-        try { applicationService.create(body, f, p); } catch (Exception ignore) {}
-    }
 
-    // ========================= Proposals (safe) =========================
+
     @Transactional
     public void addProposal() {
         if (proposalService.count() > 0) return;
 
-        // 가장 앞의 프로젝트 1개
-        Project project = null;
-        for (long pid = 1; pid <= 500; pid++) {
-            try { project = projectService.findById(pid); break; } catch (Exception ignore) {}
-        }
-        if (project == null) return;
-        Member clientMember = project.getClient().getMember();
-
-        // 프리랜서 2명 타겟팅
-        List<Long> targets = new ArrayList<>();
-        for (int i = 1; i <= 40; i++) {
-            String uname = String.format("freelancer%d", i);
-            var opt = memberService.findByUsername(uname);
-            if (opt.isPresent() && opt.get().getFreelancer() != null) {
-                targets.add(opt.get().getFreelancer().getId());
-            }
-            if (targets.size() >= 2) break;
-        }
-        if (targets.isEmpty()) return;
-
-        try { proposalService.createProposal(clientMember, project.getId(), targets.get(0), "프로젝트 제안 메시지 1"); } catch (Exception ignore) {}
-        if (targets.size() >= 2) {
-            try { proposalService.createProposal(clientMember, project.getId(), targets.get(1), "프로젝트 제안 메시지 2"); } catch (Exception ignore) {}
-        }
+        Project project = projectService.findById(1L);
+        Member member = project.getClient().getMember();
+        proposalService.createProposal(member, 1L, 6L, "프로젝트 제안 메시지 1");
+        proposalService.createProposal(member, 1L, 8L, "프로젝트 제안 메시지 2");
     }
 
     // ========================= Freelancer Profiles =========================
@@ -375,7 +361,6 @@ public class BaseInitData {
         var f01 = memberService.findByUsername("freelancer1").map(Member::getFreelancer);
         if (f01.isPresent() && f01.get().getJob() != null) return;
 
-        // 앞쪽 10명 정도 상세 세팅
         updateF("freelancer1","백엔드",
                 "Spring Boot/JPA 중심 백엔드 개발자",
                 Map.of("Java", 60, "Spring Boot", 48, "JPA", 36, "MySQL", 30),
@@ -573,7 +558,6 @@ public class BaseInitData {
                 .orElse(null);
         if (any != null) return;
 
-        // 사용할 프로젝트(최대 7) — 평가 생성용
         List<Project> projects = new ArrayList<>();
         for (long pid = 1; pid <= 500; pid++) {
             try { projects.add(projectService.findById(pid)); } catch (Exception ignore) {}

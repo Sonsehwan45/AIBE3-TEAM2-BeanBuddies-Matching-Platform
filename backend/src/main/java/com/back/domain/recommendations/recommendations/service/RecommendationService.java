@@ -121,12 +121,12 @@ public class RecommendationService {
 
         if (auth == null || !auth.isAuthenticated()
                 || "anonymousUser".equals(String.valueOf(auth.getPrincipal()))) {
-            throw new ServiceException("401-111", "로그인 정보가 없습니다");
+            throw new ServiceException("401-1", "로그인 정보가 없습니다");
         }
 
         String username = auth.getName();
         return memberRepo.findByUsername(username)
-                .orElseThrow(() -> new ServiceException("401-222", "사용자 정보를 찾을 수 없습니다"));
+                .orElseThrow(() -> new ServiceException("401-2", "사용자 정보를 찾을 수 없습니다"));
     }
 
     /** 텍스트 → Mroonga Boolean(+토큰) 질의 변환기 */
