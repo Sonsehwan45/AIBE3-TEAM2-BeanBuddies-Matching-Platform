@@ -516,17 +516,48 @@ public class BaseInitData {
         memberService.findByUsername(uname).ifPresent(m -> {
             if (m.getFreelancer() != null) {
                 try {
+                    // interests는 job과 uname을 기반으로 1~4에서 2개 내외로 섞어서 선정
+                    List<Long> interests = pickInterests(uname, job);
                     freelancerService.updateFreelancer(
                             m.getFreelancer().getId(),
                             job,
                             uname + "@example.com",
                             comment,
                             careers,
-                            skills
+                            skills,
+                            interests
                     );
                 } catch (Exception ignore) {}
             }
         });
+    }
+
+    // job과 사용자명을 바탕으로 기존 interestId(1~4)에서 다양하게 선택
+    private List<Long> pickInterests(String uname, String job) {
+        String j = job == null ? "" : job;
+        List<Long> base;
+        if (j.contains("프론트")) {
+            base = List.of(1L, 2L); // 웹, 모바일
+        } else if (j.contains("데이터")) {
+            base = List.of(3L, 4L); // 데이터, 클라우드
+        } else if (j.contains("클라우드")) {
+            base = List.of(4L, 1L); // 클라우드, 웹
+        } else if (j.contains("풀스택")) {
+            base = List.of(1L, 4L); // 웹, 클라우드
+        } else { // 백엔드 등 기타
+            base = List.of(1L, 4L); // 웹, 클라우드
+        }
+        int n = 0;
+        try {
+            String digits = uname.replaceAll("[^0-9]", "");
+            n = digits.isEmpty() ? 0 : Integer.parseInt(digits);
+        } catch (Exception ignore) {}
+        long extra = (n % 4) + 1L; // 1~4 중 하나 추가로 섞기
+        java.util.LinkedHashSet<Long> set = new java.util.LinkedHashSet<>(base);
+        set.add(extra);
+        // 최대 2개로 제한해 깔끔하게 유지
+        List<Long> mixed = new ArrayList<>(set);
+        return mixed.subList(0, Math.min(2, mixed.size()));
     }
 
     // ========================= Client Info =========================
@@ -565,17 +596,6 @@ public class BaseInitData {
         }
         if (projects.isEmpty()) return;
 
-        List<String> jobs = List.of("백엔드","프론트엔드","풀스택","데이터","클라우드");
-        List<String> comments = List.of("안녕하세요", "잘 부탁드립니다", "열심히 하겠습니다", "빠르게 적응합니다");
-        List<List<Long>> skills = List.of(
-                List.of(1L), List.of(2L), List.of(3L),
-                List.of(4L), List.of(5L), List.of(6L),
-                List.of(7L), List.of(8L), List.of(9L),
-                List.of(10L), List.of(11L), List.of(12L),
-                List.of(1L,2L), List.of(4L,6L), List.of(8L,9L)
-        );
-        List<Integer> months = List.of(6,12,18,24,30,36,42,48);
-
         int idx = 0;
         for (int i = 31; i <= 50; i++) {
             String uname = String.format("freelancer%02d", i);
@@ -584,14 +604,28 @@ public class BaseInitData {
 
             Long fid = opt.get().getFreelancer().getId();
             try {
+                List<String> jobs = List.of("백엔드","프론트엔드","풀스택","데이터","클라우드"); // ensure scope
+                List<String> comments = List.of("안녕하세요", "잘 부탁드립니다", "열심히 하겠습니다", "빠르게 적응합니다");
+                List<List<Long>> skills = List.of(
+                        List.of(1L), List.of(2L), List.of(3L),
+                        List.of(4L), List.of(5L), List.of(6L),
+                        List.of(7L), List.of(8L), List.of(9L),
+                        List.of(10L), List.of(11L), List.of(12L),
+                        List.of(1L,2L), List.of(4L,6L), List.of(8L,9L)
+                );
+                List<Integer> months = List.of(6,12,18,24,30,36,42,48);
+
+                String job = jobs.get(i % jobs.size());
+                List<Long> interests = pickInterests(uname, job);
                 freelancerService.updateFreelancer(
                         fid,
-                        jobs.get(i % jobs.size()),
+                        job,
                         uname + "@example.com",
                         comments.get(i % comments.size()),
                         Map.of("Java", months.get(i % months.size()),
                                 "Spring", months.get((i+1) % months.size())),
-                        skills.get(i % skills.size())
+                        skills.get(i % skills.size()),
+                        interests
                 );
             } catch (Exception ignore) {}
 

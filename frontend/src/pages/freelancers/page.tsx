@@ -1,13 +1,10 @@
-import { useApiClient } from "@/lib/backend/apiClient";
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import Button from "../../components/base/Button";
-import Select from "../../components/base/Select";
-import { useAuth } from "../../context/AuthContext";
 
-interface FreelancersProps {
-  userType?: "client" | "freelancer";
-}
+import { client } from '@/lib/backend/client';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import Button from '../../components/base/Button';
+import Select from '../../components/base/Select';
+import { useAuth } from '../../context/AuthContext';
 
 // API 응답 타입 정의
 type FreelancerSummary = {
@@ -15,24 +12,18 @@ type FreelancerSummary = {
   name?: string;
   careerLevel?: "NEWBIE" | "JUNIOR" | "MID" | "SENIOR" | "UNDEFINED";
   ratingAvg?: number;
-  skills?: Array<{ id?: number; name?: string }>;
+  skills?: Array<{ id?: number; name?: string; }>;
+  interests?: Array<{ id?: number; name?: string; }>;
 };
 
-interface FreelancersProps {
-  userType?: "client" | "freelancer";
-}
-
-export default function Freelancers({ userType = "client" }: FreelancersProps) {
-  const client = useApiClient();
-  const { token } = useAuth();
-  const [searchKeyword, setSearchKeyword] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [selectedExperience, setSelectedExperience] = useState("");
-  const [selectedSkills, setSelectedSkills] = useState<
-    Array<{ id: number; name: string }>
-  >([]);
-  const [selectedRating, setSelectedRating] = useState("");
-  const [sortBy, setSortBy] = useState("latest");
+export default function Freelancers() {
+  const { token, user } = useAuth();
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedExperience, setSelectedExperience] = useState('');
+  const [selectedSkills, setSelectedSkills] = useState<Array<{ id: number; name: string }>>([]);
+  const [selectedRating, setSelectedRating] = useState('');
+  const [sortBy, setSortBy] = useState('latest');
   const [favorites, setFavorites] = useState<number[]>([]);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -43,7 +34,7 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
   const [totalPages, setTotalPages] = useState(0);
   const [totalElements, setTotalElements] = useState(0);
 
-  const ALL_OPTION = { value: "", label: "전체 분야" };
+  const ALL_OPTION = { value: '', label: '전체 분야' };
 
   // 필터 데이터 불러오기 (skills, interests)
   useEffect(() => {
@@ -61,24 +52,19 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
       if (!token) return;
 
       try {
-        const { data: favoritesResponse } = await client.GET(
-          "/api/v1/members/me/favorites/freelancers",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+        const { data: favoritesResponse } = await client.GET("/api/v1/members/me/favorites/freelancers", {
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
-        );
+        });
 
         if (favoritesResponse?.data) {
-          const favoriteIds = (favoritesResponse.data as any[]).map(
-            (fav: any) => fav.id
-          );
+          const favoriteIds = (favoritesResponse.data as any[]).map((fav: any) => fav.id);
           setFavorites(favoriteIds);
-          console.log("✅ 관심 프리랜서 목록 로드:", favoriteIds);
+          console.log('✅ 관심 프리랜서 목록 로드:', favoriteIds);
         }
       } catch (error) {
-        console.error("❌ 관심 프리랜서 목록 조회 실패:", error);
+        console.error('❌ 관심 프리랜서 목록 조회 실패:', error);
       }
     };
 
@@ -89,68 +75,71 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
   const fetchFreelancers = async () => {
     setLoading(true);
     try {
-      // URL을 직접 구성해서 호출
-      const params = new URLSearchParams();
-      params.append("page", currentPage.toString());
-      params.append("size", "20");
-
       // 정렬 파라미터 설정
-      let sortParam = "id,desc"; // 기본값
+      let sortParam: string[] = ['id,desc']; // 기본값
       switch (sortBy) {
-        case "ratingAvg":
-          sortParam = "ratingAvg,desc";
+        case 'ratingAvg':
+          sortParam = ['ratingAvg,desc'];
           break;
-        case "careerTotalYears":
-          sortParam = "careerTotalYears,desc";
+        case 'careerTotalYears':
+          sortParam = ['careerTotalYears,desc'];
           break;
-        case "latest":
+        case 'latest':
         default:
-          sortParam = "id,desc";
+          sortParam = ['id,desc'];
           break;
       }
-      params.append("sort", sortParam);
-      console.log("정렬 파라미터:", sortBy, "→", sortParam);
+      console.log('정렬 파라미터:', sortBy, '→', sortParam);
 
+      // openapi-fetch 클라이언트 사용
+      // pageable 객체를 평탄화하여 전달
+      const queryParams: any = {
+        'pageable.page': currentPage,
+        'pageable.size': 20,
+        'pageable.sort': sortParam,
+      };
+
+      if (searchKeyword.trim()) {
+        queryParams.searchKeyword = searchKeyword.trim();
+      }
       if (selectedExperience) {
-        params.append("careerLevel", selectedExperience);
+        queryParams.careerLevel = selectedExperience;
       }
       if (selectedRating) {
-        const ratingParam = parseFloat(selectedRating.replace("+", ""));
-        params.append("ratingAvg", ratingParam.toString());
+        queryParams.ratingAvg = parseFloat(selectedRating.replace('+', ''));
       }
       if (selectedSkills.length > 0) {
-        const skillIds = selectedSkills.map((skill) => skill.id).join(",");
-        params.append("skillIds", skillIds);
-        console.log("선택된 스킬 IDs:", skillIds);
+        queryParams.skillIds = selectedSkills.map(skill => skill.id).join(',');
+      }
+      if (selectedCategory) {
+        queryParams.interestIds = selectedCategory;
       }
 
-      const url = `http://localhost:8080/api/v1/freelancers?${params.toString()}`;
-      console.log("API 호출 URL:", url);
+      console.log('쿼리 파라미터:', queryParams);
 
-      const response = await fetch(url, {
-        credentials: "include",
-        headers: {
-          Accept: "application/json",
-        },
+      const { data: response, error } = await client.GET("/api/v1/freelancers", {
+        params: {
+          query: queryParams
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      console.log('API 응답:', response);
+
+      if (error) {
+        console.error('API 에러:', error);
+        throw new Error('프리랜서 목록 조회 실패');
       }
 
-      const result = await response.json();
-      console.log("API 응답:", result);
-
-      if (result?.data) {
-        setFreelancers(result.data.content ?? []);
-        setTotalElements(result.data.totalElements ?? 0);
-        setTotalPages(result.data.totalPages ?? 0);
-        console.log("프리랜서 목록:", result.data.content);
+      if (response?.data) {
+        setFreelancers(response.data.content ?? []);
+        setTotalElements(response.data.totalElements ?? 0);
+        setTotalPages(response.data.totalPages ?? 0);
+        console.log('프리랜서 목록:', response.data.content);
       } else {
-        console.error("API 응답 데이터가 없습니다:", result);
+        console.error('API 응답 데이터가 없습니다:', response);
       }
     } catch (error) {
-      console.error("프리랜서 목록 조회 실패:", error);
+      console.error('프리랜서 목록 조회 실패:', error);
     } finally {
       setLoading(false);
     }
@@ -159,7 +148,7 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
   // 프리랜서 목록 초기 로드 및 필터 변경시 재로드
   useEffect(() => {
     fetchFreelancers();
-  }, [currentPage, selectedExperience, selectedRating, selectedSkills, sortBy]);
+  }, [currentPage, selectedExperience, selectedRating, selectedSkills, sortBy, searchKeyword, selectedCategory]);
 
   // 흥미 분야 불러오기
   type InterestItem = {
@@ -168,9 +157,9 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
   };
 
   const [interests, setInterests] = useState<InterestItem[]>([]);
-  const interestOptions = interests.map((item) => ({
+  const interestOptions = interests.map(item => ({
     value: String(item.id),
-    label: item.name || "",
+    label: item.name || ''
   }));
   const selectedInterests = [ALL_OPTION, ...interestOptions];
 
@@ -191,29 +180,29 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
     UNDEFINED("미입력", -1, -1)
    */
   const experienceOptions = [
-    { value: "", label: "전체 경력" },
-    { value: "NEWBIE", label: "신입 (1년 미만)" },
-    { value: "JUNIOR", label: "주니어 (1-3년)" },
-    { value: "MID", label: "미들 (3-7년)" },
-    { value: "SENIOR", label: "시니어 (7년 이상)" },
+    { value: '', label: '전체 경력' },
+    { value: 'NEWBIE', label: '신입 (1년 미만)' },
+    { value: 'JUNIOR', label: '주니어 (1-3년)' },
+    { value: 'MID', label: '미들 (3-7년)' },
+    { value: 'SENIOR', label: '시니어 (7년 이상)' }
   ];
 
   const ratingOptions = [
-    { value: "", label: "전체 평점" },
-    { value: "4.5+", label: "4.5점 이상" },
-    { value: "4.0+", label: "4.0점 이상" },
-    { value: "3.5+", label: "3.5점 이상" },
+    { value: '', label: '전체 평점' },
+    { value: '4.5+', label: '4.5점 이상' },
+    { value: '4.0+', label: '4.0점 이상' },
+    { value: '3.5+', label: '3.5점 이상' }
   ];
 
   const sortOptions = [
-    { value: "latest", label: "최신순" },
-    { value: "ratingAvg", label: "평점순" },
-    { value: "careerTotalYears", label: "경력순" },
+    { value: 'latest', label: '최신순' },
+    { value: 'ratingAvg', label: '평점순' },
+    { value: 'careerTotalYears', label: '경력순' }
   ];
 
   const toggleFavorite = async (freelancerId: number) => {
     if (!token) {
-      alert("⚠️ 로그인이 필요합니다.");
+      alert('⚠️ 로그인이 필요합니다.');
       return;
     }
 
@@ -222,96 +211,70 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
     try {
       if (isFavorite) {
         // 관심 프리랜서 삭제
-        const response = await client.DELETE(
-          "/api/v1/members/me/favorites/freelancers/{userId}",
-          {
-            params: {
-              path: {
-                userId: freelancerId,
-              },
-            },
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+        const response = await client.DELETE("/api/v1/members/me/favorites/freelancers/{userId}", {
+          params: {
+            path: {
+              userId: freelancerId
+            }
+          },
+          headers: {
+            'Authorization': `Bearer ${token}`
           }
-        );
+        });
 
         if (response.error) {
-          throw new Error("관심 프리랜서 삭제 실패");
+          throw new Error('관심 프리랜서 삭제 실패');
         }
 
-        setFavorites((prev) => prev.filter((id) => id !== freelancerId));
-        console.log("✅ 관심 프리랜서 삭제:", freelancerId);
+        setFavorites(prev => prev.filter(id => id !== freelancerId));
+        console.log('✅ 관심 프리랜서 삭제:', freelancerId);
       } else {
         // 관심 프리랜서 등록
-        const response = await client.POST(
-          "/api/v1/members/me/favorites/freelancers",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: {
-              userId: freelancerId,
-            },
+        const response = await client.POST("/api/v1/members/me/favorites/freelancers", {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: {
+            userId: freelancerId
           }
-        );
+        });
 
         if (response.error) {
-          throw new Error("관심 프리랜서 등록 실패");
+          throw new Error('관심 프리랜서 등록 실패');
         }
 
-        setFavorites((prev) => [...prev, freelancerId]);
-        console.log("✅ 관심 프리랜서 등록:", freelancerId);
+        setFavorites(prev => [...prev, freelancerId]);
+        console.log('✅ 관심 프리랜서 등록:', freelancerId);
       }
     } catch (error) {
-      console.error("❌ 관심 프리랜서 처리 실패:", error);
-      alert("⚠️ 처리 중 오류가 발생했습니다. 다시 시도해주세요.");
+      console.error('❌ 관심 프리랜서 처리 실패:', error);
+      alert('⚠️ 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
     }
   };
 
   const addSkillFilter = (skill: { id?: number; name?: string }) => {
-    if (
-      skill.id &&
-      skill.name &&
-      !selectedSkills.some((s) => s.id === skill.id)
-    ) {
-      setSelectedSkills((prev) => [
-        ...prev,
-        { id: skill.id!, name: skill.name! },
-      ]);
+    if (skill.id && skill.name && !selectedSkills.some(s => s.id === skill.id)) {
+      setSelectedSkills(prev => [...prev, { id: skill.id!, name: skill.name! }]);
     }
   };
 
   const removeSkillFilter = (skillToRemove: { id: number; name: string }) => {
-    setSelectedSkills((prev) => prev.filter((s) => s.id !== skillToRemove.id));
+    setSelectedSkills(prev => prev.filter(s => s.id !== skillToRemove.id));
   };
 
   const clearAllFilters = () => {
-    setSearchKeyword("");
-    setSelectedCategory("");
-    setSelectedExperience("");
+    setSearchKeyword('');
+    setSelectedCategory('');
+    setSelectedExperience('');
     setSelectedSkills([]);
-    setSelectedRating("");
+    setSelectedRating('');
     setCurrentPage(0);
   };
 
-  // 키워드 검색 필터링 (클라이언트 사이드)
-  const filteredFreelancers = freelancers.filter((freelancer) => {
-    // 키워드 검색 필터
-    if (searchKeyword) {
-      const nameMatch = freelancer.name
-        ?.toLowerCase()
-        .includes(searchKeyword.toLowerCase());
-      const skillMatch = freelancer.skills?.some((skill) =>
-        skill.name?.toLowerCase().includes(searchKeyword.toLowerCase())
-      );
-      if (!nameMatch && !skillMatch) return false;
-    }
+  // 백엔드에서 검색/필터링하므로 클라이언트 사이드 필터링 불필요
+  const filteredFreelancers = freelancers;
 
-    return true;
-  });
-  const activeFiltersCount =
-    (selectedCategory ? 1 : 0) +
+  const activeFiltersCount = (selectedCategory ? 1 : 0) +
     (selectedExperience ? 1 : 0) +
     (selectedRating ? 1 : 0) +
     selectedSkills.length;
@@ -326,9 +289,7 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
               <i className="ri-team-line text-white text-2xl"></i>
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                프리랜서 찾기
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900">프리랜서 찾기</h1>
               <p className="text-gray-600">전문적인 프리랜서를 찾아보세요</p>
             </div>
           </div>
@@ -342,7 +303,7 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
               <i className="ri-search-line absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg"></i>
               <input
                 type="text"
-                placeholder="프리랜서 이름, 소개, 기술 스택으로 검색"
+                placeholder="프리랜서 이름, 소개로 검색"
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -426,9 +387,7 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {skills
-                    .filter(
-                      (skill) => !selectedSkills.some((s) => s.id === skill.id)
-                    )
+                    .filter(skill => !selectedSkills.some(s => s.id === skill.id))
                     .slice(0, 10)
                     .map((skill) => (
                       <button
@@ -444,18 +403,11 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
 
               <div className="flex justify-end">
                 <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    onClick={clearAllFilters}
-                    className="rounded-xl"
-                  >
+                  <Button variant="outline" onClick={clearAllFilters} className="rounded-xl">
                     <i className="ri-refresh-line mr-2"></i>
                     필터 초기화
                   </Button>
-                  <Button
-                    onClick={() => setShowFilters(false)}
-                    className="rounded-xl"
-                  >
+                  <Button onClick={() => setShowFilters(false)} className="rounded-xl">
                     필터 적용
                   </Button>
                 </div>
@@ -468,30 +420,15 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <p className="text-gray-600">
-              총{" "}
-              <span className="font-semibold text-indigo-600">
-                {totalElements}
-              </span>
-              명의 프리랜서
+              총 <span className="font-semibold text-indigo-600">{totalElements}</span>명의 프리랜서
               {searchKeyword && (
-                <span>
-                  {" "}
-                  • '<span className="font-medium">{searchKeyword}</span>' 검색
-                  결과
-                </span>
+                <span> • '<span className="font-medium">{searchKeyword}</span>' 검색 결과</span>
               )}
             </p>
             {activeFiltersCount > 0 && (
               <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">
-                  활성 필터: {activeFiltersCount}개
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={clearAllFilters}
-                  className="rounded-lg"
-                >
+                <span className="text-sm text-gray-600">활성 필터: {activeFiltersCount}개</span>
+                <Button variant="outline" size="sm" onClick={clearAllFilters} className="rounded-lg">
                   전체 해제
                 </Button>
               </div>
@@ -512,95 +449,88 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
         {/* 프리랜서 리스트 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {filteredFreelancers.map((freelancer) => (
-            <div
-              key={freelancer.id}
-              className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300 group"
-            >
+            <div key={freelancer.id} className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-6 hover:shadow-2xl transition-all duration-300">
               <div className="flex items-start space-x-4">
                 <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-                  {freelancer.name?.charAt(0) || "F"}
+                  {freelancer.name?.charAt(0) || 'F'}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
-                      <Link to={`/freelancers/${freelancer.id}`}>
-                        {freelancer.name || "이름 없음"}
-                      </Link>
+                    <h3 className="text-lg font-bold text-gray-900 hover:text-indigo-600 transition-colors">
+                      <Link to={`/freelancers/${freelancer.id}`}>{freelancer.name || '이름 없음'}</Link>
                     </h3>
                     <button
                       onClick={() => toggleFavorite(freelancer.id || 0)}
                       className="p-2 rounded-lg hover:bg-gray-100/50 transition-colors cursor-pointer"
                     >
-                      <i
-                        className={`text-lg ${
-                          favorites.includes(freelancer.id || 0)
-                            ? "ri-heart-fill text-red-500"
-                            : "ri-heart-line text-gray-400"
-                        }`}
-                      ></i>
+                      <i className={`text-lg ${favorites.includes(freelancer.id || 0) ? 'ri-heart-fill text-red-500' : 'ri-heart-line text-gray-400'}`}></i>
                     </button>
                   </div>
 
                   <p className="text-sm text-gray-600 mb-2 font-medium">
-                    {freelancer.careerLevel === "NEWBIE" && "신입"}
-                    {freelancer.careerLevel === "JUNIOR" && "주니어"}
-                    {freelancer.careerLevel === "MID" && "미드"}
-                    {freelancer.careerLevel === "SENIOR" && "시니어"}
-                    {freelancer.careerLevel === "UNDEFINED" && "경력 미입력"}
+                    {freelancer.careerLevel === 'NEWBIE' && '신입 (1년 미만)'}
+                    {freelancer.careerLevel === 'JUNIOR' && '주니어 (1-3년)'}
+                    {freelancer.careerLevel === 'MID' && '미드 (3-7년)'}
+                    {freelancer.careerLevel === 'SENIOR' && '시니어 (7년 이상)'}
+                    {freelancer.careerLevel === 'UNDEFINED' && '경력 미입력'}
                   </p>
 
                   <div className="flex items-center mb-3">
                     <div className="flex items-center bg-yellow-50 px-2 py-1 rounded-full mr-3">
                       <i className="ri-star-fill text-yellow-400 mr-1"></i>
-                      <span className="text-sm font-semibold text-yellow-700">
-                        {freelancer.ratingAvg?.toFixed(1) || "0.0"}
-                      </span>
+                      <span className="text-sm font-semibold text-yellow-700">{freelancer.ratingAvg?.toFixed(1) || '0.0'}</span>
                     </div>
                     <span className="text-sm text-gray-500">평점</span>
                   </div>
 
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {freelancer.skills?.slice(0, 4).map((skill) => (
-                      <span
-                        key={skill.id}
-                        className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium border border-indigo-100"
-                      >
-                        {skill.name}
-                      </span>
-                    ))}
-                    {(freelancer.skills?.length || 0) > 4 && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs">
-                        +{(freelancer.skills?.length || 0) - 4}개
-                      </span>
-                    )}
+                  {/* 주요 기술 */}
+                  <div className="mb-3">
+                    <span className="text-xs font-medium text-gray-500 mb-1 block">주요 기술</span>
+                    <div className="flex flex-wrap gap-1">
+                      {freelancer.skills?.slice(0, 4).map((skill) => (
+                        <span key={skill.id} className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium border border-indigo-100">
+                          {skill.name}
+                        </span>
+                      ))}
+                      {(freelancer.skills?.length || 0) > 4 && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs">
+                          +{(freelancer.skills?.length || 0) - 4}개
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-500">
-                      <span className="flex items-center">
-                        <i className="ri-time-line mr-1"></i>
-                        보통 1일 내 응답
-                      </span>
+                  {/* 관심 분야 */}
+                  {freelancer.interests && freelancer.interests.length > 0 && (
+                    <div className="mb-4">
+                      <span className="text-xs font-medium text-gray-500 mb-1 block">관심 분야</span>
+                      <div className="flex flex-wrap gap-1">
+                        {freelancer.interests.slice(0, 3).map((interest) => (
+                          <span key={interest.id} className="px-2 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-medium border border-purple-100">
+                            {interest.name}
+                          </span>
+                        ))}
+                        {(freelancer.interests.length || 0) > 3 && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs">
+                            +{(freelancer.interests.length || 0) - 3}개
+                          </span>
+                        )}
+                      </div>
                     </div>
+                  )}
 
+                  <div className="flex justify-end items-center">
                     <div className="flex space-x-2">
                       <Link to={`/freelancers/${freelancer.id}`}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="rounded-lg group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all"
-                        >
+                        <Button variant="outline" size="sm" className="rounded-lg hover:bg-indigo-600 hover:text-white hover:border-indigo-600 transition-all">
                           <i className="ri-user-line mr-1"></i>
                           프로필 보기
                         </Button>
                       </Link>
-                      {userType === "client" && (
+                      {user?.role === 'CLIENT' && (
                         <Link to={`/freelancers/${freelancer.id}/propose`}>
-                          <Button
-                            size="sm"
-                            className="rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600"
-                          >
+                          <Button size="sm" className="rounded-lg bg-gradient-to-r from-indigo-500 to-purple-600">
                             <i className="ri-send-plane-line mr-1"></i>
                             제안
                           </Button>
@@ -618,12 +548,8 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
           <div className="text-center py-16">
             <div className="p-6 bg-white/50 rounded-2xl inline-block">
               <i className="ri-team-line text-4xl text-gray-400 mb-4"></i>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                검색 결과가 없습니다
-              </h3>
-              <p className="text-gray-500 mb-4">
-                다른 검색 조건을 시도해보세요
-              </p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">검색 결과가 없습니다</h3>
+              <p className="text-gray-500 mb-4">다른 검색 조건을 시도해보세요</p>
               <Button onClick={clearAllFilters} className="rounded-xl">
                 <i className="ri-refresh-line mr-2"></i>
                 필터 초기화
@@ -644,26 +570,22 @@ export default function Freelancers({ userType = "client" }: FreelancersProps) {
                 <i className="ri-arrow-left-line"></i>
               </button>
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                const pageNum =
-                  Math.max(0, Math.min(totalPages - 5, currentPage - 2)) + i;
+                const pageNum = Math.max(0, Math.min(totalPages - 5, currentPage - 2)) + i;
                 return (
                   <button
                     key={pageNum}
                     onClick={() => setCurrentPage(pageNum)}
-                    className={`px-4 py-2 rounded-xl cursor-pointer transition-all ${
-                      pageNum === currentPage
-                        ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg"
-                        : "border border-gray-200 hover:bg-gray-50"
-                    }`}
+                    className={`px-4 py-2 rounded-xl cursor-pointer transition-all ${pageNum === currentPage
+                      ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg'
+                      : 'border border-gray-200 hover:bg-gray-50'
+                      }`}
                   >
                     {pageNum + 1}
                   </button>
                 );
               })}
               <button
-                onClick={() =>
-                  setCurrentPage(Math.min(totalPages - 1, currentPage + 1))
-                }
+                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
                 disabled={currentPage >= totalPages - 1}
                 className="px-4 py-2 rounded-xl border border-gray-200 hover:bg-gray-50 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
