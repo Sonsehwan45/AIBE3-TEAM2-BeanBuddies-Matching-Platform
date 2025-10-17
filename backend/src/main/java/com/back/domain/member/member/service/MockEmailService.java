@@ -4,7 +4,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 @Service
-@Profile("test")
+@Profile({"test"})
 public class MockEmailService implements EmailService {
 
     public void sendEmailMessage(String toEmail, String subject, String text) {

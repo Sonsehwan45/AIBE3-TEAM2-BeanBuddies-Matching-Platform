@@ -9,7 +9,6 @@ import com.back.domain.application.application.entity.Application;
 import com.back.domain.application.application.service.ApplicationService;
 import com.back.domain.client.client.entity.Client;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
-import com.back.domain.freelancer.freelancer.service.FreelancerService;
 import com.back.domain.member.member.entity.Member;
 import com.back.domain.member.member.service.MemberService;
 import com.back.domain.project.project.entity.Project;
@@ -26,14 +25,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/projects/{projectId}/applications")
@@ -100,6 +92,9 @@ public class ApiV1ApplicationController {
         if (status == ApplicationStatus.ACCEPT) {
             project.addParticipant(application.getFreelancer());
         }
+        if (status == ApplicationStatus.DENIED) {
+            project.removeParticipant(application.getFreelancer());
+        }
 
         return new ApiResponse<>(
                 "200-1",
@@ -124,6 +119,9 @@ public class ApiV1ApplicationController {
 
         if (!application.getFreelancer().equals(freelancer)) {
             throw new ServiceException("403-1", "권한이 없습니다.");
+        }
+        if (application.getStatus() == ApplicationStatus.ACCEPT) {
+            throw new ServiceException("403-2", "수락된 지원서는 삭제할 수 없습니다.");
         }
 
         applicationService.delete(application);

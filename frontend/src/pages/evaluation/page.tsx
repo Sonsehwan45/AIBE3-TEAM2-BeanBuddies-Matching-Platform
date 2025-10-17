@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
 import { mockProjects } from "../../mocks/users";
 import Button from "../../components/base/Button";
-import { client } from "../../global/backend/client";
+import { useApiClient } from "../../lib/backend/apiClient";
 
 export default function Evaluation() {
+  const client = useApiClient();
   const { type, projectId } = useParams(); // type: 'client' | 'freelancer'
   const location = useLocation();
   const navigate = useNavigate();

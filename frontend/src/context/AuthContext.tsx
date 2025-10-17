@@ -7,6 +7,7 @@ interface UserInfo {
   name?: string;
   role?: string;
   status?: string;
+  profileImgUrl?: string;
 }
 
 interface AuthContextType {

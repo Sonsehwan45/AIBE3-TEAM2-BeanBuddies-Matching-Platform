@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Button from "../../../components/base/Button";
 import Input from "../../../components/base/Input";
 import toast from "react-hot-toast";
-import { client } from "../../../lib/backend/client";
+import { useApiClient } from "@/lib/backend/apiClient";
 import { supabase } from "@/utils/supabase";
 import {
   uploadImageToStorage,
@@ -11,6 +11,7 @@ import {
 } from "@/utils/imageUtils";
 
 export default function Signup() {
+  const client = useApiClient();
   const navigate = useNavigate();
 
   //이메일 인증 관련 상태

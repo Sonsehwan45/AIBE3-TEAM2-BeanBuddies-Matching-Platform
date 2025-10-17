@@ -18,7 +18,13 @@ public interface ProjectsSearchRepository extends JpaRepository<ProjectsSearch, 
     SELECT
       p.project_id                                        AS projectId,
       p.title                                             AS title,
-      (  MATCH(p.title)                AGAINST (:qTitleAny IN BOOLEAN MODE) * :wTitle
+      p.summary                                           AS summary,
+      p.price                                             AS price,
+      p.duration                                          AS duration,
+      p.status                                            AS status,
+      p.preferred_condition                               AS preferred_condition,
+      (
+         MATCH(p.title)               AGAINST (:qTitleAny IN BOOLEAN MODE) * :wTitle
        + MATCH(p.preferred_condition)  AGAINST (:qPrefAny  IN BOOLEAN MODE) * :wPref
        + MATCH(p.working_condition)    AGAINST (:qWorkAny  IN BOOLEAN MODE) * :wWork
       )                                                   AS textScore

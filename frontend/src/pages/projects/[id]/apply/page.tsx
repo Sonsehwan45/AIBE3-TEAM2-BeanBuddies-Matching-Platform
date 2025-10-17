@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Button from "../../../../components/base/Button";
 import Input from "../../../../components/base/Input";
-import client from "../../../../global/backend/client";
+import { useApiClient } from "../../../../lib/backend/apiClient";
 
 interface Project {
   id: number;
@@ -29,9 +29,22 @@ interface Project {
     id: number;
     name: string;
   }>;
+  participants: Array<FreelancerSummary>;
+}
+
+interface FreelancerSummary {
+  id: number;
+  name: string;
+  careerLevel: "JUNIOR" | "MID" | "SENIOR"; // CareerLevel enum 대응
+  ratingAvg: number;
+  skills: Array<{
+    id: number;
+    name: string;
+  }>;
 }
 
 export default function ProjectApply() {
+  const client = useApiClient();
   const { user, token, isLoggedIn } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -69,9 +82,7 @@ export default function ProjectApply() {
         setProject(response.data.data);
       } catch (err: any) {
         console.error("프로젝트 조회 실패:", err);
-        setError(
-          err.message || "프로젝트 정보를 불러오는 중 오류가 발생했습니다."
-        );
+        setError(err.msg || "프로젝트 정보를 불러오는 중 오류가 발생했습니다.");
       } finally {
         setLoading(false);
       }
@@ -94,18 +105,22 @@ export default function ProjectApply() {
       // 입력값 검증
       if (!formData.estimatedPay || Number(formData.estimatedPay) <= 0) {
         alert("유효한 예상 급여를 입력해주세요.");
+        setSubmitting(false);
         return;
       }
       if (!formData.expectedDuration.trim()) {
         alert("예상 기간을 입력해주세요.");
+        setSubmitting(false);
         return;
       }
       if (!formData.workPlan.trim()) {
         alert("작업 계획을 입력해주세요.");
+        setSubmitting(false);
         return;
       }
       if (!formData.additionalRequest.trim()) {
         alert("추가 요청사항을 입력해주세요.");
+        setSubmitting(false);
         return;
       }
 
@@ -118,7 +133,7 @@ export default function ProjectApply() {
         "/api/v1/projects/{projectId}/applications",
         {
           headers: {
-            Authorization: `Bearer ${token}`, // ✅ 토큰 포함
+            Authorization: `Bearer ${token}`,
           },
           params: { path: { projectId: project.id } },
           body: {
@@ -130,15 +145,13 @@ export default function ProjectApply() {
         }
       );
 
-      if (!response || response.error) {
-        throw new Error(response?.error?.msg || "지원서 제출에 실패했습니다.");
-      }
+      if (response.error) throw response.error;
 
       alert("지원서가 성공적으로 제출되었습니다!");
       navigate(`/projects/${project.id}`);
     } catch (err: any) {
       console.error("지원서 제출 실패:", err);
-      alert(err.message || "지원서 제출에 실패했습니다.");
+      alert(err.msg || "지원서 제출에 실패했습니다.");
     } finally {
       setSubmitting(false);
     }
