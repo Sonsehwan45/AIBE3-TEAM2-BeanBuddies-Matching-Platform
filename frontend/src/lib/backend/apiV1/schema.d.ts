@@ -135,6 +135,38 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/members/me/favorites/projects": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["getMyFavoriteProjects"];
+    put?: never;
+    post: operations["addFavoriteProject"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/members/me/favorites/freelancers": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["getMyFavoriteFreelancers"];
+    put?: never;
+    post: operations["addFavoriteFreelancer"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/members/join/verification": {
     parameters: {
       query?: never;
@@ -474,6 +506,39 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/proposals": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 자신과 관련된 모든 제안서 조회 */
+    get: operations["getMyProposals"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/projects/{projectId}/collaborator": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["getCollaborator"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/projects/{projectId}/applications/me": {
     parameters: {
       query?: never;
@@ -554,6 +619,22 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/members/me/participated-projects": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["getMyParticipatedProjects"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/members/me/applications": {
     parameters: {
       query?: never;
@@ -603,7 +684,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/api/v1/evaluations/me": {
+  "/api/v1/evaluations/{id}": {
     parameters: {
       query?: never;
       header?: never;
@@ -614,6 +695,70 @@ export interface paths {
     put?: never;
     post?: never;
     delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/evaluations/written-by-me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["getWrittenEvaluations"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/evaluations/me": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get: operations["getEvaluations_1"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/members/me/favorites/projects/{projectId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations["removeFavoriteProject"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/members/me/favorites/freelancers/{userId}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    delete: operations["removeFavoriteFreelancer"];
     options?: never;
     head?: never;
     patch?: never;
@@ -694,6 +839,16 @@ export interface components {
       msg: string;
       data: components["schemas"]["ProjectDto"];
     };
+    FreelancerSummary: {
+      /** Format: int64 */
+      id?: number;
+      name?: string;
+      /** @enum {string} */
+      careerLevel?: "NEWBIE" | "JUNIOR" | "MID" | "SENIOR" | "UNDEFINED";
+      /** Format: double */
+      ratingAvg?: number;
+      skills?: components["schemas"]["SkillDto"][];
+    };
     InterestDto: {
       /** Format: int64 */
       id?: number;
@@ -723,6 +878,7 @@ export interface components {
       ownerName?: string;
       skills?: components["schemas"]["SkillDto"][];
       interests?: components["schemas"]["InterestDto"][];
+      participants?: components["schemas"]["FreelancerSummary"][];
     };
     SkillDto: {
       /** Format: int64 */
@@ -818,6 +974,14 @@ export interface components {
     PasswordResetEmailReq: {
       username: string;
       email: string;
+    };
+    FavoriteProjectReq: {
+      /** Format: int64 */
+      projectId: number;
+    };
+    FavoriteFreelancerReq: {
+      /** Format: int64 */
+      userId: number;
     };
     JoinVerifyReq: {
       email: string;
@@ -934,28 +1098,28 @@ export interface components {
       totalPages?: number;
       /** Format: int64 */
       totalElements?: number;
+      first?: boolean;
+      last?: boolean;
       /** Format: int32 */
       size?: number;
       content?: unknown[];
       /** Format: int32 */
       number?: number;
       sort?: components["schemas"]["SortObject"];
-      first?: boolean;
-      last?: boolean;
+      pageable?: components["schemas"]["PageableObject"];
       /** Format: int32 */
       numberOfElements?: number;
-      pageable?: components["schemas"]["PageableObject"];
       empty?: boolean;
     };
     PageableObject: {
       /** Format: int64 */
       offset?: number;
       sort?: components["schemas"]["SortObject"];
+      paged?: boolean;
       /** Format: int32 */
       pageNumber?: number;
       /** Format: int32 */
       pageSize?: number;
-      paged?: boolean;
       unpaged?: boolean;
     };
     SortObject: {
@@ -973,6 +1137,11 @@ export interface components {
       id?: number;
       title?: string;
       status?: string;
+    };
+    ApiResponseListProposalDto: {
+      resultCode: string;
+      msg: string;
+      data: components["schemas"]["ProposalDto"][];
     };
     ProjectSearchDto: {
       keywordType?: string;
@@ -1000,17 +1169,17 @@ export interface components {
       totalPages?: number;
       /** Format: int64 */
       totalElements?: number;
+      first?: boolean;
+      last?: boolean;
       /** Format: int32 */
       size?: number;
       content?: components["schemas"]["ProjectSummaryDto"][];
       /** Format: int32 */
       number?: number;
       sort?: components["schemas"]["SortObject"];
-      first?: boolean;
-      last?: boolean;
+      pageable?: components["schemas"]["PageableObject"];
       /** Format: int32 */
       numberOfElements?: number;
-      pageable?: components["schemas"]["PageableObject"];
       empty?: boolean;
     };
     ProjectSummaryDto: {
@@ -1030,10 +1199,38 @@ export interface components {
       skills?: components["schemas"]["SkillDto"][];
       interests?: components["schemas"]["InterestDto"][];
     };
-    ApiResponseListProposalDto: {
+    ApiResponseProfileResponseDto: {
       resultCode: string;
       msg: string;
-      data: components["schemas"]["ProposalDto"][];
+      data: components["schemas"]["ProfileResponseDto"];
+    };
+    ProfileResponseDto: {
+      /** Format: int64 */
+      id?: number;
+      username?: string;
+      name?: string;
+      email?: string;
+      /** @enum {string} */
+      role?: "CLIENT" | "FREELANCER" | "ADMIN";
+      /** Format: date-time */
+      createdAt?: string;
+      profileImgUrl?: string;
+      /** Format: double */
+      ratingAvg?: number;
+      job?: string;
+      career?: {
+        [key: string]: number;
+      };
+      freelancerEmail?: string;
+      comment?: string;
+      skills?: string[];
+      interests?: string[];
+      companySize?: string;
+      companyDescription?: string;
+      representative?: string;
+      businessNo?: string;
+      companyPhone?: string;
+      companyEmail?: string;
     };
     ApiResponsePageApplicationSummaryDto: {
       resultCode: string;
@@ -1062,54 +1259,39 @@ export interface components {
       totalPages?: number;
       /** Format: int64 */
       totalElements?: number;
+      first?: boolean;
+      last?: boolean;
       /** Format: int32 */
       size?: number;
       content?: components["schemas"]["ApplicationSummaryDto"][];
       /** Format: int32 */
       number?: number;
       sort?: components["schemas"]["SortObject"];
-      first?: boolean;
-      last?: boolean;
+      pageable?: components["schemas"]["PageableObject"];
       /** Format: int32 */
       numberOfElements?: number;
-      pageable?: components["schemas"]["PageableObject"];
       empty?: boolean;
-    };
-    ApiResponseProfileResponseDto: {
-      resultCode: string;
-      msg: string;
-      data: components["schemas"]["ProfileResponseDto"];
-    };
-    ProfileResponseDto: {
-      username?: string;
-      name?: string;
-      email?: string;
-      /** @enum {string} */
-      role?: "CLIENT" | "FREELANCER" | "ADMIN";
-      /** Format: date-time */
-      createdAt?: string;
-      profileImgUrl?: string;
-      /** Format: double */
-      ratingAvg?: number;
-      job?: string;
-      career?: {
-        [key: string]: number;
-      };
-      freelancerEmail?: string;
-      comment?: string;
-      skills?: string[];
-      interests?: string[];
-      companySize?: string;
-      companyDescription?: string;
-      representative?: string;
-      businessNo?: string;
-      companyPhone?: string;
-      companyEmail?: string;
     };
     ApiResponseListProjectSummaryDto: {
       resultCode: string;
       msg: string;
       data: components["schemas"]["ProjectSummaryDto"][];
+    };
+    ApiResponseListFreelancerSummaryDto: {
+      resultCode: string;
+      msg: string;
+      data: components["schemas"]["FreelancerSummaryDto"][];
+    };
+    FreelancerSummaryDto: {
+      /** Format: int64 */
+      id?: number;
+      /** Format: int64 */
+      memberId?: number;
+      name?: string;
+      profileImgUrl?: string;
+      job?: string;
+      /** Format: double */
+      ratingAvg?: number;
     };
     ApiResponseListApplicationSummaryDto: {
       resultCode: string;
@@ -1126,32 +1308,22 @@ export interface components {
       msg: string;
       data: components["schemas"]["PageFreelancerSummary"];
     };
-    FreelancerSummary: {
-      /** Format: int64 */
-      id?: number;
-      name?: string;
-      /** @enum {string} */
-      careerLevel?: "NEWBIE" | "JUNIOR" | "MID" | "SENIOR" | "UNDEFINED";
-      /** Format: double */
-      ratingAvg?: number;
-      skills?: components["schemas"]["SkillDto"][];
-    };
     PageFreelancerSummary: {
       /** Format: int32 */
       totalPages?: number;
       /** Format: int64 */
       totalElements?: number;
+      first?: boolean;
+      last?: boolean;
       /** Format: int32 */
       size?: number;
       content?: components["schemas"]["FreelancerSummary"][];
       /** Format: int32 */
       number?: number;
       sort?: components["schemas"]["SortObject"];
-      first?: boolean;
-      last?: boolean;
+      pageable?: components["schemas"]["PageableObject"];
       /** Format: int32 */
       numberOfElements?: number;
-      pageable?: components["schemas"]["PageableObject"];
       empty?: boolean;
     };
     ApiResponseEvaluationsWithCountResponse: {
@@ -1518,6 +1690,130 @@ export interface operations {
     requestBody: {
       content: {
         "application/json": components["schemas"]["PasswordResetEmailReq"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+    };
+  };
+  getMyFavoriteProjects: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseListProjectSummaryDto"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+    };
+  };
+  addFavoriteProject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FavoriteProjectReq"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+    };
+  };
+  getMyFavoriteFreelancers: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseListFreelancerSummaryDto"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+    };
+  };
+  addFavoriteFreelancer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["FavoriteFreelancerReq"];
       };
     };
     responses: {
@@ -2433,6 +2729,66 @@ export interface operations {
       };
     };
   };
+  getMyProposals: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseListProposalDto"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+    };
+  };
+  getCollaborator: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseProfileResponseDto"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+    };
+  };
   getAllMe: {
     parameters: {
       query: {
@@ -2584,6 +2940,35 @@ export interface operations {
       };
     };
   };
+  getMyParticipatedProjects: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseListProjectSummaryDto"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+    };
+  };
   getMyApplications: {
     parameters: {
       query?: never;
@@ -2680,6 +3065,37 @@ export interface operations {
     parameters: {
       query?: never;
       header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseEvaluationsWithCountResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+    };
+  };
+  getWrittenEvaluations: {
+    parameters: {
+      query?: never;
+      header?: never;
       path?: never;
       cookie?: never;
     };
@@ -2692,6 +3108,97 @@ export interface operations {
         };
         content: {
           "application/json;charset=UTF-8": components["schemas"]["ApiResponseEvaluationsWithCountResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+    };
+  };
+  getEvaluations_1: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseEvaluationsWithCountResponse"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+    };
+  };
+  removeFavoriteProject: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        projectId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
+        };
+      };
+    };
+  };
+  removeFavoriteFreelancer: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        userId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json;charset=UTF-8": components["schemas"]["ApiResponseVoid"];
         };
       };
       /** @description Bad Request */

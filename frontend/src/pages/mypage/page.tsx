@@ -1,14 +1,23 @@
-import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useApiClient } from "@/lib/backend/apiClient";
+import type { components } from "@/lib/backend/apiV1/schema";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import Badge from "../../components/base/Badge";
 import Button from "../../components/base/Button";
 import Card from "../../components/base/Card";
-import Badge from "../../components/base/Badge";
 import Input from "../../components/base/Input";
 import Select from "../../components/base/Select";
+
+type EvaluationResponse = components["schemas"]["EvaluationResponse"];
+type ApplicationSummaryDto = components["schemas"]["ApplicationSummaryDto"];
+type ProjectSummaryDto = components["schemas"]["ProjectSummaryDto"];
+
 import { useApiClient } from "@/lib/backend/apiClient";
 import { useAuth } from "@/context/AuthContext";
 import { mockFeedback } from "@/mocks/users";
 import MyPageSocial from "./social/page";
+
 
 interface BaseProfile {
   username: string;
@@ -44,35 +53,14 @@ interface ClientProfile extends BaseProfile {
 
 type ExtendedProfileResponse = FreelancerProfile | ClientProfile;
 
-// 내가 지원한 프로젝트 응답 아이템 타입
-interface MyApplicationItem {
-  id: number;
-  estimatedPay: number;
-  expectedDuration: string;
-  workPlan: string;
-  additionalRequest?: string;
-  status: "WAIT" | "ACCEPT" | "DENIED";
-  createDate: string;
-  projectId: number;
-  projectTitle: string;
-  freelancerId: number;
-  freelancerName: string;
-}
+// 내가 지원한 프로젝트 응답 아이템 타입 (스키마 사용)
+type MyApplicationItem = ApplicationSummaryDto;
 
-// 내가 등록한 프로젝트 응답 아이템 타입 (CLIENT 전용)
-interface MyProjectItem {
-  id: number;
-  title: string;
-  summary: string;
-  status: string; // e.g., OPEN | CLOSED
-  ownerName: string;
-  duration: string;
-  price: number;
-  deadline: string; // yyyy-MM-dd
-  createDate: string; // ISO
-  skills: { id: number; name: string }[];
-  interests: { id: number; name: string }[];
-}
+// 내가 등록한 프로젝트 응답 아이템 타입 (스키마 사용)
+type MyProjectItem = ProjectSummaryDto & { freelancerId?: number };
+
+// 평가 응답 타입 (스키마 사용)
+type EvaluationItem = EvaluationResponse;
 
 interface MyPageProps {
   userType?: "client" | "freelancer";
@@ -84,12 +72,13 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
   const { isLoggedIn, user, token } = useAuth();
   //새로고침해도 탭 상태 유지
   const [activeTab, setActiveTab] = useState<
-    "profile" | "projects" | "bookmarks" | "feedback" | "social"
+    "profile" | "projects" | "bookmarks" | "feedback" | "mefeedback" | "social"
   >(() => (localStorage.getItem("activeTab") as any) || "profile");
 
   useEffect(() => {
     localStorage.setItem("activeTab", activeTab);
   }, [activeTab]);
+
 
   const defaultFreelancerProfile: FreelancerProfile = {
     username: "",
@@ -163,6 +152,21 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
   const [projects, setProjects] = useState<MyProjectItem[]>([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
   // profile-tab paginations removed; lists live in Projects tab
+
+  // evaluations for feedback tab
+  const [evaluations, setEvaluations] = useState<EvaluationItem[]>([]);
+  const [evaluationsLoading, setEvaluationsLoading] = useState(false);
+  const [evaluationsError, setEvaluationsError] = useState<string | null>(null);
+
+  // written evaluations for mefeedback tab
+  const [writtenEvaluations, setWrittenEvaluations] = useState<
+    EvaluationItem[]
+  >([]);
+  const [writtenEvaluationsLoading, setWrittenEvaluationsLoading] =
+    useState(false);
+  const [writtenEvaluationsError, setWrittenEvaluationsError] = useState<
+    string | null
+  >(null);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -239,7 +243,23 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
         }
 
         if (Array.isArray(data.data)) {
-          setApplications(data.data);
+          // API 응답 데이터를 MyApplicationItem 타입에 맞게 변환
+          const transformedData: MyApplicationItem[] = data.data.map(
+            (item: any) => ({
+              id: item.id || 0,
+              estimatedPay: item.estimatedPay || 0,
+              expectedDuration: item.expectedDuration || "",
+              workPlan: item.workPlan || "",
+              additionalRequest: item.additionalRequest || "",
+              status: item.status || "WAIT",
+              createDate: item.createDate || new Date().toISOString(),
+              projectId: item.projectId || 0,
+              projectTitle: item.projectTitle || "",
+              freelancerId: item.freelancerId || 0,
+              freelancerName: item.freelancerName || "",
+            })
+          );
+          setApplications(transformedData);
         } else {
           console.warn("지원 목록 응답 포맷이 예상과 다릅니다:", data);
           setApplications([]);
@@ -290,8 +310,8 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
     const searched = q
       ? filtered.filter(
           (p) =>
-            p.title.toLowerCase().includes(q) ||
-            p.summary.toLowerCase().includes(q)
+            p.title?.toLowerCase().includes(q) ||
+            p.summary?.toLowerCase().includes(q)
         )
       : filtered;
     const totalPages = Math.max(1, Math.ceil(searched.length / pageSizeClient));
@@ -314,7 +334,7 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
         : applications.filter((a) => a.status === applicationStatusFilter);
     const q = searchQuery.trim().toLowerCase();
     const searched = q
-      ? filtered.filter((a) => a.projectTitle.toLowerCase().includes(q))
+      ? filtered.filter((a) => a.projectTitle?.toLowerCase().includes(q))
       : filtered;
     const totalPages = Math.max(
       1,
@@ -419,8 +439,9 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
 
         if (data.resultCode === "200-7") {
           const responseData = data.data;
-          setProfileData((prev) => ({
-            ...prev,
+          // 타입 안전성을 위해 명시적으로 변환
+          const transformedProfile = {
+            ...profileData,
             ...responseData,
             // 명시적으로 기본값 보정
             skills: (responseData as any)?.skills || [],
@@ -429,22 +450,28 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
             ...(responseData.role === "CLIENT"
               ? {
                   companyName:
-                    responseData.companyName || responseData.name || "",
-                  companySize: responseData.companySize || "STARTUP",
-                  companyDescription: responseData.companyDescription || "",
-                  representative: responseData.representative || "",
-                  businessNo: responseData.businessNo || "",
-                  companyPhone: responseData.companyPhone || "",
-                  companyEmail: responseData.companyEmail || "",
+                    (responseData as any).companyName ||
+                    responseData.name ||
+                    "",
+                  companySize: (responseData as any).companySize || "STARTUP",
+                  companyDescription:
+                    (responseData as any).companyDescription || "",
+                  representative: (responseData as any).representative || "",
+                  businessNo: (responseData as any).businessNo || "",
+                  companyPhone: (responseData as any).companyPhone || "",
+                  companyEmail: (responseData as any).companyEmail || "",
                 }
               : {
-                  job: responseData.job || "",
-                  career: responseData.career || {},
+                  job: (responseData as any).job || "",
+                  career: (responseData as any).career || {},
                   freelancerEmail:
-                    responseData.freelancerEmail || responseData.email || "",
-                  comment: responseData.comment || "",
+                    (responseData as any).freelancerEmail ||
+                    responseData.email ||
+                    "",
+                  comment: (responseData as any).comment || "",
                 }),
-          }));
+          } as ExtendedProfileResponse;
+          setProfileData(transformedProfile);
         } else {
           throw new Error("프로필 조회에 실패했습니다.");
         }
@@ -489,8 +516,14 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
           },
           { id: "bookmarks", label: "관심 프리랜서", icon: "ri-heart-3-line" },
           { id: "feedback", label: "피드백 관리", icon: "ri-star-line" },
+          {
+            id: "mefeedback",
+            label: "내가 등록한 피드백",
+            icon: "ri-star-line",
+          },
           //OAuth : 소셜 계정 연결 확인용 화면 제공
           { id: "social", label: "소셜 계정 연결", icon: "ri-links-line" },
+
         ]
       : [
           { id: "profile", label: "프로필 관리", icon: "ri-user-3-line" },
@@ -501,6 +534,11 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
           },
           { id: "bookmarks", label: "관심 프로젝트", icon: "ri-heart-3-line" },
           { id: "feedback", label: "피드백 관리", icon: "ri-star-line" },
+          {
+            id: "mefeedback",
+            label: "내가 등록한 피드백",
+            icon: "ri-star-line",
+          },
           //OAuth : 소셜 계정 연결 확인용 화면 제공
           { id: "social", label: "소셜 계정 연결", icon: "ri-links-line" },
         ];
@@ -792,6 +830,88 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
 
   useEffect(() => {
     let cancelled = false;
+    const fetchEvaluations = async () => {
+      if (!token) return;
+      setEvaluationsLoading(true);
+      setEvaluationsError(null);
+      try {
+        const { data, error } = await client.GET("/api/v1/evaluations/me");
+        if (error) {
+          console.error("평가 조회 에러:", error);
+          setEvaluationsError("평가를 불러오는데 실패했습니다.");
+          return;
+        }
+        if (data?.data) {
+          const evaluations = data.data.evaluations || [];
+          // API 응답의 optional 필드들을 처리하여 타입 안전성 확보
+          const processedEvaluations: EvaluationItem[] = evaluations.map(
+            (evaluationItem: any) => ({
+              evaluationId: evaluationItem.evaluationId || 0,
+              projectId: evaluationItem.projectId || 0,
+              evaluatorId: evaluationItem.evaluatorId || 0,
+              evaluateeId: evaluationItem.evaluateeId || 0,
+              comment: evaluationItem.comment || "",
+              ratingSatisfaction: evaluationItem.ratingSatisfaction || 0,
+              ratingProfessionalism: evaluationItem.ratingProfessionalism || 0,
+              ratingScheduleAdherence:
+                evaluationItem.ratingScheduleAdherence || 0,
+              ratingCommunication: evaluationItem.ratingCommunication || 0,
+              ratingProactiveness: evaluationItem.ratingProactiveness || 0,
+              createdAt: evaluationItem.createdAt || new Date().toISOString(),
+            })
+          );
+          setEvaluations(processedEvaluations);
+        }
+      } catch (err) {
+        console.error("평가 조회 중 오류:", err);
+        setEvaluationsError("평가를 불러오는데 실패했습니다.");
+      } finally {
+        setEvaluationsLoading(false);
+      }
+    };
+
+    const fetchWrittenEvaluations = async () => {
+      if (!token) return;
+      setWrittenEvaluationsLoading(true);
+      setWrittenEvaluationsError(null);
+      try {
+        const { data, error } = await client.GET(
+          "/api/v1/evaluations/written-by-me"
+        );
+        if (error) {
+          console.error("작성한 평가 조회 에러:", error);
+          setWrittenEvaluationsError("작성한 평가를 불러오는데 실패했습니다.");
+          return;
+        }
+        if (data?.data) {
+          const evaluations = data.data.evaluations || [];
+          // API 응답의 optional 필드들을 처리하여 타입 안전성 확보
+          const processedEvaluations: EvaluationItem[] = evaluations.map(
+            (evaluationItem: any) => ({
+              evaluationId: evaluationItem.evaluationId || 0,
+              projectId: evaluationItem.projectId || 0,
+              evaluatorId: evaluationItem.evaluatorId || 0,
+              evaluateeId: evaluationItem.evaluateeId || 0,
+              comment: evaluationItem.comment || "",
+              ratingSatisfaction: evaluationItem.ratingSatisfaction || 0,
+              ratingProfessionalism: evaluationItem.ratingProfessionalism || 0,
+              ratingScheduleAdherence:
+                evaluationItem.ratingScheduleAdherence || 0,
+              ratingCommunication: evaluationItem.ratingCommunication || 0,
+              ratingProactiveness: evaluationItem.ratingProactiveness || 0,
+              createdAt: evaluationItem.createdAt || new Date().toISOString(),
+            })
+          );
+          setWrittenEvaluations(processedEvaluations);
+        }
+      } catch (err) {
+        console.error("작성한 평가 조회 중 오류:", err);
+        setWrittenEvaluationsError("작성한 평가를 불러오는데 실패했습니다.");
+      } finally {
+        setWrittenEvaluationsLoading(false);
+      }
+    };
+
     const fetchFavProjects = async () => {
       if (!token) return;
       setFavProjLoading(true);
@@ -836,6 +956,8 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
         if (!cancelled) setFavProjLoading(false);
       }
     };
+    fetchEvaluations();
+    fetchWrittenEvaluations();
     fetchFavProjects();
     return () => {
       cancelled = true;
@@ -848,7 +970,7 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
     const searched = q
       ? favProjects.filter(
           (p) =>
-            p.title.toLowerCase().includes(q) ||
+            p.title?.toLowerCase().includes(q) ||
             (p.description || "").toLowerCase().includes(q)
         )
       : favProjects;
@@ -1513,21 +1635,24 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                             const searched = q
                               ? filtered.filter(
                                   (p) =>
-                                    p.title.toLowerCase().includes(q) ||
-                                    p.summary.toLowerCase().includes(q)
+                                    p.title?.toLowerCase().includes(q) ||
+                                    p.summary?.toLowerCase().includes(q)
                                 )
                               : filtered;
                             const sorted = [...searched].sort((a, b) => {
                               const dir = sortDirClient === "asc" ? 1 : -1;
                               if (sortKeyClient === "date")
                                 return (
-                                  (new Date(a.createDate).getTime() -
-                                    new Date(b.createDate).getTime()) *
+                                  (new Date(a.createDate || 0).getTime() -
+                                    new Date(b.createDate || 0).getTime()) *
                                   dir
                                 );
                               if (sortKeyClient === "price")
-                                return (a.price - b.price) * dir;
-                              return a.title.localeCompare(b.title) * dir;
+                                return ((a.price || 0) - (b.price || 0)) * dir;
+                              return (
+                                (a.title || "").localeCompare(b.title || "") *
+                                dir
+                              );
                             });
                             const start = (pageClient - 1) * pageSizeClient;
                             return sorted.slice(start, start + pageSizeClient);
@@ -1572,7 +1697,7 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                                       style: "currency",
                                       currency: "KRW",
                                       maximumFractionDigits: 0,
-                                    }).format(p.price)}{" "}
+                                    }).format(p.price || 0)}{" "}
                                     · 기간: {p.duration} · 마감: {p.deadline}
                                   </div>
                                   <div className="mt-1 text-xs text-gray-500">
@@ -1595,7 +1720,7 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                                       day: "2-digit",
                                       hour: "2-digit",
                                       minute: "2-digit",
-                                    }).format(new Date(p.createDate))}
+                                    }).format(new Date(p.createDate || 0))}
                                   </div>
                                   <Link to={`/projects/${p.id}`}>
                                     <Button
@@ -1606,6 +1731,21 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                                       지원서 목록
                                     </Button>
                                   </Link>
+                                  {p.status === "COMPLETED" && (
+                                    <Link
+                                      to={`/evaluation/freelancer/${p.id}`}
+                                      state={{ evaluateeId: p.freelancerId }}
+                                    >
+                                      <Button
+                                        size="sm"
+                                        variant="primary"
+                                        className="rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600"
+                                      >
+                                        <i className="ri-star-line mr-1"></i>
+                                        평가하기
+                                      </Button>
+                                    </Link>
+                                  )}
                                 </div>
                               </div>
                             </Card>
@@ -1645,8 +1785,8 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                                 const searched = q
                                   ? filtered.filter(
                                       (p) =>
-                                        p.title.toLowerCase().includes(q) ||
-                                        p.summary.toLowerCase().includes(q)
+                                        p.title?.toLowerCase().includes(q) ||
+                                        p.summary?.toLowerCase().includes(q)
                                     )
                                   : filtered;
                                 const totalPages = Math.max(
@@ -1670,8 +1810,8 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                                 const searched = q
                                   ? filtered.filter(
                                       (p) =>
-                                        p.title.toLowerCase().includes(q) ||
-                                        p.summary.toLowerCase().includes(q)
+                                        p.title?.toLowerCase().includes(q) ||
+                                        p.summary?.toLowerCase().includes(q)
                                     )
                                   : filtered;
                                 const totalPages = Math.max(
@@ -1793,22 +1933,27 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                             const q = searchQuery.trim().toLowerCase();
                             const searched = q
                               ? filtered.filter((a) =>
-                                  a.projectTitle.toLowerCase().includes(q)
+                                  a.projectTitle?.toLowerCase().includes(q)
                                 )
                               : filtered;
                             const sorted = [...searched].sort((a, b) => {
                               const dir = sortDirFreelancer === "asc" ? 1 : -1;
                               if (sortKeyFreelancer === "date")
                                 return (
-                                  (new Date(a.createDate).getTime() -
-                                    new Date(b.createDate).getTime()) *
+                                  (new Date(a.createDate || 0).getTime() -
+                                    new Date(b.createDate || 0).getTime()) *
                                   dir
                                 );
                               if (sortKeyFreelancer === "pay")
-                                return (a.estimatedPay - b.estimatedPay) * dir;
+                                return (
+                                  ((a.estimatedPay || 0) -
+                                    (b.estimatedPay || 0)) *
+                                  dir
+                                );
                               return (
-                                a.projectTitle.localeCompare(b.projectTitle) *
-                                dir
+                                (a.projectTitle || "").localeCompare(
+                                  b.projectTitle || ""
+                                ) * dir
                               );
                             });
                             const start =
@@ -1847,7 +1992,7 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                                       style: "currency",
                                       currency: "KRW",
                                       maximumFractionDigits: 0,
-                                    }).format(app.estimatedPay)}
+                                    }).format(app.estimatedPay || 0)}
                                   </div>
                                   <div className="mt-0.5 text-sm text-gray-600">
                                     예상 기간: {app.expectedDuration}
@@ -1864,7 +2009,7 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                                       day: "2-digit",
                                       hour: "2-digit",
                                       minute: "2-digit",
-                                    }).format(new Date(app.createDate))}
+                                    }).format(new Date(app.createDate || 0))}
                                   </div>
                                   <Link
                                     to={`/projects/${app.projectId}/apply/${app.id}`}
@@ -1918,7 +2063,7 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                                 const q = searchQuery.trim().toLowerCase();
                                 const searched = q
                                   ? filtered.filter((a) =>
-                                      a.projectTitle.toLowerCase().includes(q)
+                                      a.projectTitle?.toLowerCase().includes(q)
                                     )
                                   : filtered;
                                 const totalPages = Math.max(
@@ -1944,7 +2089,7 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                                 const q = searchQuery.trim().toLowerCase();
                                 const searched = q
                                   ? filtered.filter((a) =>
-                                      a.projectTitle.toLowerCase().includes(q)
+                                      a.projectTitle?.toLowerCase().includes(q)
                                     )
                                   : filtered;
                                 const totalPages = Math.max(
@@ -2411,7 +2556,7 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                         const searched = q
                           ? favProjects.filter(
                               (p) =>
-                                p.title.toLowerCase().includes(q) ||
+                                p.title?.toLowerCase().includes(q) ||
                                 (p.description || "").toLowerCase().includes(q)
                             )
                           : favProjects;
@@ -2524,7 +2669,7 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                             const searched = q
                               ? favProjects.filter(
                                   (p) =>
-                                    p.title.toLowerCase().includes(q) ||
+                                    p.title?.toLowerCase().includes(q) ||
                                     (p.description || "")
                                       .toLowerCase()
                                       .includes(q)
@@ -2545,7 +2690,7 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                             const searched = q
                               ? favProjects.filter(
                                   (p) =>
-                                    p.title.toLowerCase().includes(q) ||
+                                    p.title?.toLowerCase().includes(q) ||
                                     (p.description || "")
                                       .toLowerCase()
                                       .includes(q)
@@ -2591,100 +2736,430 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                   <div className="space-y-6">
                     <div className="bg-blue-50 rounded-lg p-4">
                       <p className="text-sm text-gray-600">
-                        총{" "}
-                        {
-                          mockFeedback.filter((f) =>
-                            userType === "client"
-                              ? f.targetType === "client"
-                              : f.targetType === "freelancer"
-                          ).length
-                        }{" "}
-                        개의 리뷰
+                        총 {evaluations.length} 개의 리뷰
                       </p>
                     </div>
 
-                    <div className="space-y-4">
-                      {mockFeedback
-                        .filter((feedback) =>
-                          userType === "client"
-                            ? feedback.targetType === "client"
-                            : feedback.targetType === "freelancer"
-                        )
-                        .map((feedback) => (
-                          <div
-                            key={feedback.id}
-                            className="border border-gray-200 rounded-lg p-4"
-                          >
-                            <div className="flex justify-between items-start mb-3">
-                              <div>
-                                <h4 className="font-semibold text-gray-900">
-                                  {feedback.projectName}
-                                </h4>
-                                <p className="text-sm text-gray-600">
-                                  작성자: {feedback.authorName}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  작성일: {feedback.createdAt}
-                                </p>
-                              </div>
-                              <div className="flex items-center">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                  <i
-                                    key={star}
-                                    className={`ri-star-${
-                                      star <= feedback.rating ? "fill" : "line"
-                                    } text-yellow-400`}
-                                  ></i>
-                                ))}
-                                <span className="ml-2 font-medium">
-                                  {feedback.rating}
-                                </span>
-                              </div>
-                            </div>
+                    {evaluationsLoading && (
+                      <div className="flex justify-center items-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <span className="ml-2 text-gray-600">
+                          평가를 불러오는 중...
+                        </span>
+                      </div>
+                    )}
 
-                            <p className="text-gray-700 mb-3">
-                              {feedback.feedback}
-                            </p>
+                    {evaluationsError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <p className="text-red-600">{evaluationsError}</p>
+                      </div>
+                    )}
 
-                            <div className="grid grid-cols-4 gap-4 text-sm">
-                              <div className="text-center">
-                                <span className="text-gray-600">
-                                  커뮤니케이션
-                                </span>
-                                <div className="font-medium">
-                                  {feedback.categories.communication}/5
+                    {!evaluationsLoading &&
+                      !evaluationsError &&
+                      evaluations.length === 0 && (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500">
+                            아직 받은 평가가 없습니다.
+                          </p>
+                        </div>
+                      )}
+
+                    {!evaluationsLoading &&
+                      !evaluationsError &&
+                      evaluations.length > 0 && (
+                        <div className="space-y-4">
+                          {evaluations.map((evaluation) => (
+                            <Card key={evaluation.evaluationId} className="p-6">
+                              <div className="flex justify-between items-start mb-4">
+                                <div>
+                                  <h3 className="font-semibold text-gray-900">
+                                    프로젝트 ID: {evaluation.projectId}
+                                  </h3>
+                                  <p className="text-sm text-gray-500">
+                                    {new Date(
+                                      evaluation.createdAt || 0
+                                    ).toLocaleDateString("ko-KR")}
+                                  </p>
                                 </div>
                               </div>
-                              <div className="text-center">
-                                <span className="text-gray-600">
-                                  {userType === "client"
-                                    ? "프로젝트 관리"
-                                    : "기술력"}
-                                </span>
-                                <div className="font-medium">
-                                  {feedback.categories.technical}/5
-                                </div>
-                              </div>
-                              <div className="text-center">
-                                <span className="text-gray-600">일정 준수</span>
-                                <div className="font-medium">
-                                  {feedback.categories.schedule}/5
-                                </div>
-                              </div>
-                              {feedback.categories.paymentCompliance && (
-                                <div className="text-center">
-                                  <span className="text-gray-600">
-                                    급여 준수
-                                  </span>
-                                  <div className="font-medium">
-                                    {feedback.categories.paymentCompliance}/5
-                                  </div>
+
+                              {evaluation.comment && (
+                                <div className="mb-4">
+                                  <h4 className="font-medium text-gray-700 mb-2">
+                                    코멘트
+                                  </h4>
+                                  <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">
+                                    {evaluation.comment}
+                                  </p>
                                 </div>
                               )}
-                            </div>
-                          </div>
-                        ))}
+
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {evaluation.ratingSatisfaction &&
+                                  evaluation.ratingSatisfaction > 0 && (
+                                    <div className="text-center">
+                                      <p className="text-sm text-gray-500 mb-1">
+                                        만족도
+                                      </p>
+                                      <div className="flex justify-center">
+                                        {[...Array(5)].map((_, i) => (
+                                          <span
+                                            key={i}
+                                            className={`text-lg ${
+                                              i <
+                                              (evaluation.ratingSatisfaction ||
+                                                0)
+                                                ? "text-yellow-400"
+                                                : "text-gray-300"
+                                            }`}
+                                          >
+                                            ★
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {evaluation.ratingSatisfaction}/5
+                                      </p>
+                                    </div>
+                                  )}
+
+                                {evaluation.ratingProfessionalism &&
+                                  evaluation.ratingProfessionalism > 0 && (
+                                    <div className="text-center">
+                                      <p className="text-sm text-gray-500 mb-1">
+                                        전문성
+                                      </p>
+                                      <div className="flex justify-center">
+                                        {[...Array(5)].map((_, i) => (
+                                          <span
+                                            key={i}
+                                            className={`text-lg ${
+                                              i <
+                                              (evaluation.ratingProfessionalism ||
+                                                0)
+                                                ? "text-yellow-400"
+                                                : "text-gray-300"
+                                            }`}
+                                          >
+                                            ★
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {evaluation.ratingProfessionalism}/5
+                                      </p>
+                                    </div>
+                                  )}
+
+                                {evaluation.ratingScheduleAdherence &&
+                                  evaluation.ratingScheduleAdherence > 0 && (
+                                    <div className="text-center">
+                                      <p className="text-sm text-gray-500 mb-1">
+                                        일정 준수
+                                      </p>
+                                      <div className="flex justify-center">
+                                        {[...Array(5)].map((_, i) => (
+                                          <span
+                                            key={i}
+                                            className={`text-lg ${
+                                              i <
+                                              (evaluation.ratingScheduleAdherence ||
+                                                0)
+                                                ? "text-yellow-400"
+                                                : "text-gray-300"
+                                            }`}
+                                          >
+                                            ★
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {evaluation.ratingScheduleAdherence}/5
+                                      </p>
+                                    </div>
+                                  )}
+
+                                {evaluation.ratingCommunication &&
+                                  evaluation.ratingCommunication > 0 && (
+                                    <div className="text-center">
+                                      <p className="text-sm text-gray-500 mb-1">
+                                        소통
+                                      </p>
+                                      <div className="flex justify-center">
+                                        {[...Array(5)].map((_, i) => (
+                                          <span
+                                            key={i}
+                                            className={`text-lg ${
+                                              i <
+                                              (evaluation.ratingCommunication ||
+                                                0)
+                                                ? "text-yellow-400"
+                                                : "text-gray-300"
+                                            }`}
+                                          >
+                                            ★
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {evaluation.ratingCommunication}/5
+                                      </p>
+                                    </div>
+                                  )}
+
+                                {evaluation.ratingProactiveness &&
+                                  evaluation.ratingProactiveness > 0 && (
+                                    <div className="text-center">
+                                      <p className="text-sm text-gray-500 mb-1">
+                                        적극성
+                                      </p>
+                                      <div className="flex justify-center">
+                                        {[...Array(5)].map((_, i) => (
+                                          <span
+                                            key={i}
+                                            className={`text-lg ${
+                                              i <
+                                              (evaluation.ratingProactiveness ||
+                                                0)
+                                                ? "text-yellow-400"
+                                                : "text-gray-300"
+                                            }`}
+                                          >
+                                            ★
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {evaluation.ratingProactiveness}/5
+                                      </p>
+                                    </div>
+                                  )}
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
+                  </div>
+                </div>
+              )}
+
+              {/* 내가 등록한 피드백 */}
+              {activeTab === "mefeedback" && (
+                <div className="p-6">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                    내가 등록한 피드백
+                  </h2>
+
+                  <div className="space-y-6">
+                    <div className="bg-blue-50 rounded-lg p-4">
+                      <p className="text-sm text-gray-600">
+                        총 {writtenEvaluations.length} 개의 리뷰 작성
+                      </p>
                     </div>
+
+                    {writtenEvaluationsLoading && (
+                      <div className="flex justify-center items-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                        <span className="ml-2 text-gray-600">
+                          작성한 평가를 불러오는 중...
+                        </span>
+                      </div>
+                    )}
+
+                    {writtenEvaluationsError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <p className="text-red-600">
+                          {writtenEvaluationsError}
+                        </p>
+                      </div>
+                    )}
+
+                    {!writtenEvaluationsLoading &&
+                      !writtenEvaluationsError &&
+                      writtenEvaluations.length === 0 && (
+                        <div className="text-center py-8">
+                          <p className="text-gray-500">
+                            아직 작성한 평가가 없습니다.
+                          </p>
+                        </div>
+                      )}
+
+                    {!writtenEvaluationsLoading &&
+                      !writtenEvaluationsError &&
+                      writtenEvaluations.length > 0 && (
+                        <div className="space-y-4">
+                          {writtenEvaluations.map((evaluation) => (
+                            <Card key={evaluation.evaluationId} className="p-6">
+                              <div className="flex justify-between items-start mb-4">
+                                <div>
+                                  <h3 className="font-semibold text-gray-900">
+                                    프로젝트 ID: {evaluation.projectId}
+                                  </h3>
+                                  <p className="text-sm text-gray-500">
+                                    {new Date(
+                                      evaluation.createdAt || 0
+                                    ).toLocaleDateString("ko-KR")}
+                                  </p>
+                                </div>
+                              </div>
+
+                              {evaluation.comment && (
+                                <div className="mb-4">
+                                  <h4 className="font-medium text-gray-700 mb-2">
+                                    코멘트
+                                  </h4>
+                                  <p className="text-gray-600 bg-gray-50 p-3 rounded-lg">
+                                    {evaluation.comment}
+                                  </p>
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {evaluation.ratingSatisfaction &&
+                                  evaluation.ratingSatisfaction > 0 && (
+                                    <div className="text-center">
+                                      <p className="text-sm text-gray-500 mb-1">
+                                        만족도
+                                      </p>
+                                      <div className="flex justify-center">
+                                        {[...Array(5)].map((_, i) => (
+                                          <span
+                                            key={i}
+                                            className={`text-lg ${
+                                              i <
+                                              (evaluation.ratingSatisfaction ||
+                                                0)
+                                                ? "text-yellow-400"
+                                                : "text-gray-300"
+                                            }`}
+                                          >
+                                            ★
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {evaluation.ratingSatisfaction}/5
+                                      </p>
+                                    </div>
+                                  )}
+
+                                {evaluation.ratingProfessionalism &&
+                                  evaluation.ratingProfessionalism > 0 && (
+                                    <div className="text-center">
+                                      <p className="text-sm text-gray-500 mb-1">
+                                        전문성
+                                      </p>
+                                      <div className="flex justify-center">
+                                        {[...Array(5)].map((_, i) => (
+                                          <span
+                                            key={i}
+                                            className={`text-lg ${
+                                              i <
+                                              (evaluation.ratingProfessionalism ||
+                                                0)
+                                                ? "text-yellow-400"
+                                                : "text-gray-300"
+                                            }`}
+                                          >
+                                            ★
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {evaluation.ratingProfessionalism}/5
+                                      </p>
+                                    </div>
+                                  )}
+
+                                {evaluation.ratingScheduleAdherence &&
+                                  evaluation.ratingScheduleAdherence > 0 && (
+                                    <div className="text-center">
+                                      <p className="text-sm text-gray-500 mb-1">
+                                        일정 준수
+                                      </p>
+                                      <div className="flex justify-center">
+                                        {[...Array(5)].map((_, i) => (
+                                          <span
+                                            key={i}
+                                            className={`text-lg ${
+                                              i <
+                                              (evaluation.ratingScheduleAdherence ||
+                                                0)
+                                                ? "text-yellow-400"
+                                                : "text-gray-300"
+                                            }`}
+                                          >
+                                            ★
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {evaluation.ratingScheduleAdherence}/5
+                                      </p>
+                                    </div>
+                                  )}
+
+                                {evaluation.ratingCommunication &&
+                                  evaluation.ratingCommunication > 0 && (
+                                    <div className="text-center">
+                                      <p className="text-sm text-gray-500 mb-1">
+                                        소통
+                                      </p>
+                                      <div className="flex justify-center">
+                                        {[...Array(5)].map((_, i) => (
+                                          <span
+                                            key={i}
+                                            className={`text-lg ${
+                                              i <
+                                              (evaluation.ratingCommunication ||
+                                                0)
+                                                ? "text-yellow-400"
+                                                : "text-gray-300"
+                                            }`}
+                                          >
+                                            ★
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {evaluation.ratingCommunication}/5
+                                      </p>
+                                    </div>
+                                  )}
+
+                                {evaluation.ratingProactiveness &&
+                                  evaluation.ratingProactiveness > 0 && (
+                                    <div className="text-center">
+                                      <p className="text-sm text-gray-500 mb-1">
+                                        적극성
+                                      </p>
+                                      <div className="flex justify-center">
+                                        {[...Array(5)].map((_, i) => (
+                                          <span
+                                            key={i}
+                                            className={`text-lg ${
+                                              i <
+                                              (evaluation.ratingProactiveness ||
+                                                0)
+                                                ? "text-yellow-400"
+                                                : "text-gray-300"
+                                            }`}
+                                          >
+                                            ★
+                                          </span>
+                                        ))}
+                                      </div>
+                                      <p className="text-sm text-gray-600 mt-1">
+                                        {evaluation.ratingProactiveness}/5
+                                      </p>
+                                    </div>
+                                  )}
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+                      )}
                   </div>
                 </div>
               )}
