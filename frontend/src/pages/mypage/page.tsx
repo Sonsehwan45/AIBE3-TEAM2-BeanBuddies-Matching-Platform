@@ -13,11 +13,8 @@ type EvaluationResponse = components["schemas"]["EvaluationResponse"];
 type ApplicationSummaryDto = components["schemas"]["ApplicationSummaryDto"];
 type ProjectSummaryDto = components["schemas"]["ProjectSummaryDto"];
 
-import { useApiClient } from "@/lib/backend/apiClient";
-import { useAuth } from "@/context/AuthContext";
 import { mockFeedback } from "@/mocks/users";
 import MyPageSocial from "./social/page";
-
 
 interface BaseProfile {
   username: string;
@@ -78,7 +75,6 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
   useEffect(() => {
     localStorage.setItem("activeTab", activeTab);
   }, [activeTab]);
-
 
   const defaultFreelancerProfile: FreelancerProfile = {
     username: "",
@@ -523,7 +519,6 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
           },
           //OAuth : 소셜 계정 연결 확인용 화면 제공
           { id: "social", label: "소셜 계정 연결", icon: "ri-links-line" },
-
         ]
       : [
           { id: "profile", label: "프로필 관리", icon: "ri-user-3-line" },
