@@ -70,7 +70,7 @@ class ApiV1FreelancerControllerTest {
                 .andDo(print());
 
         // TODO: 데이터 확인
-        Page<FreelancerSummary> freelancers = freelancerService.findAll(new FreelancerSearchCondition(null, null, null),
+        Page<FreelancerSummary> freelancers = freelancerService.findAll(new FreelancerSearchCondition(null,null,null, null, null),
                 PageRequest.of(0, 20));
 
         resultActions

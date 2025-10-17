@@ -1,16 +1,20 @@
 package com.back.domain.freelancer.freelancer.repository;
 
 import static com.back.domain.freelancer.freelancer.entity.QFreelancer.freelancer;
+import static com.back.domain.freelancer.join.entity.QFreelancerInterest.freelancerInterest;
 import static com.back.domain.freelancer.join.entity.QFreelancerSkill.freelancerSkill;
 
+import com.back.domain.common.interest.dto.InterestDto;
 import com.back.domain.common.skill.dto.SkillDto;
 import com.back.domain.freelancer.freelancer.constant.CareerLevel;
 import com.back.domain.freelancer.freelancer.dto.FreelancerSearchCondition;
 import com.back.domain.freelancer.freelancer.dto.FreelancerSummary;
 import com.back.domain.freelancer.freelancer.entity.Freelancer;
+import com.back.domain.freelancer.join.entity.QFreelancerInterest;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.EntityPathBase;
 import com.querydsl.core.types.dsl.PathBuilder;
@@ -42,12 +46,15 @@ public class FreelancerRepositoryImpl implements FreelancerRepositoryCustom {
                 )
                 .distinct()
                 .where(
+                        findLiked(condition.searchKeyword()),
                         ratingAvgGoe(condition.ratingAvg()),
                         careerYearBetween(condition.careerLevel()),
-                        skillIn(condition.skillIds())
+                        skillIn(condition.skillIds()),
+                        interestIn(condition.interestIds())
                 )
                 .from(freelancer)
                 .leftJoin(freelancer.skills, freelancerSkill)
+                .leftJoin(freelancer.interests, freelancerInterest)
                 .orderBy(getSort(pageable))
                 .offset(offset)
                 .limit(limit)
@@ -72,18 +79,30 @@ public class FreelancerRepositoryImpl implements FreelancerRepositoryCustom {
                 .where(freelancerSkill.freelancer.id.in(freelancerIds))
                 .fetch();
 
-        // 프리랜서 - 스킬을 조합하기 위해
-        // FreelancerId를 키로, 해당 FreelancerId를 포함하는 스킬 칼럼들로 그룹화
-        Map<Long, List<SkillDto>> freelancerIdToSkill = groupByFreelancerSkill(freelancersSkills);
+        // 프리랜서 ID가 포함된 모든 관심사 조회
+        List<Tuple> freelancersInterests = queryFactory.select(
+                        freelancerInterest.freelancer.id,
+                        freelancerInterest.interest.id,
+                        freelancerInterest.interest.name
+                )
+                .from(freelancerInterest)
+                .where(freelancerInterest.freelancer.id.in(freelancerIds))
+                .fetch();
 
-        // 두 개의 쿼리 조합
+        // 프리랜서 - 스킬, 관심 분야를 조합하기 위해
+        // FreelancerId를 키로, 해당 FreelancerId를 포함하는 스킬, 관심분야 칼럼들로 그룹화
+        Map<Long, List<SkillDto>> freelancerIdToSkill = groupByFreelancerSkill(freelancersSkills);
+        Map<Long, List<InterestDto>> freelancerIdToInterests = groupByFreelancerInterests(freelancersInterests);
+
+        // 세 개의 쿼리 조합
         List<FreelancerSummary> results = freelancers.stream()
                 .map(tuple -> new FreelancerSummary(
                         tuple.get(freelancer.id),
                         tuple.get(freelancer.member.name),
                         tuple.get(freelancer.careerTotalYears),
                         tuple.get(freelancer.ratingAvg),
-                        freelancerIdToSkill.get(tuple.get(freelancer.id))
+                        freelancerIdToSkill.get(tuple.get(freelancer.id)),
+                        freelancerIdToInterests.get(tuple.get(freelancer.id))
                 ))
                 .toList();
 
@@ -92,10 +111,13 @@ public class FreelancerRepositoryImpl implements FreelancerRepositoryCustom {
                 .select(freelancer.countDistinct())
                 .from(freelancer)
                 .leftJoin(freelancer.skills, freelancerSkill)
+                .leftJoin(freelancer.interests, freelancerInterest)
                 .where(
+                        findLiked(condition.searchKeyword()),
                         ratingAvgGoe(condition.ratingAvg()),
                         careerYearBetween(condition.careerLevel()),
-                        skillIn(condition.skillIds())
+                        skillIn(condition.skillIds()),
+                        interestIn(condition.interestIds())
                 )
                 .fetchOne();
 
@@ -122,6 +144,16 @@ public class FreelancerRepositoryImpl implements FreelancerRepositoryCustom {
                 .toArray(OrderSpecifier[]::new);
     }
 
+    private BooleanExpression findLiked(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        String likePattern = "%" + keyword.trim() + "%";
+        return freelancer.member.name.like(likePattern)
+                .or(freelancer.job.like(likePattern))
+                .or(freelancer.comment.like(likePattern));
+    }
+
     private BooleanExpression ratingAvgGoe(Float ratingAvg) {
         if (ratingAvg == null) {
             return null;
@@ -143,6 +175,13 @@ public class FreelancerRepositoryImpl implements FreelancerRepositoryCustom {
         return freelancer.skills.any().skill.id.in(skillIds);
     }
 
+    private BooleanExpression interestIn(List<Long> interestIds) {
+        if (interestIds == null || interestIds.isEmpty()) {
+            return null;
+        }
+        return freelancer.interests.any().interest.id.in(interestIds);
+    }
+
     private Map<Long, List<SkillDto>> groupByFreelancerSkill(List<Tuple> freelancersSkills) {
         return freelancersSkills.stream()
                 .collect(
@@ -152,6 +191,21 @@ public class FreelancerRepositoryImpl implements FreelancerRepositoryCustom {
                                         tuple -> new SkillDto(
                                                 tuple.get(freelancerSkill.skill.id),
                                                 tuple.get(freelancerSkill.skill.name)
+                                        ),
+                                        Collectors.toList()
+                                )
+                        ));
+    }
+
+    private Map<Long, List<InterestDto>> groupByFreelancerInterests(List<Tuple> freelancersInterests) {
+        return freelancersInterests.stream()
+                .collect(
+                        Collectors.groupingBy(
+                                tuple -> tuple.get(freelancerInterest.freelancer.id),
+                                Collectors.mapping(
+                                        tuple -> new InterestDto(
+                                                tuple.get(freelancerInterest.interest.id),
+                                                tuple.get(freelancerInterest.interest.name)
                                         ),
                                         Collectors.toList()
                                 )

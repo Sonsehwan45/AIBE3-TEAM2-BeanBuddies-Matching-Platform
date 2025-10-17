@@ -1,6 +1,7 @@
 package com.back.domain.freelancer.freelancer.entity;
 
 import com.back.domain.application.application.entity.Application;
+import com.back.domain.common.interest.entity.Interest;
 import com.back.domain.common.skill.entity.Skill;
 import com.back.domain.freelancer.join.entity.FreelancerInterest;
 import com.back.domain.freelancer.join.entity.FreelancerSkill;
@@ -8,14 +9,22 @@ import com.back.domain.member.member.entity.Member;
 import com.back.domain.project.participant.entity.ProjectParticipant;
 import com.back.domain.proposal.proposal.entity.Proposal;
 import com.back.standard.converter.JsonConverter;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.Email;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @NoArgsConstructor
@@ -93,6 +102,12 @@ public class Freelancer {
         newSkills.forEach(skill -> skills.add(new FreelancerSkill(this, skill)));
     }
 
+    public void updateInterests(List<Interest> findInterests) {
+        interests.clear();
+        findInterests.forEach((interest -> interests.add(new FreelancerInterest(this, interest))));
+    }
+
+
     //이미 계산된 평가 평균을 소수점 첫째 자리까지 반올림하기 위한 메서드
     public void updateRatingAvg(double ratingAvg) {
         this.ratingAvg = Math.round(ratingAvg * 10.0) / 10.0;
@@ -106,11 +121,11 @@ public class Freelancer {
         this.career = null;
         this.careerTotalYears = null;
 
-        if(skills != null && !skills.isEmpty()) {
+        if (skills != null && !skills.isEmpty()) {
             skills.clear();
         }
 
-        if(interests != null && !interests.isEmpty()) {
+        if (interests != null && !interests.isEmpty()) {
             interests.clear();
         }
     }
