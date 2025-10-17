@@ -1,6 +1,7 @@
 package com.back.domain.member.member.entity;
 
 import com.back.domain.member.member.constant.SocialProvider;
+import com.back.global.jpa.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,11 +11,7 @@ import lombok.ToString;
 @Getter
 @NoArgsConstructor
 @ToString
-public class MemberSocial {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class MemberSocial extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

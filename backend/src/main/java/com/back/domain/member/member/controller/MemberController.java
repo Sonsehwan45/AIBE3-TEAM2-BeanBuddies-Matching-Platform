@@ -324,7 +324,7 @@ public class MemberController {
         memberSocialService.linkSocialAccount(memberId, SocialProvider.KAKAO, providerId);
 
         //TODO : 테스트 후 변경 필요
-        response.sendRedirect("http://localhost:3000/mypage/social");
+        response.sendRedirect("http://localhost:3000/mypage");
     }
 
     //네이버
@@ -356,7 +356,7 @@ public class MemberController {
         String providerId = memberSocialService.getProviderIdFromLinkCode(SocialProvider.NAVER, code);
         memberSocialService.linkSocialAccount(memberId, SocialProvider.NAVER, providerId);
 
-        response.sendRedirect("http://localhost:3000/mypage/social");
+        response.sendRedirect("http://localhost:3000/mypage");
     }
 
     //구글
@@ -390,7 +390,7 @@ public class MemberController {
         String providerId = memberSocialService.getProviderIdFromLinkCode(SocialProvider.GOOGLE, code);
         memberSocialService.linkSocialAccount(memberId, SocialProvider.GOOGLE, providerId);
 
-        response.sendRedirect("http://localhost:3000/mypage/social");
+        response.sendRedirect("http://localhost:3000/mypage");
     }
 
 
@@ -401,10 +401,11 @@ public class MemberController {
         Long memberId = user.getId();
         List<MemberSocial> linkedAccounts = memberSocialService.getLinkedAccounts(memberId);
 
+        // provider 이름만 리스트로 반환
         List<Map<String, String>> response = linkedAccounts.stream()
                 .map(ms -> Map.of(
                         "provider", ms.getProvider().name(),
-                        "providerId", ms.getProviderId()
+                        "connectedAt", ms.getCreateDate().toString()
                 ))
                 .collect(Collectors.toList());
 
