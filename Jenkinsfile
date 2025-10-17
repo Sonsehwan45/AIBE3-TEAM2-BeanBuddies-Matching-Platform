@@ -1,5 +1,3 @@
-// Jenkinsfile (전체 수정본)
-
 pipeline {
     agent any // 파이프라인을 실행할 Jenkins 에이전트 지정
 
@@ -45,6 +43,42 @@ pipeline {
                     def appImage = docker.build("${DOCKERHUB_USERNAME}/${FRONTEND_APP_NAME}:${env.BUILD_NUMBER}", "--build-arg VITE_API_BASE_URL=${VITE_API_BASE_URL} ./frontend")
                     docker.withRegistry('https://registry.hub.docker.com', 'yhcho-dockerhub') {
                         appImage.push()
+                    }
+                }
+            }
+        }
+
+        // --- 추가: 소셜 설정 파일 생성 ---
+        stage('Prepare social config') {
+            steps {
+                withCredentials([
+                    string(credentialsId: 'SOCIAL_KAKAO_CLIENT_ID', variable: 'KAKAO_CLIENT_ID'),
+                    string(credentialsId: 'SOCIAL_KAKAO_CLIENT_SECRET', variable: 'KAKAO_CLIENT_SECRET'),
+                    string(credentialsId: 'SOCIAL_NAVER_CLIENT_ID', variable: 'NAVER_CLIENT_ID'),
+                    string(credentialsId: 'SOCIAL_NAVER_CLIENT_SECRET', variable: 'NAVER_CLIENT_SECRET'),
+                    string(credentialsId: 'SOCIAL_GOOGLE_CLIENT_ID', variable: 'GOOGLE_CLIENT_ID'),
+                    string(credentialsId: 'SOCIAL_GOOGLE_CLIENT_SECRET', variable: 'GOOGLE_CLIENT_SECRET')
+                ]) {
+                    script {
+                        def yml = """social:
+  kakao:
+    client-id: ${KAKAO_CLIENT_ID}
+    client-secret: ${KAKAO_CLIENT_SECRET}
+    redirect-uri-login: https://api.yhcho.com/api/v1/auth/oauth/kakao/login/callback
+    redirect-uri-link: https://api.yhcho.com/api/v1/members/oauth/kakao/link/callback
+  naver:
+    client-id: ${NAVER_CLIENT_ID}
+    client-secret: ${NAVER_CLIENT_SECRET}
+    redirect-uri-login: https://api.yhcho.com/api/v1/auth/oauth/naver/login/callback
+    redirect-uri-link: https://api.yhcho.com/api/v1/members/oauth/naver/link/callback
+  google:
+    client-id: ${GOOGLE_CLIENT_ID}
+    client-secret: ${GOOGLE_CLIENT_SECRET}
+    redirect-uri-login: https://api.yhcho.com/api/v1/auth/oauth/google/login/callback
+    redirect-uri-link: https://api.yhcho.com/api/v1/members/oauth/google/link/callback
+"""
+                        writeFile file: 'backend/src/main/resources/application-social.yml', text: yml
+                        echo "Created backend/src/main/resources/application-social.yml"
                     }
                 }
             }
@@ -160,6 +194,14 @@ EOF
     }
     post {
         always {
+            // 워크스페이스에 남아있는 social config 파일을 삭제합니다.
+            script {
+                if (isUnix()) {
+                    sh 'rm -f backend/src/main/resources/application-social.yml'
+                } else {
+                    bat 'if exist backend\\src\\main\\resources\\application-social.yml del /Q backend\\src\\main\\resources\\application-social.yml'
+                }
+            }
             // 빌드 중간 산물들을 정리합니다.
             cleanWs()
         }
