@@ -98,13 +98,41 @@ public class Freelancer {
     }
 
     public void updateSkills(List<Skill> newSkills) {
-        skills.clear();
-        newSkills.forEach(skill -> skills.add(new FreelancerSkill(this, skill)));
+        if (newSkills == null) return;
+
+        // 제거할 FreelancerSkill 찾기: 현재 컬렉션에 있지만 새 목록에 없는 것들
+        skills.removeIf(fs -> {
+            if (fs.getSkill() == null || fs.getSkill().getId() == null) return false;
+            return newSkills.stream().noneMatch(s -> s.getId() != null && s.getId().equals(fs.getSkill().getId()));
+        });
+
+        // 추가할 스킬만 새로 생성하여 추가 (이미 존재하는 것은 재사용)
+        for (Skill skill : newSkills) {
+            if (skill == null || skill.getId() == null) continue;
+            boolean exists = skills.stream().anyMatch(fs -> fs.getSkill() != null && skill.getId().equals(fs.getSkill().getId()));
+            if (!exists) {
+                skills.add(new FreelancerSkill(this, skill));
+            }
+        }
     }
 
     public void updateInterests(List<Interest> findInterests) {
-        interests.clear();
-        findInterests.forEach((interest -> interests.add(new FreelancerInterest(this, interest))));
+        if (findInterests == null) return;
+
+        // 제거: 현재에 있지만 새 목록에 없는 관심사들
+        interests.removeIf(fi -> {
+            if (fi.getInterest() == null || fi.getInterest().getId() == null) return false;
+            return findInterests.stream().noneMatch(i -> i.getId() != null && i.getId().equals(fi.getInterest().getId()));
+        });
+
+        // 추가: 존재하지 않는 관심사만 추가
+        for (Interest interest : findInterests) {
+            if (interest == null || interest.getId() == null) continue;
+            boolean exists = interests.stream().anyMatch(fi -> fi.getInterest() != null && interest.getId().equals(fi.getInterest().getId()));
+            if (!exists) {
+                interests.add(new FreelancerInterest(this, interest));
+            }
+        }
     }
 
 
