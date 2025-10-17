@@ -32,6 +32,9 @@ public class FreelancerSkill {
     public FreelancerSkill(Freelancer freelancer, Skill skill) {
         this.freelancer = freelancer;
         this.skill = skill;
-        this.id = new FreelancerSkillId(freelancer.getId(), skill.getId());
+        // only set id when both sides have non-null ids to avoid creating duplicate managed entities
+        if (freelancer != null && freelancer.getId() != null && skill != null && skill.getId() != null) {
+            this.id = new FreelancerSkillId(freelancer.getId(), skill.getId());
+        }
     }
 }
