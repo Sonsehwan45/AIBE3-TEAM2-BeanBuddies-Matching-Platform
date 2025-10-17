@@ -1,0 +1,16 @@
+social:
+  kakao:
+    client-id: NEED_TO_INPUT
+    client-secret: NEED_TO_INPUT
+    redirect-uri-login: http://localhost:8080/api/v1/auth/oauth/kakao/login/callback
+    redirect-uri-link: http://localhost:8080/api/v1/members/oauth/kakao/link/callback
+  naver:
+    client-id: NEED_TO_INPUT
+    client-secret: NEED_TO_INPUT
+    redirect-uri-login: http://localhost:8080/api/v1/auth/oauth/naver/login/callback
+    redirect-uri-link: http://localhost:8080/api/v1/members/oauth/naver/link/callback
+  google:
+    client-id: NEED_TO_INPUT
+    client-secret: NEED_TO_INPUT
+    redirect-uri-login: http://localhost:8080/api/v1/auth/oauth/google/login/callback
+    redirect-uri-link: http://localhost:8080/api/v1/members/oauth/google/link/callback

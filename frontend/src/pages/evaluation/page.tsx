@@ -1,8 +1,11 @@
-import { useState } from "react";
-import { useParams, Link, useLocation, useNavigate } from "react-router-dom";
-import { mockProjects } from "../../mocks/users";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import Button from "../../components/base/Button";
 import { useApiClient } from "../../lib/backend/apiClient";
+import type { components } from "../../lib/backend/apiV1/schema";
+
+type ProjectDto = components["schemas"]["ProjectDto"];
+type ProfileResponseDto = components["schemas"]["ProfileResponseDto"];
 
 export default function Evaluation() {
   const client = useApiClient();
@@ -16,11 +19,65 @@ export default function Evaluation() {
     proactiveness: 0,
     comment: "",
   });
-  //커밋 위치 확인용 주석
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [project, setProject] = useState<ProjectDto | null>(null);
+  const [collaborator, setCollaborator] = useState<ProfileResponseDto | null>(
+    null
+  );
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const project = mockProjects.find((p) => p.id === Number(projectId));
   const isEvaluatingClient = type === "client";
+
+  // 프로젝트 정보와 평가자 정보 가져오기
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        if (!projectId) {
+          setError("프로젝트 ID가 없습니다.");
+          return;
+        }
+
+        // 평가자 정보를 먼저 가져오기 (프로젝트 정보도 함께 반환될 수 있음)
+        const collaboratorResponse = await client.GET(
+          "/api/v1/projects/{projectId}/collaborator",
+          {
+            params: { path: { projectId: parseInt(projectId) } },
+          }
+        );
+
+        if (!collaboratorResponse || !collaboratorResponse.data?.data) {
+          throw new Error("평가자 정보를 가져올 수 없습니다.");
+        }
+
+        setCollaborator(collaboratorResponse.data.data);
+
+        // 프로젝트 정보는 별도로 가져오기 (collaborator API에 프로젝트 정보가 포함되지 않은 경우를 대비)
+        try {
+          const projectResponse = await client.GET("/api/v1/projects/{id}", {
+            params: { path: { id: parseInt(projectId) } },
+          });
+
+          if (projectResponse.data?.data) {
+            setProject(projectResponse.data.data);
+          }
+        } catch (projectError) {
+          console.warn("프로젝트 정보 조회 실패:", projectError);
+          // 프로젝트 정보가 없어도 평가는 가능하도록 계속 진행
+        }
+      } catch (err: any) {
+        console.error("데이터 조회 실패:", err);
+        setError(err.message || "정보를 불러오는 중 오류가 발생했습니다.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [projectId, client]);
 
   const handleRatingChange = (category: string, rating: number) => {
     setFormData((prev) => ({ ...prev, [category]: rating }));
@@ -54,11 +111,12 @@ export default function Evaluation() {
     setIsSubmitting(true);
 
     try {
-      // URL에서 evaluateeId 가져오기 (location.state에서 전달받을 수도 있음)
-      const evaluateeId = location.state?.evaluateeId;
+      // collaborator 상태에서 직접 evaluateeId 가져오기
+      const evaluateeId = collaborator?.id;
 
       if (!evaluateeId) {
         alert("평가 대상 정보를 찾을 수 없습니다.");
+        setIsSubmitting(false); // 제출 상태 해제
         return;
       }
 
@@ -92,13 +150,35 @@ export default function Evaluation() {
     }
   };
 
-  if (!project) {
+  // 로딩 상태
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            프로젝트를 찾을 수 없습니다
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            프로젝트 및 평가자 정보를 불러오는 중...
           </h2>
+          <p className="text-gray-600">잠시만 기다려주세요.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 에러 상태
+  if (error || !project || !collaborator) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i className="ri-error-warning-line text-red-600 text-2xl"></i>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            {error || "정보를 찾을 수 없습니다"}
+          </h2>
+          <p className="text-gray-600 mb-6">
+            프로젝트 또는 평가자 정보를 불러오는 중 문제가 발생했습니다.
+          </p>
           <Link to="/mypage">
             <Button>마이페이지로 돌아가기</Button>
           </Link>
@@ -184,19 +264,32 @@ export default function Evaluation() {
                 </h3>
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                    {isEvaluatingClient
-                      ? project.clientName.charAt(0)
-                      : project.selectedFreelancer?.name?.charAt(0) || "F"}
+                    {collaborator.name?.charAt(0) || "U"}
                   </div>
                   <div>
                     <p className="text-xl font-bold text-gray-900">
-                      {isEvaluatingClient
-                        ? project.clientName
-                        : project.selectedFreelancer?.name || "프리랜서"}
+                      {collaborator.name || "사용자"}
                     </p>
                     <p className="text-sm text-gray-600">
-                      {isEvaluatingClient ? "의뢰자" : "개발자"}
+                      {collaborator.role === "CLIENT"
+                        ? "의뢰자"
+                        : collaborator.role === "FREELANCER"
+                        ? "개발자"
+                        : "사용자"}
                     </p>
+                    {collaborator.job && (
+                      <p className="text-xs text-gray-500">
+                        {collaborator.job}
+                      </p>
+                    )}
+                    {collaborator.ratingAvg && (
+                      <div className="flex items-center mt-1">
+                        <i className="ri-star-fill text-yellow-400 text-xs mr-1"></i>
+                        <span className="text-xs text-gray-600">
+                          {collaborator.ratingAvg.toFixed(1)}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -218,19 +311,27 @@ export default function Evaluation() {
                   <div>
                     <span className="text-gray-500">예산:</span>
                     <span className="ml-2 font-medium">
-                      {project.finalBudget || project.budget}
+                      {project.price?.toLocaleString()}원
                     </span>
                   </div>
                   <div>
-                    <span className="text-gray-500">완료일:</span>
+                    <span className="text-gray-500">마감일:</span>
                     <span className="ml-2 font-medium">
-                      {project.completedAt || "2024-01-20"}
+                      {project.deadline
+                        ? new Date(project.deadline).toLocaleDateString()
+                        : "미정"}
                     </span>
                   </div>
                   <div>
                     <span className="text-gray-500">상태:</span>
                     <span className="ml-2 font-medium text-purple-600">
-                      {project.status}
+                      {project.status === "COMPLETED"
+                        ? "완료"
+                        : project.status === "IN_PROGRESS"
+                        ? "진행중"
+                        : project.status === "OPEN"
+                        ? "모집중"
+                        : "종료"}
                     </span>
                   </div>
                 </div>
