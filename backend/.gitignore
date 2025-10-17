@@ -42,6 +42,7 @@ dv_test.mv.db
 dv_test.trace.db
 application-secret.yml
 application-mail.yml
+application-social.yml
 
 ### QueryDsl ###
 src/main/generated/

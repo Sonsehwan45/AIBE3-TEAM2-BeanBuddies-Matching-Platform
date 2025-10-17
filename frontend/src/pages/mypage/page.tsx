@@ -8,6 +8,7 @@ import Select from "../../components/base/Select";
 import { useApiClient } from "@/lib/backend/apiClient";
 import { useAuth } from "@/context/AuthContext";
 import { mockFeedback } from "@/mocks/users";
+import MyPageSocial from "./social/page";
 
 interface BaseProfile {
   username: string;
@@ -81,9 +82,14 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
   const client = useApiClient();
   const navigate = useNavigate();
   const { isLoggedIn, user, token } = useAuth();
+  //새로고침해도 탭 상태 유지
   const [activeTab, setActiveTab] = useState<
-    "profile" | "projects" | "bookmarks" | "feedback"
-  >("profile");
+    "profile" | "projects" | "bookmarks" | "feedback" | "social"
+  >(() => (localStorage.getItem("activeTab") as any) || "profile");
+
+  useEffect(() => {
+    localStorage.setItem("activeTab", activeTab);
+  }, [activeTab]);
 
   const defaultFreelancerProfile: FreelancerProfile = {
     username: "",
@@ -483,6 +489,8 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
           },
           { id: "bookmarks", label: "관심 프리랜서", icon: "ri-heart-3-line" },
           { id: "feedback", label: "피드백 관리", icon: "ri-star-line" },
+          //OAuth : 소셜 계정 연결 확인용 화면 제공
+          { id: "social", label: "소셜 계정 연결", icon: "ri-links-line" },
         ]
       : [
           { id: "profile", label: "프로필 관리", icon: "ri-user-3-line" },
@@ -493,6 +501,8 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
           },
           { id: "bookmarks", label: "관심 프로젝트", icon: "ri-heart-3-line" },
           { id: "feedback", label: "피드백 관리", icon: "ri-star-line" },
+          //OAuth : 소셜 계정 연결 확인용 화면 제공
+          { id: "social", label: "소셜 계정 연결", icon: "ri-links-line" },
         ];
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
@@ -2678,6 +2688,9 @@ export default function MyPage({ userType = "client" }: MyPageProps) {
                   </div>
                 </div>
               )}
+
+              {/* 소셜 계정 연결 관리 */}
+              {activeTab === "social" && <MyPageSocial />}
             </div>
           </div>
         </div>
