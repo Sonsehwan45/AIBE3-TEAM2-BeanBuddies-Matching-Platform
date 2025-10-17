@@ -13,6 +13,7 @@ type FreelancerSummary = {
   careerLevel?: "NEWBIE" | "JUNIOR" | "MID" | "SENIOR" | "UNDEFINED";
   ratingAvg?: number;
   skills?: Array<{ id?: number; name?: string; }>;
+  interests?: Array<{ id?: number; name?: string; }>;
 };
 
 export default function Freelancers() {
@@ -483,18 +484,41 @@ export default function Freelancers() {
                     <span className="text-sm text-gray-500">평점</span>
                   </div>
 
-                  <div className="flex flex-wrap gap-1 mb-4">
-                    {freelancer.skills?.slice(0, 4).map((skill) => (
-                      <span key={skill.id} className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium border border-indigo-100">
-                        {skill.name}
-                      </span>
-                    ))}
-                    {(freelancer.skills?.length || 0) > 4 && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs">
-                        +{(freelancer.skills?.length || 0) - 4}개
-                      </span>
-                    )}
+                  {/* 주요 기술 */}
+                  <div className="mb-3">
+                    <span className="text-xs font-medium text-gray-500 mb-1 block">주요 기술</span>
+                    <div className="flex flex-wrap gap-1">
+                      {freelancer.skills?.slice(0, 4).map((skill) => (
+                        <span key={skill.id} className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-medium border border-indigo-100">
+                          {skill.name}
+                        </span>
+                      ))}
+                      {(freelancer.skills?.length || 0) > 4 && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs">
+                          +{(freelancer.skills?.length || 0) - 4}개
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {/* 관심 분야 */}
+                  {freelancer.interests && freelancer.interests.length > 0 && (
+                    <div className="mb-4">
+                      <span className="text-xs font-medium text-gray-500 mb-1 block">관심 분야</span>
+                      <div className="flex flex-wrap gap-1">
+                        {freelancer.interests.slice(0, 3).map((interest) => (
+                          <span key={interest.id} className="px-2 py-1 bg-purple-50 text-purple-700 rounded-lg text-xs font-medium border border-purple-100">
+                            {interest.name}
+                          </span>
+                        ))}
+                        {(freelancer.interests.length || 0) > 3 && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs">
+                            +{(freelancer.interests.length || 0) - 3}개
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   <div className="flex justify-end items-center">
                     <div className="flex space-x-2">
