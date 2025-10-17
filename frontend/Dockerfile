@@ -12,7 +12,12 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
-# Build the application
+# Build-time envs for Vite (prefixed with VITE_) 전달 가능
+# docker build --build-arg VITE_API_BASE_URL=https://api.example.com .
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
+# Build the application (Vite는 VITE_ 접두사의 env를 정적으로 치환합니다)
 RUN npm run build
 
 # Stage 2: Serve the application with Nginx

@@ -2,6 +2,7 @@ package com.back.domain.member.member.service;
 
 import com.back.domain.member.member.constant.MemberStatus;
 import com.back.domain.member.member.constant.Role;
+import com.back.domain.member.member.constant.SocialProvider;
 import com.back.domain.member.member.entity.Member;
 import com.back.global.exception.ServiceException;
 import com.back.global.jwt.JwtProvider;
@@ -17,6 +18,7 @@ public class AuthService {
 
     private final JwtProvider jwtProvider;
     private final MemberService memberService;
+    private final MemberSocialService memberSocialService;
     private final TokenBlacklistService tokenBlacklistService;
 
     public Map<String, Object> login(String username, String password) {
@@ -71,5 +73,18 @@ public class AuthService {
         if(accessToken == null || accessToken.isBlank()) return;
 
         tokenBlacklistService.addBlacklistToken(accessToken);
+    }
+
+    public Map<String, Object> loginWithSocial(SocialProvider provider, String providerId) {
+        Member member = memberSocialService.findMemberByProviderAndProviderId(provider, providerId);
+
+        String accessToken = genAccessToken(member);
+        String refreshToken = genRefreshToken(member);
+
+        return Map.of(
+                "member", member,
+                "accessToken", accessToken,
+                "refreshToken", refreshToken
+        );
     }
 }

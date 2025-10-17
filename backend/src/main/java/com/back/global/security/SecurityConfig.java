@@ -39,9 +39,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/members/*/profile").permitAll() // 다른 사용자 프로필 조회
                         .requestMatchers(HttpMethod.GET, "/api/v1/projects/**").permitAll() // 프로젝트/지원서/제안서 단건/다건 조회
                         .requestMatchers("/api/*/auth/login").permitAll() // 로그인 경로는 누구나 접근 가능해야 함
-                        .requestMatchers(HttpMethod.POST, "/api/*/auth/logout").permitAll()
+                        .requestMatchers("/api/*/auth/logout").permitAll()
                         .requestMatchers("/api/*/skills").permitAll()
                         .requestMatchers("/api/*/interests").permitAll()
+                        .requestMatchers("/api/*/auth/oauth/**").permitAll()
 
                         //인증된 사용자만 접근 가능
                         .requestMatchers("/api/*/test/auth").authenticated()
@@ -54,6 +55,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/*/members/me/favorites/**").authenticated() // 내 즐겨찾기 목록 조회
                         .requestMatchers(HttpMethod.GET,"/api/v1/proposals").authenticated() // 나의 제안서 조회
                         .requestMatchers("/api/v1/recommendations").authenticated() // 맞춤 추천 조회
+                        .requestMatchers("/api/v1/members/me/social").authenticated() // 맞춤 추천 조회
 
                                        
                         //평가 생성 및 수정은 인증된 사용자만 가능

@@ -4,9 +4,9 @@ import type { paths } from "@/lib/backend/apiV1/schema";
 import { useAuth } from "@/context/AuthContext";
 import { useMemo } from "react";
 
-const API_BASE_URL = import.meta.env.DEV
-  ? "http://localhost:8080"
-  : "https://api.yhcho.com";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ??
+  (import.meta.env.DEV ? "http://localhost:8080" : "https://api.yhcho.com");
 
 export function useApiClient() {
   const { token, setToken } = useAuth();

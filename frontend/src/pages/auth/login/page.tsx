@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../../components/base/Button";
 import Input from "../../../components/base/Input";
@@ -17,6 +17,38 @@ export default function Login() {
   });
 
   const [formErrors, setFormErrors] = useState<string[]>([]); // <-- 폼 하단용
+
+  //소셜 로그인 완료 후 해시 파싱 로직
+  useEffect(() => {
+    console.log("소셜 로그인 후처리 useEffect");
+    const hash = window.location.hash;
+    if (hash) {
+      const params = new URLSearchParams(hash.substring(1));
+      const accessToken = params.get("accessToken");
+      const id = params.get("id");
+      const name = params.get("name");
+      const role = params.get("role");
+      const status = params.get("status");
+      const profileImg = params.get("profileImg");
+
+      if (accessToken) {
+        setToken(decodeURIComponent(accessToken));
+        setUser({
+          id: Number(decodeURIComponent(id || "0")),
+          name: decodeURIComponent(name || ""),
+          role: decodeURIComponent(role || ""),
+          status: decodeURIComponent(status || ""),
+          profileImgUrl: decodeURIComponent(profileImg || ""),
+        });
+
+        toast.success(`${decodeURIComponent(name || "")}님 환영합니다! 🎉`);
+        navigate("/", { replace: true });
+      }
+
+      //URL 정리
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -50,6 +82,28 @@ export default function Login() {
     } catch (err: any) {
       toast.error("알 수 없는 에러가 발생했습니다.", { duration: 3000 });
     }
+  };
+
+  //소셜 로그인 핸들러
+  const handleSocialLogin = (provider: string) => {
+    let url = "";
+    switch (provider) {
+      case "Kakao":
+        url = "http://localhost:8080/api/v1/auth/oauth/kakao/login";
+        break;
+      case "Google":
+        url = "http://localhost:8080/api/v1/auth/oauth/google/login";
+        break;
+      case "Naver":
+        url = "http://localhost:8080/api/v1/auth/oauth/naver/login";
+        break;
+      default:
+        toast.error("지원하지 않는 로그인 방식입니다.");
+        return;
+    }
+
+    //실제 로그인 페이지로 리다이렉트
+    window.location.href = url;
   };
 
   return (
@@ -127,6 +181,7 @@ export default function Login() {
               </div>
             </div>
 
+            {/* 소셜 로그인 버튼 */}
             <div className="mt-6 grid grid-cols-3 gap-3">
               <button
                 type="button"
@@ -151,7 +206,10 @@ export default function Login() {
                 onClick={() => handleSocialLogin("Naver")}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 cursor-pointer whitespace-nowrap"
               >
-                <i className="ri-naver-fill text-green-500 text-lg"></i>
+                <div className="flex items-center justify-center text-green-600 font-extrabold text-base -translate-y-0.47">
+                  N
+                </div>
+
                 <span className="ml-2">Naver</span>
               </button>
             </div>
