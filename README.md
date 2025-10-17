@@ -71,14 +71,10 @@
 
 ## 👥 팀 BeanBuddies
 
-| 이름 | 역할                |
-|------|-------------------|
-| [![김은주](https://avatars.githubusercontent.com/u/119219808?v=4)](https://github.com/kku1403) | 회원 및 인증/인가 시스템    |
-| [![조용현](https://avatars.githubusercontent.com/u/46590866?v=4)](https://github.com/yhcho14) | 마이페이지 시스템 및 CI/CD |
-| [![최원제](https://avatars.githubusercontent.com/u/109943444?v=4)](https://github.com/1J-Choi) | 프로젝트/지원서 관리 시스템   |
-| [![김희수](https://avatars.githubusercontent.com/u/142914095?v=4)](https://github.com/inti0) | 프리랜서/제안서 관리 시스템   |
-| [![이록은](https://avatars.githubusercontent.com/u/159905810?v=4)](https://github.com/Leere1) | 맞춤 추천 시스템         |
-| [![손세환](https://avatars.githubusercontent.com/u/162403924?v=4)](https://github.com/Sonsehwan45) | 평가 관리 시스템         |
+| [![김은주](https://avatars.githubusercontent.com/u/119219808?v=4)](https://github.com/kku1403)<br>김은주 | [![조용현](https://avatars.githubusercontent.com/u/46590866?v=4)](https://github.com/yhcho14)<br>조용현 | [![최원제](https://avatars.githubusercontent.com/u/109943444?v=4)](https://github.com/1J-Choi)<br>최원제 | [![김희수](https://avatars.githubusercontent.com/u/142914095?v=4)](https://github.com/inti0)<br>김희수 | [![이록은](https://avatars.githubusercontent.com/u/159905810?v=4)](https://github.com/Leere1)<br>이록은 | [![손세환](https://avatars.githubusercontent.com/u/162403924?v=4)](https://github.com/Sonsehwan45)<br>손세환 |
+|------|------|------|------|------|------|
+| 회원 및 인증/인가 시스템 | 마이페이지 및 CI/CD | 프로젝트/지원서 관리 | 프리랜서/제안서 관리 | 맞춤 추천 시스템 | 평가 관리 시스템 |
+
 
 
 ---
